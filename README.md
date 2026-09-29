@@ -1,56 +1,59 @@
-# Welcome to your Expo app 👋
+# Winter Arc App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Tracker für den Winter Arc: eigene Regeln festlegen, einen Vertrag mit sich selbst unterschreiben und
+92 Tage lang (1. Oktober – 31. Dezember) jeden Tag abhaken. Expo (React Native + TypeScript), später
+mit Supabase. Ziel: App Store und Google Play.
 
-## Get started
+> Arbeitstitel. Der finale Name kommt vor dem Store-Release.
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Loslegen
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Dann auf dem iPhone die App **Expo Go** aus dem App Store laden und den QR-Code aus dem Terminal
+mit der Kamera scannen. Laptop und iPhone müssen im selben WLAN sein (sonst `npx expo start --tunnel`).
 
-### Other setup steps
+Weitere Befehle:
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+| Befehl | Zweck |
+|---|---|
+| `npm test` | Unit-Tests der Arc-Logik (Streak, Schild, Statistik) |
+| `npm run typecheck` | TypeScript prüfen |
+| `npm run web` | Vorschau im Browser |
 
-## Learn more
+## Aufbau
 
-To learn more about developing your project with Expo, look at the following resources:
+```
+src/
+  app/                  Screens (Expo Router, dateibasiert)
+    (tabs)/index.tsx    Heute – Check-in, Bogen-Anzeige, Streak, Schild
+    (tabs)/verlauf.tsx  Heatmap über den ganzen Arc, Quote je Regel
+    (tabs)/vertrag.tsx  Vertrag, Regeln ändern (Amendments), Einstellungen
+    onboarding/         Willkommen + 4-Schritte-Assistent (Zeitraum, Regeln, Warum, Vertrag)
+    tag/[date].tsx      Tagesdetail, Nachtragen (bis 2 Tage zurück), Notiz
+  components/           UI-Bausteine (ArcGauge, RuleRow, Heatmap, HoldToSign, …)
+  lib/arc.ts            Kernlogik – reine Funktionen, getestet in lib/__tests__
+  lib/date.ts           Datumsrechnung mit lokalen Kalendertagen (DST-sicher)
+  store/store.ts        Lokaler Zustand, gespeichert in AsyncStorage (offline-first)
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Regeln der App
 
-## Join the community
+- **Tag gehalten** = alle täglichen Regeln erfüllt. Wöchentliche Regeln (z. B. Training 4×) zählen separat.
+- **Schild**: Pro Woche (Mo–So) wird ein einzelner verpasster Tag automatisch gerettet.
+  Zwei verpasste Tage in Folge beenden den Streak. Grundlage: Lally et al. (2010) – ein einzelner
+  verpasster Tag beeinflusst die Gewohnheitsbildung kaum.
+- **Vertrag**: Vor dem Start frei änderbar, danach 3 Änderungen. Änderungen gelten ab heute,
+  vergangene Tage bleiben so, wie sie bewertet wurden.
+- **Nachtragen**: heute und die 2 Tage davor. Ältere Tage sind gesperrt.
 
-Join our community of developers creating universal apps.
+## Roadmap
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- [x] **Phase 0** – Arc erstellen, Vertrag, Check-in, Streak mit Schild, Heatmap, Tagesnotiz, hell/dunkel
+- [ ] **Phase 1** – Erinnerungen (Push), Accounts + Sync (Supabase), Fotos im Journal, Wochenrückblick, teilbare Fortschritts-Karte
+- [ ] **Phase 2** – Crews: gemeinsamer Arc mit Freunden, Check-ins sehen, Reaktionen, Rangliste
+- [ ] **Phase 3** – Release: App-Icon, Name, Datenschutzerklärung, Sign in with Apple, Account löschen, TestFlight, Store-Einträge
+- [ ] Danach – Widgets, Apple Health, weitere Arcs (Spring Arc …)
