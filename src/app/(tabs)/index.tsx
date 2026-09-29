@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ArcGauge } from '@/components/arc-gauge';
 import { ChevronIcon, FlameIcon, ShieldIcon } from '@/components/icons';
+import { ReminderPrompt } from '@/components/reminder-prompt';
 import { RuleRow } from '@/components/rule-row';
 import { StatTile } from '@/components/stat-tile';
 import { Button } from '@/components/ui/button';
@@ -14,10 +15,10 @@ import { T } from '@/components/ui/text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
-import { activeRules, arcPhase, computeStats, dayProgress, ruleValue, weeklyCount } from '@/lib/arc';
+import { activeRules, arcPhase, computeStats, dayProgress, dueReviewWeek, ruleValue, weeklyCount } from '@/lib/arc';
 import { diffDays, formatLong, formatShort } from '@/lib/date';
 import { describeRule } from '@/lib/templates';
-import { abandonActiveArc, selectActiveArc, selectLog, setRuleValue, useAppState } from '@/store/store';
+import { abandonActiveArc, selectActiveArc, selectLog, selectReviews, setRuleValue, useAppState } from '@/store/store';
 
 export default function TodayScreen() {
   const theme = useTheme();
@@ -51,6 +52,7 @@ export default function TodayScreen() {
           <T variant="hero">{inDays}</T>
           <T color="textSecondary">{inDays === 1 ? 'Tag bis zum Start' : 'Tage bis zum Start'}</T>
         </Card>
+        <ReminderPrompt />
         <Card tone="surfaceMuted" bordered={false}>
           <T variant="bodyStrong">{phase.title}</T>
           <T variant="caption">{phase.hint}</T>
@@ -103,6 +105,7 @@ export default function TodayScreen() {
 
   // ---------- Laufender Arc ----------
   const streakDays = stats.streak.current;
+  const reviewWeek = dueReviewWeek(arc, today, selectReviews(state, arc.id));
 
   return (
     <Screen tabs>
@@ -130,6 +133,21 @@ export default function TodayScreen() {
         />
         <StatTile label="Quote" value={stats.evaluatedDays ? `${Math.round(stats.completionRate * 100)}%` : '–'} sub="gehalten" />
       </View>
+
+      <ReminderPrompt />
+
+      {reviewWeek && (
+        <Pressable
+          onPress={() => router.push({ pathname: '/rueckblick', params: { week: reviewWeek } })}
+          style={({ pressed }) => [styles.noteRow, { backgroundColor: theme.accentSoft, borderColor: theme.accent, opacity: pressed ? 0.8 : 1, marginTop: 0 }]}>
+          <T style={styles.emoji}>🗓️</T>
+          <View style={styles.flex}>
+            <T variant="bodyStrong" color="accent">Wochenrückblick</T>
+            <T variant="caption">Zwei Minuten: Was lief gut, was nimmst du dir vor?</T>
+          </View>
+          <ChevronIcon color={theme.accent} />
+        </Pressable>
+      )}
 
       {stats.streak.onThinIce && !allDone && (
         <Card tone="warningSoft" bordered={false} style={styles.alert}>

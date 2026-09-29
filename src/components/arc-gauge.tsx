@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
+import type { Palette } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { T } from './ui/text';
@@ -31,10 +32,13 @@ type Props = {
   /** Text unter der Zahl; Standard "von N". */
   sub?: string;
   size?: number;
+  /** Feste Farben (z. B. für die Teilen-Karte), sonst das System-Theme. */
+  palette?: Palette;
 };
 
-export function ArcGauge({ progress, today, dayNumber, totalDays, label = 'Tag', sub, size = 260 }: Props) {
-  const theme = useTheme();
+export function ArcGauge({ progress, today, dayNumber, totalDays, label = 'Tag', sub, size = 260, palette }: Props) {
+  const systemTheme = useTheme();
+  const theme = palette ?? systemTheme;
   const c = size / 2;
   const outerW = 14;
   const innerW = 6;
@@ -67,9 +71,9 @@ export function ArcGauge({ progress, today, dayNumber, totalDays, label = 'Tag',
         )}
       </Svg>
       <View style={[StyleSheet.absoluteFill, styles.center, { height: size }]}>
-        <T variant="label">{label}</T>
-        <T variant="hero">{dayNumber}</T>
-        <T variant="caption" color="textTertiary">
+        <T variant="label" style={{ color: theme.textSecondary }}>{label}</T>
+        <T variant="hero" style={{ color: theme.text }}>{dayNumber}</T>
+        <T variant="caption" style={{ color: theme.textTertiary }}>
           {sub ?? `von ${totalDays}`}
         </T>
       </View>

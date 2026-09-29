@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "Winter Arc",
-    "slug": "winter-arc-app",
+    "name": "Nordwand",
+    "slug": "nordwand",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "winterarc",
+    "scheme": "nordwand",
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#F3F5F8",
     "ios": {
-      "bundleIdentifier": "ch.maxkon.winterarc",
+      "bundleIdentifier": "ch.maxkon.nordwand",
       "supportsTablet": false,
       "icon": "./assets/expo.icon",
       "infoPlist": {
@@ -17,7 +17,7 @@
       }
     },
     "android": {
-      "package": "ch.maxkon.winterarc",
+      "package": "ch.maxkon.nordwand",
       "adaptiveIcon": {
         "backgroundColor": "#E4EBFC",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -41,6 +41,20 @@
           "dark": {
             "backgroundColor": "#0A0E13"
           }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#2657D9"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Nordwand braucht Zugriff auf deine Fotos, damit du Bilder zu deinem Tagebuch hinzufügen kannst.",
+          "cameraPermission": "Nordwand braucht Zugriff auf die Kamera, damit du Fotos für dein Tagebuch aufnehmen kannst.",
+          "microphonePermission": false
         }
       ]
     ],

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Chip, SectionTitle, TextField } from '@/components/ui/controls';
 import { Screen } from '@/components/ui/screen';
+import { TimeRow } from '@/components/ui/time-row';
 import { T } from '@/components/ui/text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -22,9 +23,11 @@ import {
   resetAll,
   seedDemo,
   selectActiveArc,
+  updateReminders,
   updateSettings,
   useAppState,
 } from '@/store/store';
+import { enableReminders } from '@/services/notifications';
 
 const ROLLOVER_OPTIONS = [0, 2, 3, 4];
 
@@ -38,6 +41,7 @@ export default function ContractScreen() {
   if (!arc) return null;
 
   const beforeStart = today < arc.startDate;
+  const reminders = state.settings.reminders;
   const rules = currentRules(arc);
   const canAmend = beforeStart || arc.amendmentsLeft > 0;
   const total = diffDays(arc.startDate, arc.endDate) + 1;
@@ -138,6 +142,59 @@ export default function ContractScreen() {
         }}
       />
 
+      <SectionTitle>Erinnerungen</SectionTitle>
+      <Card style={styles.settings}>
+        <View style={styles.switchRow}>
+          <View style={styles.flex}>
+            <T variant="bodyStrong">Erinnerungen</T>
+            <T variant="caption">Abends nur, wenn noch etwas offen ist.</T>
+          </View>
+          <Switch
+            value={!!reminders.enabled}
+            onValueChange={async (v) => {
+              if (!v) return updateReminders({ enabled: false });
+              const ok = await enableReminders();
+              if (!ok) {
+                await confirm(
+                  'Benachrichtigungen blockiert',
+                  'Erlaube Benachrichtigungen für Nordwand in den Systemeinstellungen deines Handys.',
+                  'OK',
+                );
+              }
+            }}
+            trackColor={{ true: theme.accent, false: theme.border }}
+          />
+        </View>
+        <TimeRow
+          label="Morgens"
+          hint="Tag X von Y und ein kurzer Anstoss"
+          value={reminders.morning}
+          fallback={7 * 60 + 30}
+          disabled={!reminders.enabled}
+          onChange={(morning) => updateReminders({ morning })}
+        />
+        <TimeRow
+          label="Abends"
+          hint="Check-in, falls noch Regeln offen sind"
+          value={reminders.evening}
+          fallback={20 * 60 + 30}
+          disabled={!reminders.enabled}
+          onChange={(evening) => updateReminders({ evening })}
+        />
+        <View style={[styles.switchRow, !reminders.enabled && styles.disabled]}>
+          <View style={styles.flex}>
+            <T variant="bodyStrong">Wochenrückblick</T>
+            <T variant="caption">Sonntagabend, zwei Minuten Reflexion</T>
+          </View>
+          <Switch
+            disabled={!reminders.enabled}
+            value={reminders.weeklyReview}
+            onValueChange={(weeklyReview) => updateReminders({ weeklyReview })}
+            trackColor={{ true: theme.accent, false: theme.border }}
+          />
+        </View>
+      </Card>
+
       <SectionTitle>Einstellungen</SectionTitle>
       <Card style={styles.settings}>
         <TextField
@@ -229,5 +286,6 @@ const styles = StyleSheet.create({
   settings: { gap: Spacing.five },
   setting: { gap: Spacing.two },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three },
+  disabled: { opacity: 0.45 },
 });

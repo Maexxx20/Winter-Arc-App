@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { computeStats, computeStreak, dayProgress, weeklyCount, type ArcLog } from '../arc';
+import { arcWeeks as arcWeeksFn, computeStats, computeStreak, dayProgress, weekSummary as weekSummaryFn, weeklyCount, type ArcLog } from '../arc';
 import { addDays, diffDays, rangeDays, todayISO, weekStart } from '../date';
 import type { Arc, Rule } from '../types';
 
@@ -164,5 +164,29 @@ describe('Statistik', () => {
     // Woche 1 (Do–So = 4 Tage): erwartet ceil(3*4/7)=2, erreicht 2. Laufende Woche: 1/1.
     expect(g.expected).toBe(3);
     expect(g.hits).toBe(3);
+  });
+});
+
+describe('Wochen', () => {
+  const arc = makeArc([daily('a')]);
+  it('arcWeeks deckt den ganzen Arc ab', () => {
+    const w = arcWeeksFn(arc);
+    expect(w[0]).toBe('2026-09-28');
+    expect(w[w.length - 1]).toBe('2026-12-28');
+    expect(w).toHaveLength(14);
+  });
+  it('weekSummary zählt gehaltene Tage', () => {
+    const log = doneOn({}, ['2026-10-05', '2026-10-06', '2026-10-08'], ['a']);
+    const s = weekSummaryFn(arc, log, '2026-10-05', '2026-10-20');
+    expect(s.index).toBe(2);
+    expect(s.held).toBe(3);
+    expect(s.days).toHaveLength(7);
+    expect(s.complete).toBe(true);
+    expect(s.rules[0]).toMatchObject({ hits: 3, expected: 7 });
+  });
+  it('erste Woche hat nur Tage im Arc', () => {
+    const s = weekSummaryFn(arc, {}, '2026-09-28', '2026-10-02');
+    expect(s.days.map((d) => d.date)).toEqual(['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04']);
+    expect(s.complete).toBe(false);
   });
 });

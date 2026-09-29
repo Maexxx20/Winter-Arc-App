@@ -42,12 +42,36 @@ export interface Arc {
   amendmentsLeft: number;
   status: ArcStatus;
   createdAt: string;
+  /** Letzte Änderung (für den Sync: neuere Version gewinnt). */
+  updatedAt?: string;
 }
 
 export interface DayEntry {
   /** ruleId → Wert. Abhaken: 1 = erledigt. Menge: erfasste Menge. */
   values: Record<string, number>;
   note?: string;
+  /** Lokale Datei-URIs der Fotos (im App-Dokumentenordner). */
+  photos?: string[];
+  updatedAt: string;
+}
+
+/** Minuten seit Mitternacht, z. B. 7:30 = 450. */
+export type TimeOfDay = number;
+
+export interface ReminderSettings {
+  /** null = noch nie gefragt, false = aus */
+  enabled: boolean | null;
+  morning: TimeOfDay | null;
+  evening: TimeOfDay | null;
+  weeklyReview: boolean;
+}
+
+export interface WeekReview {
+  /** 1–5: Wie war die Woche? */
+  rating: number;
+  wins: string;
+  obstacles: string;
+  nextWeek: string;
   updatedAt: string;
 }
 
@@ -56,6 +80,7 @@ export interface Settings {
   /** Stunde, zu der ein neuer Tag beginnt (0 = Mitternacht). */
   rolloverHour: number;
   haptics: boolean;
+  reminders: ReminderSettings;
 }
 
 export interface AppState {
@@ -64,6 +89,8 @@ export interface AppState {
   activeArcId: string | null;
   /** arcId → Datum → Eintrag */
   logs: Record<string, Record<ISODate, DayEntry>>;
+  /** arcId → Wochenstart (Montag) → Rückblick */
+  reviews: Record<string, Record<ISODate, WeekReview>>;
   settings: Settings;
 }
 

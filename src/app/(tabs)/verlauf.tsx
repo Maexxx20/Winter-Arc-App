@@ -1,20 +1,24 @@
 import { router } from 'expo-router';
 import { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Heatmap, HeatmapLegend } from '@/components/heatmap';
+import { ChevronIcon } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 import { StatTile } from '@/components/stat-tile';
 import { Card } from '@/components/ui/card';
 import { SectionTitle } from '@/components/ui/controls';
 import { Screen } from '@/components/ui/screen';
 import { T } from '@/components/ui/text';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
-import { computeStats } from '@/lib/arc';
-import { formatShort } from '@/lib/date';
+import { arcWeeks, computeStats, weekSummary } from '@/lib/arc';
+import { addDays, formatShort } from '@/lib/date';
 import { describeRule } from '@/lib/templates';
-import { selectActiveArc, selectLog, useAppState } from '@/store/store';
+import { selectActiveArc, selectLog, selectReviews, useAppState } from '@/store/store';
+
+const RATING_EMOJI = ['', '😣', '😕', '😐', '🙂', '🔥'];
 
 export default function HistoryScreen() {
   const theme = useTheme();
@@ -22,7 +26,12 @@ export default function HistoryScreen() {
   const today = useToday();
   const arc = selectActiveArc(state);
   const log = selectLog(state, arc?.id);
+  const reviews = selectReviews(state, arc?.id);
   const stats = useMemo(() => (arc ? computeStats(arc, log, today) : null), [arc, log, today]);
+  const weeks = useMemo(
+    () => (arc ? arcWeeks(arc).filter((w) => w <= today).map((w) => weekSummary(arc, log, w, today)).reverse() : []),
+    [arc, log, today],
+  );
   if (!arc || !stats) return null;
 
   const pct = (x: number) => `${Math.round(x * 100)}%`;
@@ -55,6 +64,42 @@ export default function HistoryScreen() {
         />
         <HeatmapLegend />
       </Card>
+
+      {stats.started && (
+        <Button title="Fortschritt teilen" variant="secondary" onPress={() => router.push('/teilen')} />
+      )}
+
+      {weeks.length > 0 && stats.started && (
+        <>
+          <SectionTitle>Wochen</SectionTitle>
+          <View style={styles.weeks}>
+            {weeks.map((w) => {
+              const r = reviews[w.week];
+              return (
+                <Pressable
+                  key={w.week}
+                  onPress={() => router.push({ pathname: '/rueckblick', params: { week: w.week } })}
+                  style={({ pressed }) => [styles.weekRow, { backgroundColor: theme.surface, borderColor: theme.border, opacity: pressed ? 0.8 : 1 }]}>
+                  <View style={styles.flex}>
+                    <T variant="bodyStrong">Woche {w.index}</T>
+                    <T variant="caption">
+                      {formatShort(w.week)} – {formatShort(addDays(w.week, 6))} · {w.held}/{w.days.length} gehalten
+                    </T>
+                  </View>
+                  {r ? (
+                    <T style={styles.emoji}>{RATING_EMOJI[r.rating]}</T>
+                  ) : (
+                    <T variant="caption" color="accent">
+                      {w.complete ? 'Rückblick' : 'läuft'}
+                    </T>
+                  )}
+                  <ChevronIcon color={theme.textTertiary} size={16} />
+                </Pressable>
+              );
+            })}
+          </View>
+        </>
+      )}
 
       <SectionTitle>Regeln</SectionTitle>
       <Card style={styles.rules}>
@@ -98,5 +143,15 @@ const styles = StyleSheet.create({
   emoji: { fontSize: 20, lineHeight: 26 },
   flex: { flex: 1 },
   bar: { height: 6, borderRadius: 3, overflow: 'hidden' },
+  weeks: { gap: Spacing.two },
+  weekRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    padding: Spacing.three,
+    paddingHorizontal: Spacing.four,
+    borderRadius: Radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
   barFill: { height: 6, borderRadius: 3 },
 });

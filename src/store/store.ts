@@ -8,17 +8,26 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
 import { uid } from '@/lib/arc';
+import { deletePhoto } from '@/services/photos';
 import { addDays, type ISODate } from '@/lib/date';
-import type { AppState, Arc, DayEntry, Rule, Settings } from '@/lib/types';
+import type { AppState, Arc, DayEntry, ReminderSettings, Rule, Settings, WeekReview } from '@/lib/types';
 
 const STORAGE_KEY = 'arc.state.v1';
+
+const now = () => new Date().toISOString();
 
 const initialState: AppState = {
   schemaVersion: 1,
   arcs: [],
   activeArcId: null,
   logs: {},
-  settings: { name: '', rolloverHour: 0, haptics: true },
+  reviews: {},
+  settings: {
+    name: '',
+    rolloverHour: 0,
+    haptics: true,
+    reminders: { enabled: null, morning: 7 * 60 + 30, evening: 20 * 60 + 30, weeklyReview: true },
+  },
 };
 
 let state: AppState = initialState;
@@ -52,7 +61,16 @@ export async function hydrate(): Promise<void> {
     if (raw) {
       const parsed = JSON.parse(raw) as AppState;
       if (parsed?.schemaVersion === 1) {
-        state = { ...initialState, ...parsed, settings: { ...initialState.settings, ...parsed.settings } };
+        state = {
+          ...initialState,
+          ...parsed,
+          reviews: parsed.reviews ?? {},
+          settings: {
+            ...initialState.settings,
+            ...parsed.settings,
+            reminders: { ...initialState.settings.reminders, ...parsed.settings?.reminders },
+          },
+        };
       }
     }
   } catch (e) {
@@ -62,7 +80,8 @@ export async function hydrate(): Promise<void> {
   emit();
 }
 
-function subscribe(l: () => void) {
+/** Für Nebeneffekte ausserhalb von React (Erinnerungen, Sync). */
+export function subscribe(l: () => void) {
   listeners.add(l);
   return () => listeners.delete(l);
 }
@@ -73,6 +92,10 @@ export function useAppState(): AppState {
 
 export function useHydrated(): boolean {
   return useSyncExternalStore(subscribe, () => hydrated, () => hydrated);
+}
+
+export function isHydrated(): boolean {
+  return hydrated;
 }
 
 export function getState(): AppState {
@@ -114,10 +137,11 @@ export function createArc(draft: ArcDraft): Arc {
     amendmentsLeft: DEFAULT_AMENDMENTS,
     status: 'active',
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
   setState((s) => ({
     ...s,
-    arcs: [...s.arcs.map((a) => (a.id === s.activeArcId && a.status === 'active' ? { ...a, status: 'abandoned' as const } : a)), arc],
+    arcs: [...s.arcs.map((a) => (a.id === s.activeArcId && a.status === 'active' ? { ...a, status: 'abandoned' as const, updatedAt: now() } : a)), arc],
     activeArcId: arc.id,
     logs: { ...s.logs, [arc.id]: {} },
     settings: { ...s.settings, name: s.settings.name || draft.signatureName.trim() },
@@ -179,7 +203,7 @@ export function amendRules(
     ...s,
     arcs: s.arcs.map((a) =>
       a.id === arcId
-        ? { ...a, rules, amendmentsLeft: beforeStart ? a.amendmentsLeft : a.amendmentsLeft - 1 }
+        ? { ...a, rules, amendmentsLeft: beforeStart ? a.amendmentsLeft : a.amendmentsLeft - 1, updatedAt: now() }
         : a,
     ),
   }));
@@ -187,18 +211,53 @@ export function amendRules(
 }
 
 export function updateArcMeta(arcId: string, patch: Partial<Pick<Arc, 'title' | 'why'>>) {
-  setState((s) => ({ ...s, arcs: s.arcs.map((a) => (a.id === arcId ? { ...a, ...patch } : a)) }));
+  setState((s) => ({ ...s, arcs: s.arcs.map((a) => (a.id === arcId ? { ...a, ...patch, updatedAt: now() } : a)) }));
 }
 
 export function abandonActiveArc() {
   setState((s) => ({
     ...s,
-    arcs: s.arcs.map((a) => (a.id === s.activeArcId ? { ...a, status: 'abandoned' as const } : a)),
+    arcs: s.arcs.map((a) => (a.id === s.activeArcId ? { ...a, status: 'abandoned' as const, updatedAt: now() } : a)),
     activeArcId: null,
   }));
 }
 
+export function updateReminders(patch: Partial<ReminderSettings>) {
+  setState((s) => ({
+    ...s,
+    settings: { ...s.settings, reminders: { ...s.settings.reminders, ...patch } },
+  }));
+}
+
+export function addPhoto(arcId: string, date: ISODate, uri: string) {
+  updateEntry(arcId, date, (e) => ({ ...e, photos: [...(e.photos ?? []), uri] }));
+}
+
+export function removePhoto(arcId: string, date: ISODate, uri: string) {
+  updateEntry(arcId, date, (e) => {
+    const photos = (e.photos ?? []).filter((p) => p !== uri);
+    return { ...e, photos: photos.length ? photos : undefined };
+  });
+}
+
+export function saveReview(arcId: string, week: ISODate, review: Omit<WeekReview, 'updatedAt'>) {
+  setState((s) => ({
+    ...s,
+    reviews: {
+      ...s.reviews,
+      [arcId]: { ...(s.reviews[arcId] ?? {}), [week]: { ...review, updatedAt: now() } },
+    },
+  }));
+}
+
+export function selectReviews(s: AppState, arcId: string | undefined) {
+  return (arcId && s.reviews[arcId]) || {};
+}
+
 export async function resetAll() {
+  for (const log of Object.values(state.logs)) {
+    for (const e of Object.values(log)) for (const p of e.photos ?? []) deletePhoto(p);
+  }
   state = initialState;
   emit();
   await AsyncStorage.removeItem(STORAGE_KEY);

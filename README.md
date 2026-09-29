@@ -1,10 +1,10 @@
-# Winter Arc App
+# Nordwand – Winter Arc Tracker
 
 Tracker für den Winter Arc: eigene Regeln festlegen, einen Vertrag mit sich selbst unterschreiben und
 92 Tage lang (1. Oktober – 31. Dezember) jeden Tag abhaken. Expo (React Native + TypeScript), später
 mit Supabase. Ziel: App Store und Google Play.
 
-> Arbeitstitel. Der finale Name kommt vor dem Store-Release.
+> App-Name: **Nordwand** (Store-Untertitel: «Winter Arc Tracker»). Bundle-ID `ch.maxkon.nordwand`.
 
 ## Loslegen
 

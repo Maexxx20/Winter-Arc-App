@@ -15,6 +15,7 @@ import {
   maxISO,
   minISO,
   rangeDays,
+  weekdayIndex,
   weekStart,
 } from './date';
 import type { Arc, DayEntry, DayStatus, Rule } from './types';
@@ -269,4 +270,69 @@ export function uid(): string {
     const r = (Math.random() * 16) | 0;
     return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
   });
+}
+
+export interface WeekSummary {
+  week: ISODate; // Montag
+  index: number; // 1-basiert innerhalb des Arcs
+  days: { date: ISODate; status: DayStatus }[]; // nur Tage im Arc
+  held: number;
+  evaluated: number;
+  rules: { rule: Rule; hits: number; expected: number }[];
+  /** Woche ist vorbei (Sonntag liegt vor heute). */
+  complete: boolean;
+}
+
+/** Alle Wochen (Montage) des Arcs. */
+export function arcWeeks(arc: Arc): ISODate[] {
+  const out: ISODate[] = [];
+  for (let w = weekStart(arc.startDate); w <= arc.endDate; w = addDays(w, 7)) out.push(w);
+  return out;
+}
+
+export function weekSummary(arc: Arc, log: ArcLog, week: ISODate, today: ISODate): WeekSummary {
+  const { statuses } = computeStreak(arc, log, today);
+  const days = rangeDays(week, addDays(week, 6))
+    .filter((d) => d >= arc.startDate && d <= arc.endDate)
+    .map((date) => ({ date, status: statuses[date] }));
+  const held = days.filter((d) => d.status === 'done').length;
+  const evaluated = days.filter((d) => ['done', 'partial', 'missed', 'shielded'].includes(d.status)).length;
+  const elapsed = days.filter((d) => d.date <= today);
+
+  const rules = arc.rules
+    .filter((r) => elapsed.some((d) => isRuleActiveOn(r, d.date)))
+    .map((rule) => {
+      const active = elapsed.filter((d) => isRuleActiveOn(rule, d.date));
+      const hits = active.filter((d) => isValueDone(rule, ruleValue(log, d.date, rule.id))).length;
+      const expected =
+        rule.frequency.kind === 'daily'
+          ? active.filter((d) => d.date < today || isValueDone(rule, ruleValue(log, d.date, rule.id))).length
+          : Math.min(rule.frequency.times, Math.ceil((rule.frequency.times * days.filter((d) => isRuleActiveOn(rule, d.date)).length) / 7));
+      return { rule, hits: rule.frequency.kind === 'weekly' ? Math.min(hits, expected) : hits, expected };
+    });
+
+  return {
+    week,
+    index: Math.floor(diffDays(weekStart(arc.startDate), week) / 7) + 1,
+    days,
+    held,
+    evaluated,
+    rules,
+    complete: addDays(week, 6) < today || days[days.length - 1]?.date < today,
+  };
+}
+
+/** Welche Woche wird standardmässig reflektiert? Mo/Di: die vergangene, sonst die laufende. */
+export function defaultReviewWeek(today: ISODate): ISODate {
+  return weekdayIndex(today) <= 1 ? addDays(weekStart(today), -7) : weekStart(today);
+}
+
+/** Ist ein Wochenrückblick fällig? (Sonntag für die laufende, Mo/Di für die vergangene Woche) */
+export function dueReviewWeek(arc: Arc, today: ISODate, reviewed: Record<ISODate, unknown>): ISODate | null {
+  const wd = weekdayIndex(today);
+  if (wd !== 6 && wd > 1) return null;
+  const week = defaultReviewWeek(today);
+  if (reviewed[week]) return null;
+  if (addDays(week, 6) < arc.startDate || week > arc.endDate) return null;
+  return week;
 }

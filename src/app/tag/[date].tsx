@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { CloseIcon } from '@/components/icons';
+import { PhotoStrip } from '@/components/photo-strip';
 import { RuleRow } from '@/components/rule-row';
 import { Card } from '@/components/ui/card';
 import { TextField } from '@/components/ui/controls';
@@ -14,7 +15,7 @@ import { useToday } from '@/hooks/use-today';
 import { activeRules, computeStreak, ruleValue, weeklyCount } from '@/lib/arc';
 import { diffDays, formatLong, isValidISO } from '@/lib/date';
 import type { DayStatus } from '@/lib/types';
-import { selectActiveArc, selectLog, setNote, setRuleValue, useAppState } from '@/store/store';
+import { addPhoto, removePhoto, selectActiveArc, selectLog, setNote, setRuleValue, useAppState } from '@/store/store';
 
 /** Wie viele Tage zurück darf nachgetragen werden? (heute + 2) */
 export const EDIT_WINDOW_DAYS = 2;
@@ -110,6 +111,15 @@ export default function DayScreen() {
         maxLength={1000}
         placeholder="Wie lief der Tag? Was hat geholfen, was nicht?"
       />
+
+      <View style={styles.photos}>
+        <T variant="label">Fotos</T>
+        <PhotoStrip
+          photos={log[date]?.photos ?? []}
+          onAdd={(name) => addPhoto(arc.id, date, name)}
+          onRemove={(name) => removePhoto(arc.id, date, name)}
+        />
+      </View>
     </Screen>
   );
 }
@@ -121,4 +131,5 @@ const styles = StyleSheet.create({
   badge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: Radius.pill },
   badgeText: { fontWeight: '600' },
   list: { gap: Spacing.two },
+  photos: { gap: 6 },
 });

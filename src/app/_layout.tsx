@@ -6,6 +6,7 @@ import { useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
+import { useReminderSync } from '@/services/notifications';
 import { hydrate, useHydrated } from '@/store/store';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -14,6 +15,7 @@ export default function RootLayout() {
   const scheme = useColorScheme();
   const hydrated = useHydrated();
   const palette = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  useReminderSync();
 
   useEffect(() => {
     hydrate().finally(() => SplashScreen.hideAsync().catch(() => {}));
@@ -35,6 +37,9 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
           <Stack.Screen name="tag/[date]" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="rueckblick" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="teilen" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="konto" options={{ presentation: 'modal' }} />
         </Stack>
       </ThemeProvider>
     </SafeAreaProvider>

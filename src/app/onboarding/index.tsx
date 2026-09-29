@@ -33,6 +33,9 @@ export default function Welcome() {
   return (
     <Screen footer={<Button title="Meinen Arc erstellen" onPress={() => router.push('/onboarding/create')} />}>
       <View style={styles.hero}>
+        <T variant="label" color="accent" style={styles.brand}>
+          Nordwand
+        </T>
         <ArcGauge progress={0.62} today={1} dayNumber={92} totalDays={92} label="Tage" sub="1. Okt – 31. Dez" size={220} />
         <T variant="display" center>
           Dein Winter Arc.
@@ -63,7 +66,8 @@ export default function Welcome() {
 }
 
 const styles = StyleSheet.create({
-  hero: { alignItems: 'center', gap: Spacing.three, marginTop: Spacing.four },
+  hero: { alignItems: 'center', gap: Spacing.three, marginTop: Spacing.two },
+  brand: { letterSpacing: 4, fontSize: 13 },
   lead: { maxWidth: 380 },
   list: { gap: Spacing.three, marginTop: Spacing.four },
   item: {
