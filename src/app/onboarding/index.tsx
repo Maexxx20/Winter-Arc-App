@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { ArcGauge } from '@/components/arc-gauge';
@@ -8,9 +8,15 @@ import { Screen } from '@/components/ui/screen';
 import { T } from '@/components/ui/text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { supabaseConfigured, useSession } from '@/services/supabase';
+import { selectActiveArc, useAppState } from '@/store/store';
 
 export default function Welcome() {
   const theme = useTheme();
+  const state = useAppState();
+  const session = useSession();
+  // Nach dem Anmelden auf einem neuen Gerät kommt der Arc vom Server → direkt weiter.
+  if (selectActiveArc(state)) return <Redirect href="/" />;
 
   const principles = [
     {
@@ -31,7 +37,15 @@ export default function Welcome() {
   ];
 
   return (
-    <Screen footer={<Button title="Meinen Arc erstellen" onPress={() => router.push('/onboarding/create')} />}>
+    <Screen
+      footer={
+        <View style={styles.footer}>
+          <Button title="Meinen Arc erstellen" onPress={() => router.push('/onboarding/create')} />
+          {supabaseConfigured && !session && (
+            <Button title="Ich habe schon ein Konto" variant="ghost" small onPress={() => router.push('/konto')} />
+          )}
+        </View>
+      }>
       <View style={styles.hero}>
         <T variant="label" color="accent" style={styles.brand}>
           Nordwand
@@ -81,4 +95,5 @@ const styles = StyleSheet.create({
   iconWrap: { width: 44, height: 44, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },
   pIcon: { fontSize: 22, lineHeight: 28 },
   itemText: { flex: 1, gap: 2 },
+  footer: { gap: Spacing.one },
 });

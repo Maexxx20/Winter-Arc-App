@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Switch, View } from 'react-native';
 
-import { CloseIcon, PlusIcon } from '@/components/icons';
+import { ChevronIcon, CloseIcon, PlusIcon } from '@/components/icons';
 import { RuleEditor } from '@/components/rule-editor';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -28,6 +28,8 @@ import {
   useAppState,
 } from '@/store/store';
 import { enableReminders } from '@/services/notifications';
+import { supabaseConfigured, useSession } from '@/services/supabase';
+import { deleteRemoteData, useSyncStatus } from '@/services/sync';
 
 const ROLLOVER_OPTIONS = [0, 2, 3, 4];
 
@@ -38,6 +40,8 @@ export default function ContractScreen() {
   const arc = selectActiveArc(state);
   const [editorOpen, setEditorOpen] = useState(false);
   const [name, setName] = useState(state.settings.name);
+  const session = useSession();
+  const sync = useSyncStatus();
   if (!arc) return null;
 
   const beforeStart = today < arc.startDate;
@@ -141,6 +145,24 @@ export default function ContractScreen() {
           amendRules(arc.id, { add: [rule] }, today);
         }}
       />
+
+      {supabaseConfigured && (
+        <>
+          <SectionTitle>Konto</SectionTitle>
+          <Pressable
+            onPress={() => router.push('/konto')}
+            style={({ pressed }) => [styles.rule, { backgroundColor: theme.surface, borderColor: theme.border, opacity: pressed ? 0.8 : 1 }]}>
+            <T style={styles.emoji}>{session ? '☁️' : '🔒'}</T>
+            <View style={styles.flex}>
+              <T variant="bodyStrong">{session ? 'Gesichert' : 'Konto & Sync'}</T>
+              <T variant="caption" numberOfLines={1}>
+                {session ? (sync.state === 'error' ? 'Abgleich fehlgeschlagen – antippen' : session.user.email) : 'Arc sichern und auf mehreren Geräten nutzen'}
+              </T>
+            </View>
+            <ChevronIcon color={theme.textTertiary} size={16} />
+          </Pressable>
+        </>
+      )}
 
       <SectionTitle>Erinnerungen</SectionTitle>
       <Card style={styles.settings}>
@@ -246,7 +268,18 @@ export default function ContractScreen() {
           title="Alle Daten löschen"
           variant="danger"
           onPress={async () => {
-            if (await confirm('Alles löschen?', 'Alle Arcs und Einträge werden unwiderruflich gelöscht.', 'Löschen', true)) {
+            const msg = session
+              ? 'Alle Arcs und Einträge werden auf diesem Gerät und in deinem Konto unwiderruflich gelöscht.'
+              : 'Alle Arcs und Einträge werden unwiderruflich gelöscht.';
+            if (await confirm('Alles löschen?', msg, 'Löschen', true)) {
+              if (session) {
+                try {
+                  await deleteRemoteData();
+                } catch (e) {
+                  await confirm('Löschen fehlgeschlagen', String(e), 'OK');
+                  return;
+                }
+              }
               await resetAll();
               router.replace('/onboarding');
             }
@@ -258,7 +291,7 @@ export default function ContractScreen() {
       </Card>
 
       <T variant="caption" color="textTertiary" center>
-        Deine Daten liegen nur auf diesem Gerät.
+        {session ? 'Deine Daten sind in deinem Konto gesichert.' : 'Deine Daten liegen nur auf diesem Gerät.'}
       </T>
     </Screen>
   );

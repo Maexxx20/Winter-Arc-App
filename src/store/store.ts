@@ -10,7 +10,8 @@ import { useSyncExternalStore } from 'react';
 import { uid } from '@/lib/arc';
 import { deletePhoto } from '@/services/photos';
 import { addDays, type ISODate } from '@/lib/date';
-import type { AppState, Arc, DayEntry, ReminderSettings, Rule, Settings, WeekReview } from '@/lib/types';
+import { type ChangeSet, mergeRemote } from '@/lib/sync-merge';
+import type { AppState, Arc, DayEntry, ReminderSettings, Rule, Settings, SyncMeta, WeekReview } from '@/lib/types';
 
 const STORAGE_KEY = 'arc.state.v1';
 
@@ -220,6 +221,21 @@ export function abandonActiveArc() {
     arcs: s.arcs.map((a) => (a.id === s.activeArcId ? { ...a, status: 'abandoned' as const, updatedAt: now() } : a)),
     activeArcId: null,
   }));
+}
+
+/** Server-Daten übernehmen (ohne updatedAt zu verändern). */
+export function applyRemote(remote: ChangeSet) {
+  const next = mergeRemote(state, remote);
+  if (next === state) return;
+  state = next;
+  emit();
+  persist();
+}
+
+export function setSyncMeta(patch: Partial<SyncMeta>) {
+  const current: SyncMeta = state.sync ?? { lastPushedAt: null, lastPulledAt: null, userId: null };
+  state = { ...state, sync: { ...current, ...patch } };
+  persist(); // kein emit – ändert nichts an der Oberfläche
 }
 
 export function updateReminders(patch: Partial<ReminderSettings>) {

@@ -92,6 +92,17 @@ export interface AppState {
   /** arcId → Wochenstart (Montag) → Rückblick */
   reviews: Record<string, Record<ISODate, WeekReview>>;
   settings: Settings;
+  /** Stand des Server-Abgleichs (nur wenn angemeldet). */
+  sync?: SyncMeta;
+}
+
+export interface SyncMeta {
+  /** Lokale Zeit des letzten erfolgreichen Uploads. */
+  lastPushedAt: string | null;
+  /** Server-Zeit (server_updated_at) des neuesten heruntergeladenen Datensatzes. */
+  lastPulledAt: string | null;
+  /** Zu welchem Konto gehört der Stand? */
+  userId: string | null;
 }
 
 export type DayStatus =

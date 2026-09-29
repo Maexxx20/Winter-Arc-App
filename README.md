@@ -1,8 +1,8 @@
 # Nordwand – Winter Arc Tracker
 
 Tracker für den Winter Arc: eigene Regeln festlegen, einen Vertrag mit sich selbst unterschreiben und
-92 Tage lang (1. Oktober – 31. Dezember) jeden Tag abhaken. Expo (React Native + TypeScript), später
-mit Supabase. Ziel: App Store und Google Play.
+92 Tage lang (1. Oktober – 31. Dezember) jeden Tag abhaken. Expo (React Native + TypeScript),
+offline-first mit optionalem Sync über Supabase. Ziel: App Store und Google Play.
 
 > App-Name: **Nordwand** (Store-Untertitel: «Winter Arc Tracker»). Bundle-ID `ch.maxkon.nordwand`.
 
@@ -24,6 +24,8 @@ Weitere Befehle:
 | `npm run typecheck` | TypeScript prüfen |
 | `npm run web` | Vorschau im Browser |
 
+Konto & Sync einrichten: siehe [docs/SUPABASE.md](docs/SUPABASE.md). Ohne `.env.local` läuft die App rein lokal.
+
 ## Aufbau
 
 ```
@@ -33,11 +35,18 @@ src/
     (tabs)/verlauf.tsx  Heatmap über den ganzen Arc, Quote je Regel
     (tabs)/vertrag.tsx  Vertrag, Regeln ändern (Amendments), Einstellungen
     onboarding/         Willkommen + 4-Schritte-Assistent (Zeitraum, Regeln, Warum, Vertrag)
-    tag/[date].tsx      Tagesdetail, Nachtragen (bis 2 Tage zurück), Notiz
+    tag/[date].tsx      Tagesdetail, Nachtragen (bis 2 Tage zurück), Notiz, Fotos
+    rueckblick.tsx      Wochenrückblick
+    teilen.tsx          Fortschritts-Karte als Bild teilen
+    konto.tsx           Anmeldung per E-Mail-Code, Sync-Status, Konto löschen
   components/           UI-Bausteine (ArcGauge, RuleRow, Heatmap, HoldToSign, …)
   lib/arc.ts            Kernlogik – reine Funktionen, getestet in lib/__tests__
   lib/date.ts           Datumsrechnung mit lokalen Kalendertagen (DST-sicher)
+  lib/reminders.ts      Planung der Erinnerungen (reine Funktion, getestet)
+  lib/sync-merge.ts     Abgleich-Logik: neuere Version gewinnt (getestet)
+  services/             Erinnerungen, Fotos, Supabase, Sync
   store/store.ts        Lokaler Zustand, gespeichert in AsyncStorage (offline-first)
+supabase/migrations/    Datenbankschema mit Row Level Security
 ```
 
 ## Regeln der App
@@ -53,7 +62,7 @@ src/
 ## Roadmap
 
 - [x] **Phase 0** – Arc erstellen, Vertrag, Check-in, Streak mit Schild, Heatmap, Tagesnotiz, hell/dunkel
-- [ ] **Phase 1** – Erinnerungen (Push), Accounts + Sync (Supabase), Fotos im Journal, Wochenrückblick, teilbare Fortschritts-Karte
+- [x] **Phase 1** – Erinnerungen, Fotos im Journal, Wochenrückblick, teilbare Fortschritts-Karte, Konto + Sync (Supabase)
 - [ ] **Phase 2** – Crews: gemeinsamer Arc mit Freunden, Check-ins sehen, Reaktionen, Rangliste
 - [ ] **Phase 3** – Release: App-Icon, Name, Datenschutzerklärung, Sign in with Apple, Account löschen, TestFlight, Store-Einträge
 - [ ] Danach – Widgets, Apple Health, weitere Arcs (Spring Arc …)
