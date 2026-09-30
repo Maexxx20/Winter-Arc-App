@@ -45,6 +45,17 @@ Ohne eigene Domain geht das mit **Brevo** (gratis, 300 Mails pro Tag):
    - Username: dein Brevo-SMTP-Login, Password: der SMTP-Schlüssel
 4. Supabase → Authentication → **Rate Limits**: «Rate limit for sending emails» auf z. B. 60 pro Stunde.
 
+**Alternative ohne Brevo: Gmail** (bis ca. 500 Mails pro Tag)
+
+1. Im Google-Konto die Bestätigung in zwei Schritten einschalten.
+2. Unter myaccount.google.com/apppasswords ein App-Passwort «Nordwand» erstellen (16 Zeichen).
+3. Supabase → SMTP Settings: Host `smtp.gmail.com`, Port `465` (falls es hängt: `587`),
+   Username = volle Gmail-Adresse, Password = App-Passwort **ohne Leerzeichen**,
+   Sender email = dieselbe Gmail-Adresse.
+
+Meldet die App «Die Mail konnte nicht verschickt werden» (Supabase: *gateway timed out*), erreicht
+Supabase den Mailserver nicht oder wird abgewiesen. Den genauen Grund zeigt **Logs → Auth**.
+
 Mit einer Gmail-Absenderadresse landen Mails manchmal im Spam. Sobald du eine Domain hast, dort die
 Domain in Brevo verifizieren und als Absender z. B. `code@deinedomain.ch` nehmen.
 
