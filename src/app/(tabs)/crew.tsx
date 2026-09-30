@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { ChevronIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -13,8 +13,9 @@ import { useTheme } from '@/hooks/use-theme';
 import { normalizeCode } from '@/lib/crew';
 import { haptic } from '@/lib/haptics';
 import { createCrew, type CrewWithCount, joinCrew, listCrews } from '@/services/crews';
+import { pushProblemText, setCrewPush } from '@/services/push';
 import { useSession } from '@/services/supabase';
-import { updateProfile, useAppState } from '@/store/store';
+import { updateProfile, updateSettings, useAppState } from '@/store/store';
 
 export default function CrewTab() {
   const theme = useTheme();
@@ -100,6 +101,25 @@ export default function CrewTab() {
   return (
     <Screen tabs refreshing={loading && crews !== null} onRefresh={load}>
       {head}
+
+      {Platform.OS !== 'web' && settings.crewPush === null && !!crews?.length ? (
+        <Card tone="accentSoft" bordered={false} style={styles.form}>
+          <T variant="bodyStrong">Mitbekommen, wenn deine Crew dich anfeuert?</T>
+          <T variant="caption">Eine Mitteilung, wenn jemand auf deinen Tag reagiert oder der Crew beitritt. Höchstens eine pro Person und Tag.</T>
+          <View style={styles.actions}>
+            <Button title="Nein danke" variant="secondary" small style={styles.flex} onPress={() => updateSettings({ crewPush: false })} />
+            <Button
+              title="Einschalten"
+              small
+              style={styles.flex}
+              onPress={async () => {
+                const problem = await setCrewPush(true);
+                if (problem) setError(pushProblemText(problem));
+              }}
+            />
+          </View>
+        </Card>
+      ) : null}
 
       {crews?.length ? (
         <View style={styles.list}>

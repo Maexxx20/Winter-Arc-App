@@ -17,6 +17,11 @@ create table storage.buckets (id text primary key, name text not null, public bo
 create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text references storage.buckets (id), name text not null, owner_id text default auth.uid()::text, unique (bucket_id, name));
 alter table storage.objects enable row level security;
 grant usage on schema storage to anon, authenticated;
+-- Nachbau von pg_net: merkt sich die Aufrufe
+create schema net;
+create table net.calls (id serial primary key, url text, body jsonb);
+create function net.http_post(url text, body jsonb default '{}', params jsonb default '{}', headers jsonb default '{}', timeout_milliseconds int default 5000)
+returns bigint language sql as $$ insert into net.calls (url, body) values (url, body) returning id::bigint $$;
 `);
 for (const f of fs.readdirSync(dir).sort()) { await db.exec(fs.readFileSync(dir + f, 'utf8')); console.log('ok', f); }
 // Alle Migrationen müssen mehrfach ausführbar sein
@@ -113,6 +118,16 @@ await as(A, `insert into day_entries (arc_id, date, "values", updated_at) values
 r = await as(A, `update day_entries set photos = '["photos/p1.jpg"]', updated_at = now() + interval '1 second' returning photos`); check('Fotoliste im Eintrag', Array.isArray(r) && r[0]?.photos?.[0] === 'photos/p1.jpg', r);
 r = await as(A, `update day_entries set photos = '"x"', updated_at = now() + interval '2 seconds'`); check('Fotoliste nur als Liste', !!r.error, r);
 
+// Push (0007)
+const TA = 'ExponentPushToken[aaaa]', TB = 'ExponentPushToken[bbbb]';
+r = await as(A, `select claim_push_token($1, 'ios')`, [TA]); check('A registriert Token', !r.error, r);
+r = await as(B, `select claim_push_token($1, 'ios')`, [TB]); check('B registriert Token', !r.error, r);
+r = await as(B, `select * from push_tokens`); check('B sieht nur eigenes Token', r.length === 1 && r[0].token === TB, r);
+r = await as(A, `insert into push_tokens (token, user_id) values ('ExponentPushToken[x]', '${B}')`); check('kein Token für andere', !!r.error, r);
+r = await as(A, `insert into push_tokens (token) values ('kein-token')`); check('nur Expo-Tokens', !!r.error, r);
+r = await as(A, `select send_push('${B}', 'x', 'y', '/')`); check('send_push nicht direkt aufrufbar', !!r.error, r);
+await db.exec('delete from net.calls');
+
 // Reaktionen
 r = await as(B, `insert into reactions (crew_id, to_user, date, emoji) values ($1, '${A}', '2026-10-05', '🔥') returning id`, [crew.id]); check('B reagiert auf A', r.length === 1, r);
 r = await as(B, `insert into reactions (crew_id, to_user, date, emoji) values ($1, '${B}', '2026-10-05', '🔥')`, [crew.id]); check('keine Reaktion an sich selbst', !!r.error, r);
@@ -120,10 +135,17 @@ r = await as(C, `insert into reactions (crew_id, to_user, date, emoji) values ($
 r = await as(B, `insert into reactions (crew_id, to_user, date, emoji) values ($1, '${C}', '2026-10-05', '🔥')`, [crew.id]); check('nicht an Nicht-Mitglied', !!r.error, r);
 r = await as(B, `insert into reactions (crew_id, to_user, date, emoji) values ($1, '${A}', '2026-10-05', '💩')`, [crew.id]); check('nur erlaubte Emojis', !!r.error, r);
 r = await as(A, `select emoji from reactions`); check('A sieht Reaktion', r.length === 1, r);
+{ const calls = (await db.query(`select body from net.calls`)).rows;
+  check('Push an A bei Reaktion', calls.length === 1 && calls[0].body[0].to === TA && calls[0].body[0].body.includes('hat dir 🔥 geschickt') && calls[0].body[0].data.url === '/crew/' + crew.id, calls); }
+await as(B, `insert into reactions (crew_id, to_user, date, emoji) values ($1, '${A}', '2026-10-05', '💪')`, [crew.id]);
+{ const n = (await db.query(`select count(*)::int n from net.calls`)).rows[0].n; check('nur eine Mitteilung pro Tag und Person', n === 1, n); }
 r = await as(A, `delete from reactions returning id`); check('A kann fremde Reaktion nicht löschen', Array.isArray(r) && r.length === 0, r);
 
 // Besitzerwechsel und Austritt
+await db.exec('delete from net.calls');
 await as(C, `select * from join_crew($1, 'Cem')`, [crew.invite_code]);
+{ const calls = (await db.query(`select body from net.calls`)).rows.map((x) => x.body[0]);
+  check('Beitritt meldet A und B', calls.length === 2 && calls.every((c) => c.body === 'Cem ist der Crew beigetreten'), calls); }
 r = await as(C, `delete from crew_challenges returning week`); check('fremde Challenge nicht löschbar', Array.isArray(r) && r.length === 0, r);
 r = await as(C, `select count(*)::int n from crew_challenges`); check('C sieht Challenge nach Beitritt', r[0]?.n === 1, r);
 r = await as(A, `select leave_crew($1)`, [crew.id]); check('A tritt aus', !r.error, r);
@@ -143,6 +165,13 @@ r = await as(B, `select name, created_by from crews`); check('Crew bleibt nach K
 r = await as(B, `select count(*)::int n from crew_members`); check('nur B übrig', r[0].n === 1, r);
 r = await db.query(`select count(*)::int n from arcs`); check('Arcs von A gelöscht', r.rows[0].n === 0, r.rows);
 r = await as(B, `select leave_crew($1)`, [c2.id]); check('B verlässt verwaiste Crew', !r.error, r);
+
+// Push-Fehler dürfen Reaktionen nicht verhindern
+await db.exec(`drop function net.http_post(text, jsonb, jsonb, jsonb, int)`);
+r = await as(C, `select * from create_crew('Push kaputt', 'Cem')`); const c3 = r[0];
+await as(B, `select * from join_crew($1, 'Ben')`, [c3.invite_code]);
+r = await as(B, `insert into reactions (crew_id, to_user, date, emoji) values ($1, '${C}', '2026-10-06', '🔥') returning id`, [c3.id]); check('Reaktion trotz Push-Fehler', r.length === 1, r);
+await as(B, `select leave_crew($1)`, [c3.id]); await as(C, `select leave_crew($1)`, [c3.id]);
 
 // Limit: max 5 Crews
 for (let i = 0; i < 5; i++) await as(C, `select * from create_crew('C${i}', 'Cem')`);

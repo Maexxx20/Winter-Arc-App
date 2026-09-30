@@ -30,6 +30,7 @@ import {
   useAppState,
 } from '@/store/store';
 import { enableReminders } from '@/services/notifications';
+import { pushProblemText, setCrewPush } from '@/services/push';
 import { supabaseConfigured, useSession } from '@/services/supabase';
 import { deleteRemoteData, useSyncStatus } from '@/services/sync';
 
@@ -206,6 +207,22 @@ export default function ContractScreen() {
           disabled={!reminders.enabled}
           onChange={(evening) => updateReminders({ evening })}
         />
+        {supabaseConfigured && session ? (
+          <View style={styles.switchRow}>
+            <View style={styles.flex}>
+              <T variant="bodyStrong">Crew-Mitteilungen</T>
+              <T variant="caption">Wenn jemand reagiert oder deiner Crew beitritt</T>
+            </View>
+            <Switch
+              value={!!state.settings.crewPush}
+              onValueChange={async (on) => {
+                const problem = await setCrewPush(on);
+                if (problem) await confirm('Mitteilungen nicht aktiv', pushProblemText(problem), 'OK');
+              }}
+              trackColor={{ true: theme.accent, false: theme.border }}
+            />
+          </View>
+        ) : null}
         <View style={[styles.switchRow, !reminders.enabled && styles.disabled]}>
           <View style={styles.flex}>
             <T variant="bodyStrong">Wochenrückblick</T>

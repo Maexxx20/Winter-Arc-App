@@ -30,6 +30,7 @@ const initialState: AppState = {
     avatar: { local: null, remote: null },
     profileUpdatedAt: null,
     seenBadges: null,
+    crewPush: null,
     rolloverHour: 0,
     haptics: true,
     reminders: { enabled: null, morning: 7 * 60 + 30, evening: 20 * 60 + 30, weeklyReview: true },

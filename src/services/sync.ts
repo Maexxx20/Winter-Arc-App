@@ -7,6 +7,7 @@ import { applyRemote, getState, isHydrated, resetProfileSync, setSyncMeta, subsc
 import { publishStatus } from './crews';
 import { deleteRemovedPhotos, removeAllPhotos, uploadPendingPhotos } from './photo-sync';
 import { removeAvatars, syncProfile } from './profile';
+import { unregisterPush } from './push';
 import { getSession, onSession, signOut, supabase } from './supabase';
 
 // ---------- Status für die Oberfläche ----------
@@ -162,6 +163,7 @@ export async function deleteRemoteData(): Promise<void> {
 /** Vor dem Abmelden noch hochladen; lokale Daten bleiben auf dem Gerät. */
 export async function logout(): Promise<void> {
   await syncNow().catch(() => undefined);
+  await unregisterPush();
   await signOut();
   setSyncMeta({ userId: null, lastPushedAt: null, lastPulledAt: null, uploadedPhotos: [], photoDeletes: [] });
   resetProfileSync();

@@ -94,6 +94,8 @@ export interface Settings {
   profileUpdatedAt: string | null;
   /** Bereits gefeierte Abzeichen (badgeKey). null = noch nie geprüft → alte still übernehmen. */
   seenBadges: string[] | null;
+  /** Push bei Reaktionen und neuen Crew-Mitgliedern. null = noch nie gefragt. */
+  crewPush: boolean | null;
   /** Stunde, zu der ein neuer Tag beginnt (0 = Mitternacht). */
   rolloverHour: number;
   haptics: boolean;
