@@ -148,3 +148,159 @@ export function inviteMessage(crew: Pick<Crew, 'name' | 'invite_code'>): string 
     `nordwand://crew/beitreten?code=${crew.invite_code}`
   );
 }
+
+// ---------- Wochen-Challenges ----------
+
+export type ChallengeKind = 'crew_total' | 'everyone';
+
+export interface Challenge {
+  crew_id: string;
+  /** Montag der Woche */
+  week: ISODate;
+  kind: ChallengeKind;
+  target: number;
+  created_by: string | null;
+}
+
+export interface ChallengeProgress {
+  /** crew_total: gehaltene Tage zusammen; everyone: Personen, die das Ziel erreicht haben */
+  value: number;
+  /** crew_total: Ziel in Tagen; everyone: Anzahl Personen */
+  goal: number;
+  done: boolean;
+  /** Tag, an dem die Challenge geschafft wurde */
+  doneOn: ISODate | null;
+  perMember: { userId: string; days: number }[];
+  /** Verbleibende Tage der Woche inkl. heute (0 = vorbei) */
+  daysLeft: number;
+}
+
+export function challengeTitle(c: Pick<Challenge, 'kind' | 'target'>): string {
+  return c.kind === 'crew_total'
+    ? `Zusammen ${c.target} Tage halten`
+    : `Alle halten mind. ${c.target} von 7 Tagen`;
+}
+
+export function defaultChallengeTarget(kind: ChallengeKind, memberCount: number): number {
+  return kind === 'crew_total' ? Math.min(140, Math.max(1, memberCount * 5)) : 5;
+}
+
+/** Wer zählt mit? Alle, die in dieser Woche mindestens einmal etwas veröffentlicht haben. */
+function weekParticipants(members: CrewMember[], rows: StatusRow[], week: ISODate): string[] {
+  const end = addDays(week, 6);
+  const active = new Set(rows.filter((r) => r.user_id && r.date >= week && r.date <= end).map((r) => r.user_id!));
+  return members.map((m) => m.user_id).filter((id) => active.has(id));
+}
+
+export function challengeProgress(c: Challenge, members: CrewMember[], rows: StatusRow[], today: ISODate): ChallengeProgress {
+  const days = Array.from({ length: 7 }, (_, i) => addDays(c.week, i));
+  const people = weekParticipants(members, rows, c.week);
+  const doneSet = new Set(rows.filter((r) => r.status === 'done').map((r) => `${r.user_id}|${r.date}`));
+  const count = (userId: string, upTo: ISODate) => days.filter((d) => d <= upTo && doneSet.has(`${userId}|${d}`)).length;
+
+  const reached = (upTo: ISODate) => {
+    if (c.kind === 'crew_total') {
+      const value = people.reduce((sum, u) => sum + count(u, upTo), 0);
+      return { value, goal: c.target, done: value >= c.target };
+    }
+    const value = people.filter((u) => count(u, upTo) >= c.target).length;
+    return { value, goal: people.length, done: people.length > 0 && value === people.length };
+  };
+
+  const last = days[6] < today ? days[6] : today;
+  const now = reached(last);
+  const doneOn = now.done ? (days.find((d) => d <= last && reached(d).done) ?? null) : null;
+  return {
+    ...now,
+    doneOn,
+    perMember: people.map((u) => ({ userId: u, days: count(u, last) })).sort((a, b) => b.days - a.days),
+    daysLeft: today > days[6] ? 0 : Math.max(0, diffDays(today, days[6]) + 1),
+  };
+}
+
+// ---------- Was läuft in der Crew ----------
+
+export interface ProfileBadge {
+  id: string;
+  date: ISODate;
+}
+
+export type FeedItem =
+  | { kind: 'badge'; date: ISODate; userId: string; badgeId: string }
+  | { kind: 'joined'; date: ISODate; userId: string }
+  | { kind: 'reactions'; date: ISODate; from: string; to: string; emojis: string[] }
+  | { kind: 'crew_day'; date: ISODate; /** Tage in Folge (bis inkl. date) */ run: number }
+  | { kind: 'challenge_done'; date: ISODate; challenge: Challenge };
+
+const FEED_ORDER: Record<FeedItem['kind'], number> = { challenge_done: 0, crew_day: 1, badge: 2, joined: 3, reactions: 4 };
+
+export function buildFeed(
+  input: {
+    members: CrewMember[];
+    rows: StatusRow[];
+    reactions: Reaction[];
+    badges: Record<string, ProfileBadge[] | undefined>;
+    challenges: Challenge[];
+  },
+  today: ISODate,
+  days = 7,
+): FeedItem[] {
+  const since = addDays(today, -(days - 1));
+  const inRange = (d: ISODate) => d >= since && d <= today;
+  const items: FeedItem[] = [];
+  const memberIds = new Set(input.members.map((m) => m.user_id));
+
+  for (const m of input.members) {
+    const joined = toLocalISO(m.joined_at);
+    if (joined && inRange(joined)) items.push({ kind: 'joined', date: joined, userId: m.user_id });
+    for (const b of input.badges[m.user_id] ?? []) {
+      if (inRange(b.date)) items.push({ kind: 'badge', date: b.date, userId: m.user_id, badgeId: b.id });
+    }
+  }
+
+  const grouped = new Map<string, { date: ISODate; from: string; to: string; emojis: string[] }>();
+  for (const r of input.reactions) {
+    if (!inRange(r.date) || !memberIds.has(r.from_user) || !memberIds.has(r.to_user)) continue;
+    const key = `${r.date}|${r.from_user}|${r.to_user}`;
+    const g = grouped.get(key) ?? { date: r.date, from: r.from_user, to: r.to_user, emojis: [] };
+    g.emojis.push(r.emoji);
+    grouped.set(key, g);
+  }
+  for (const g of grouped.values()) items.push({ kind: 'reactions', ...g });
+
+  // Ganze Crew hat gehalten (mind. 2 Personen, alle, die an dem Tag schon dabei waren)
+  // Aufeinanderfolgende Tage werden zu einem Eintrag zusammengefasst.
+  if (input.members.length >= 2) {
+    type Run = { date: ISODate; run: number };
+    let run = null as Run | null;
+    for (let d = since; d <= today; d = addDays(d, 1)) {
+      const present = input.members.filter((m) => (toLocalISO(m.joined_at) ?? d) <= d);
+      const all =
+        present.length >= 2 &&
+        present.every((m) => input.rows.some((r) => r.user_id === m.user_id && r.date === d && r.status === 'done'));
+      if (all) run = { date: d, run: (run?.run ?? 0) + 1 };
+      else if (run) {
+        items.push({ kind: 'crew_day', ...run });
+        run = null;
+      }
+    }
+    if (run) items.push({ kind: 'crew_day', ...run });
+  }
+
+  for (const c of input.challenges) {
+    const p = challengeProgress(c, input.members, input.rows, today);
+    if (p.doneOn && inRange(p.doneOn)) items.push({ kind: 'challenge_done', date: p.doneOn, challenge: c });
+  }
+
+  return items
+    .sort((a, b) => (a.date === b.date ? FEED_ORDER[a.kind] - FEED_ORDER[b.kind] : b.date.localeCompare(a.date)))
+    .slice(0, 40);
+}
+
+/** Zeitstempel → lokales Datum (oder null, wenn leer/ungültig). */
+function toLocalISO(ts: string): ISODate | null {
+  if (!ts) return null;
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return null;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}

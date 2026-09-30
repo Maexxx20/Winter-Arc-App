@@ -44,6 +44,7 @@ export default function RootLayout() {
           <Stack.Screen name="konto" options={{ presentation: 'modal' }} />
           <Stack.Screen name="profil" options={{ presentation: 'modal' }} />
           <Stack.Screen name="crew/mitglied" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="crew/challenge" options={{ presentation: 'modal' }} />
           <Stack.Screen name="crew/[id]" />
           <Stack.Screen name="crew/beitreten" options={{ presentation: 'modal' }} />
         </Stack>

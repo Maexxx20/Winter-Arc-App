@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { MyAvatar, RemoteAvatar } from '@/components/avatar';
+import { BadgeMedal } from '@/components/badge';
 import { CloseIcon, FlameIcon } from '@/components/icons';
 import { StatTile } from '@/components/stat-tile';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ import { openLink, SUPPORT_EMAIL } from '@/constants/links';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
+import { BADGES } from '@/lib/badges';
 import { rankMembers } from '@/lib/crew';
 import { formatShort, toISO } from '@/lib/date';
 import { cachedCrew, type CrewDetail, loadCrew } from '@/services/crews';
@@ -43,6 +45,8 @@ export default function MemberScreen() {
   const name = profile?.name || entry?.member.display_name || '';
   const latest = entry?.latest ?? null;
   const received = detail?.reactions.filter((r) => r.to_user === user) ?? [];
+  const earnedIds = new Set((profile?.badges ?? []).map((b) => b.id));
+  const badgeList = BADGES.filter((b) => earnedIds.has(b.id));
 
   return (
     <Screen topInset={Platform.OS !== 'ios'}>
@@ -109,6 +113,20 @@ export default function MemberScreen() {
             </Card>
           )}
 
+          {badgeList.length ? (
+            <Card style={styles.reactions}>
+              <T variant="label">Abzeichen · {badgeList.length}</T>
+              <View style={styles.badges}>
+                {badgeList.map((b) => (
+                  <View key={b.id} style={styles.badge} accessible accessibilityLabel={b.title}>
+                    <BadgeMedal badge={b} earned size={44} />
+                    <T variant="caption" center numberOfLines={1} style={styles.badgeTitle}>{b.title}</T>
+                  </View>
+                ))}
+              </View>
+            </Card>
+          ) : null}
+
           {received.length ? (
             <Card style={styles.reactions}>
               <T variant="label">Reaktionen der letzten 7 Tage</T>
@@ -147,4 +165,7 @@ const styles = StyleSheet.create({
   tiles: { flexDirection: 'row', gap: Spacing.three },
   reactions: { gap: Spacing.two },
   emojis: { fontSize: 22, lineHeight: 30 },
+  badges: { flexDirection: 'row', flexWrap: 'wrap', rowGap: Spacing.three },
+  badge: { width: '25%', alignItems: 'center', gap: 4 },
+  badgeTitle: { fontSize: 11, lineHeight: 14 },
 });

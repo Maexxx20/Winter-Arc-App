@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, Share, StyleSheet, View } from 'react-native';
 
 import { MyAvatar, RemoteAvatar } from '@/components/avatar';
+import { ChallengeCard } from '@/components/challenge-card';
+import { CrewFeed, type FeedPerson } from '@/components/crew-feed';
 import { ChevronIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -13,7 +15,8 @@ import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
 import { confirm } from '@/lib/confirm';
-import { inviteMessage, rankMembers, REACTION_EMOJIS, type Reaction, type ReactionEmoji, type StatusRow } from '@/lib/crew';
+import { buildFeed, challengeProgress, inviteMessage, rankMembers, REACTION_EMOJIS, type Reaction, type ReactionEmoji, type StatusRow } from '@/lib/crew';
+import { weekStart } from '@/lib/date';
 import { haptic } from '@/lib/haptics';
 import { addReaction, cachedCrew, type CrewDetail, leaveCrew, loadCrew, removeReaction, subscribeCrew } from '@/services/crews';
 import { useSession } from '@/services/supabase';
@@ -58,6 +61,40 @@ export default function CrewScreen() {
   }, [id, load]);
 
   const ranked = useMemo(() => (detail ? rankMembers(detail.members, detail.rows, today) : []), [detail, today]);
+
+  const people = useMemo(() => {
+    const out: Record<string, FeedPerson> = {};
+    for (const m of detail?.members ?? []) {
+      const p = detail?.profiles[m.user_id];
+      out[m.user_id] = { name: p?.name || m.display_name, avatarPath: p?.avatar_path };
+    }
+    return out;
+  }, [detail]);
+  const names = useMemo(() => Object.fromEntries(Object.entries(people).map(([k, v]) => [k, v.name])), [people]);
+
+  const challenge = detail?.challenges.find((c) => c.week === weekStart(today));
+  const progress = useMemo(
+    () => (detail && challenge ? challengeProgress(challenge, detail.members, detail.rows, today) : null),
+    [detail, challenge, today],
+  );
+  const feed = useMemo(
+    () =>
+      detail
+        ? buildFeed(
+            {
+              members: detail.members,
+              rows: detail.rows,
+              reactions: detail.reactions,
+              badges: Object.fromEntries(Object.entries(detail.profiles).map(([k, p]) => [k, p.badges])),
+              challenges: detail.challenges,
+            },
+            today,
+          )
+        : [],
+    [detail, today],
+  );
+  const canEditChallenge = !!challenge && !!me && (challenge.created_by === me || detail?.crew.created_by === me);
+  const openChallenge = () => detail && router.push({ pathname: '/crew/challenge', params: { crew: detail.crew.id } });
 
   const toggleReaction = async (toUser: string, emoji: ReactionEmoji) => {
     if (!detail || !me) return;
@@ -135,6 +172,12 @@ export default function CrewScreen() {
             </View>
           </Card>
 
+          {challenge && progress ? (
+            <ChallengeCard challenge={challenge} progress={progress} names={names} onPress={canEditChallenge ? openChallenge : undefined} />
+          ) : (
+            <Button title="Wochen-Challenge starten" variant="secondary" onPress={openChallenge} />
+          )}
+
           <SectionTitle>Rangliste</SectionTitle>
           <View style={styles.list}>
             {ranked.map((m) => (
@@ -155,6 +198,9 @@ export default function CrewScreen() {
               />
             ))}
           </View>
+
+          <SectionTitle>Was läuft</SectionTitle>
+          <CrewFeed items={feed.slice(0, 15)} people={people} me={me} today={today} />
 
           <Card tone="accentSoft" bordered={false} style={styles.invite}>
             <View style={styles.flex}>

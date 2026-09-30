@@ -22,7 +22,7 @@ for (const f of fs.readdirSync(dir).sort()) { await db.exec(fs.readFileSync(dir 
 // Alle Migrationen müssen mehrfach ausführbar sein
 for (const f of fs.readdirSync(dir).sort()) await db.exec(fs.readFileSync(dir + f, 'utf8'));
 console.log('ok zweiter Durchlauf');
-{ const r = await db.query(`select tablename from pg_publication_tables where pubname = 'supabase_realtime' order by 1`); if (r.rows.map((x) => x.tablename).join() !== 'daily_status,reactions') { console.log('FAIL realtime', r.rows); process.exit(1); } }
+{ const r = await db.query(`select tablename from pg_publication_tables where pubname = 'supabase_realtime' order by 1`); if (r.rows.map((x) => x.tablename).join() !== 'crew_challenges,daily_status,reactions') { console.log('FAIL realtime', r.rows); process.exit(1); } }
 await db.exec(`grant all on all tables in schema public to authenticated; grant all on storage.objects to authenticated;`);
 { const r = await db.query(`select public, file_size_limit from storage.buckets where id = 'avatars'`); if (r.rows[0]?.public !== false) { console.log('FAIL bucket', r.rows); process.exit(1); } }
 
@@ -89,6 +89,20 @@ r = await as(C, `select name from storage.objects where bucket_id = 'avatars'`);
 r = await as(B, `delete from storage.objects returning name`); check('B kann Bild von A nicht löschen', Array.isArray(r) && r.length === 0, r);
 r = await as(A, `delete from storage.objects returning name`); check('A löscht eigenes Bild', r.length === 1, r);
 
+// Challenges (0005): A = Besitzer, B = Mitglied, C = fremd
+r = await as(B, `insert into crew_challenges (crew_id, week, kind, target) values ($1, '2026-10-05', 'crew_total', 10) returning target`, [crew.id]);
+check('B startet Challenge', r[0]?.target === 10, r);
+r = await as(C, `select * from crew_challenges`); check('C sieht Challenge nicht', r.length === 0, r);
+r = await as(C, `insert into crew_challenges (crew_id, week, kind, target) values ($1, '2026-10-12', 'crew_total', 10)`, [crew.id]); check('C darf keine Challenge starten', !!r.error, r);
+r = await as(B, `insert into crew_challenges (crew_id, week, kind, target) values ($1, '2026-10-06', 'crew_total', 10)`, [crew.id]); check('Woche muss Montag sein', !!r.error, r);
+r = await as(B, `insert into crew_challenges (crew_id, week, kind, target, created_by) values ($1, '2026-10-19', 'everyone', 5, '${A}')`, [crew.id]); check('nicht im Namen anderer', !!r.error, r);
+r = await as(A, `update crew_challenges set target = 12 returning target`); check('Besitzer darf ändern', r[0]?.target === 12, r);
+r = await as(B, `update crew_challenges set target = 14 returning target`); check('Ersteller darf ändern', r[0]?.target === 14, r);
+r = await as(A, `select week from crew_challenges`); check('A sieht Challenge', r.length === 1, r);
+r = await as(A, `update profiles set badges = '[{"id":"streak_7","date":"2026-10-07"}]' where id = '${A}' returning badges`); check('Abzeichen speichern', r[0]?.badges?.[0]?.id === 'streak_7', r);
+r = await as(B, `select badges from profiles where id = '${A}'`); check('B sieht Abzeichen von A', r[0]?.badges?.length === 1, r);
+r = await as(A, `update profiles set badges = '{"x":1}' where id = '${A}'`); check('Abzeichen nur als Liste', !!r.error, r);
+
 // Reaktionen
 r = await as(B, `insert into reactions (crew_id, to_user, date, emoji) values ($1, '${A}', '2026-10-05', '🔥') returning id`, [crew.id]); check('B reagiert auf A', r.length === 1, r);
 r = await as(B, `insert into reactions (crew_id, to_user, date, emoji) values ($1, '${B}', '2026-10-05', '🔥')`, [crew.id]); check('keine Reaktion an sich selbst', !!r.error, r);
@@ -100,6 +114,8 @@ r = await as(A, `delete from reactions returning id`); check('A kann fremde Reak
 
 // Besitzerwechsel und Austritt
 await as(C, `select * from join_crew($1, 'Cem')`, [crew.invite_code]);
+r = await as(C, `delete from crew_challenges returning week`); check('fremde Challenge nicht löschbar', Array.isArray(r) && r.length === 0, r);
+r = await as(C, `select count(*)::int n from crew_challenges`); check('C sieht Challenge nach Beitritt', r[0]?.n === 1, r);
 r = await as(A, `select leave_crew($1)`, [crew.id]); check('A tritt aus', !r.error, r);
 r = await as(B, `select user_id, role from crew_members order by joined_at`); check('B wird Besitzer', r[0]?.user_id === B && r[0]?.role === 'owner' && r.length === 2, r);
 r = await as(B, `select created_by from crews`); check('created_by = B', r[0]?.created_by === B, r);

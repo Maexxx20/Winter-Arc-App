@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 
+import { allBadges } from '@/lib/badges';
+import type { ProfileBadge } from '@/lib/crew';
+import { todayISO } from '@/lib/date';
 import { applyRemoteProfile, getState, type RemoteProfile, setAvatarRemote, touchProfile } from '@/store/store';
 
 import { avatarBytes } from './avatar-file';
@@ -13,6 +16,7 @@ export interface PublicProfile {
   motto: string;
   instagram: string;
   avatar_path: string | null;
+  badges?: ProfileBadge[];
 }
 
 // ---------- Eigenes Profil abgleichen ----------
@@ -25,11 +29,36 @@ export async function syncProfile(userId: string): Promise<void> {
   if (!supabase) return;
   const { data: row, error } = await supabase
     .from('profiles')
-    .select('name, motto, instagram, avatar_path, updated_at')
+    .select('name, motto, instagram, avatar_path, updated_at, badges')
     .eq('id', userId)
-    .maybeSingle<RemoteProfile>();
+    .maybeSingle<RemoteProfile & { badges: ProfileBadge[] | null }>();
   if (error) throw new Error(`profiles: ${error.message}`);
 
+  await syncProfileFields(userId, row);
+  // Abzeichen danach, damit die Profilzeile sicher existiert.
+  await publishBadges(userId, row?.badges ?? null);
+}
+
+/** Verdiente Abzeichen für die Crew veröffentlichen (nur wenn sich etwas geändert hat). */
+async function publishBadges(userId: string, server: ProfileBadge[] | null) {
+  const s = getState();
+  const today = todayISO(new Date(), s.settings.rolloverHour);
+  const seen = new Set<string>();
+  const list: ProfileBadge[] = [];
+  for (const b of allBadges(s.arcs, s.logs, s.reviews, today).sort((a, z) => a.date.localeCompare(z.date))) {
+    const key = `${b.id}|${b.date}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    list.push({ id: b.id, date: b.date });
+  }
+  const next = list.slice(-200);
+  if (JSON.stringify(next) === JSON.stringify(server ?? [])) return;
+  // updated_at bleibt gleich: Abzeichen sind berechnet und gewinnen nie gegen Profiländerungen.
+  const { error } = await supabase!.from('profiles').update({ badges: next }).eq('id', userId);
+  if (error) throw new Error(`Abzeichen: ${error.message}`);
+}
+
+async function syncProfileFields(userId: string, row: RemoteProfile | null) {
   const local = getState().settings;
   if (!local.profileUpdatedAt) {
     // Noch nie bearbeitet: Server hat Vorrang (z. B. neues Gerät), sonst einmal hochladen.
@@ -104,7 +133,7 @@ export async function removeAvatars(userId: string, keep: string | null = null):
 
 export async function fetchProfiles(ids: string[]): Promise<Record<string, PublicProfile>> {
   if (!supabase || !ids.length) return {};
-  const { data, error } = await supabase.from('profiles').select('id, name, motto, instagram, avatar_path').in('id', ids);
+  const { data, error } = await supabase.from('profiles').select('id, name, motto, instagram, avatar_path, badges').in('id', ids);
   if (error) return {};
   return Object.fromEntries((data ?? []).map((p) => [p.id, p as PublicProfile]));
 }

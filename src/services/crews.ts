@@ -1,5 +1,5 @@
-import { buildStatusRows, type Crew, type CrewMember, normalizeCode, type Reaction, type ReactionEmoji, type StatusRow } from '@/lib/crew';
-import { addDays, type ISODate, todayISO } from '@/lib/date';
+import { buildStatusRows, type Challenge, type ChallengeKind, type Crew, type CrewMember, normalizeCode, type Reaction, type ReactionEmoji, type StatusRow } from '@/lib/crew';
+import { addDays, type ISODate, todayISO, weekStart } from '@/lib/date';
 import { getState, selectActiveArc, selectLog } from '@/store/store';
 
 import { avatarUrls, fetchProfiles, type PublicProfile } from './profile';
@@ -12,8 +12,10 @@ export interface CrewDetail {
   members: CrewMember[];
   rows: StatusRow[];
   reactions: Reaction[];
-  /** user_id → Profil (Bild, Motto, Instagram) */
+  /** user_id → Profil (Bild, Motto, Instagram, Abzeichen) */
   profiles: Record<string, PublicProfile>;
+  /** Challenges dieser und der letzten Woche */
+  challenges: Challenge[];
 }
 
 /** Zuletzt geladene Crews – damit Profile sofort erscheinen. */
@@ -73,11 +75,13 @@ export async function listCrews(): Promise<CrewWithCount[]> {
 
 export async function loadCrew(crewId: string, today: ISODate): Promise<CrewDetail> {
   const sb = need();
-  const since = addDays(today, -6);
-  const [crewRes, membersRes, reactionsRes] = await Promise.all([
+  // Ab Montag der Vorwoche – für die Challenge der letzten Woche und den Verlauf.
+  const since = addDays(weekStart(today), -7);
+  const [crewRes, membersRes, reactionsRes, challengesRes] = await Promise.all([
     sb.from('crews').select('id, name, invite_code, created_by').eq('id', crewId).single(),
     sb.from('crew_members').select('*').eq('crew_id', crewId).order('joined_at'),
-    sb.from('reactions').select('id, crew_id, from_user, to_user, date, emoji').eq('crew_id', crewId).gte('date', since),
+    sb.from('reactions').select('id, crew_id, from_user, to_user, date, emoji').eq('crew_id', crewId).gte('date', addDays(today, -6)),
+    sb.from('crew_challenges').select('crew_id, week, kind, target, created_by').eq('crew_id', crewId).gte('week', since),
   ]);
   if (crewRes.error) throw new Error(translate(crewRes.error.message));
   if (membersRes.error) throw new Error(translate(membersRes.error.message));
@@ -99,6 +103,8 @@ export async function loadCrew(crewId: string, today: ISODate): Promise<CrewDeta
     rows: (rows ?? []) as StatusRow[],
     reactions: (reactionsRes.data ?? []) as Reaction[],
     profiles,
+    // Fehlt die Tabelle (Migration 0005 noch nicht ausgeführt), einfach ohne Challenges.
+    challenges: challengesRes.error ? [] : ((challengesRes.data ?? []) as Challenge[]),
   };
   detailCache.set(crewId, detail);
   return detail;
@@ -136,6 +142,23 @@ export async function renameMe(crewId: string, name: string): Promise<void> {
   if (error) throw new Error(translate(error.message));
 }
 
+export async function saveChallenge(crewId: string, week: ISODate, kind: ChallengeKind, target: number, existing: boolean): Promise<void> {
+  const sb = need();
+  const { error } = existing
+    ? await sb.from('crew_challenges').update({ kind, target }).eq('crew_id', crewId).eq('week', week)
+    : await sb.from('crew_challenges').insert({ crew_id: crewId, week, kind, target, created_by: getSession()!.user.id });
+  if (error) {
+    if (error.message.includes('duplicate')) throw new Error('Für diese Woche gibt es schon eine Challenge.');
+    throw new Error(translate(error.message));
+  }
+}
+
+export async function deleteChallenge(crewId: string, week: ISODate): Promise<void> {
+  const sb = need();
+  const { error } = await sb.from('crew_challenges').delete().eq('crew_id', crewId).eq('week', week);
+  if (error) throw new Error(translate(error.message));
+}
+
 export async function addReaction(crewId: string, toUser: string, date: ISODate, emoji: ReactionEmoji): Promise<Reaction> {
   const sb = need();
   const { data, error } = await sb
@@ -167,6 +190,7 @@ export function subscribeCrew(crewId: string, isMember: (userId: string) => bool
   const channel = supabase
     .channel(`crew-${crewId}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'reactions', filter: `crew_id=eq.${crewId}` }, soon)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'crew_challenges', filter: `crew_id=eq.${crewId}` }, soon)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_status' }, (payload) => {
       const row = (payload.new ?? payload.old) as { user_id?: string } | undefined;
       if (!row?.user_id || isMember(row.user_id)) soon();
