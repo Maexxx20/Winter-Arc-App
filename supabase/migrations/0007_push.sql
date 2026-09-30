@@ -53,7 +53,7 @@ create table if not exists public.push_log (
   from_user uuid not null references auth.users (id) on delete cascade,
   to_user uuid not null references auth.users (id) on delete cascade,
   kind text not null check (kind in ('reaction', 'join')),
-  day date not null default current_date,
+  day date not null default (now() at time zone 'Europe/Zurich')::date,
   primary key (crew_id, from_user, to_user, kind, day)
 );
 alter table public.push_log enable row level security; -- keine Policies: nur die Datenbank selbst schreibt
@@ -68,6 +68,7 @@ as $$
 declare
   v_rows int;
 begin
+  delete from public.push_log where day < (now() at time zone 'Europe/Zurich')::date - 7; -- aufräumen
   insert into public.push_log (crew_id, from_user, to_user, kind)
   values (p_crew, p_from, p_to, p_kind)
   on conflict do nothing;

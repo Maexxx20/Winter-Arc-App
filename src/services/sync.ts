@@ -58,7 +58,17 @@ async function pullTable<T>(table: string, since: string | null): Promise<(T & {
 let running: Promise<void> | null = null;
 let again = false;
 
+/** Während Konto/Daten gelöscht werden, darf kein Abgleich etwas neu hochladen. */
+let paused = false;
+
+async function pauseSync() {
+  paused = true;
+  again = false;
+  await running?.catch(() => undefined);
+}
+
 export function syncNow(): Promise<void> {
+  if (paused) return Promise.resolve();
   if (running) {
     again = true;
     return running;
@@ -83,7 +93,7 @@ async function doSync() {
     let meta = getState().sync;
     if (!meta || meta.userId !== userId) {
       // Anderes oder neues Konto: alles hochladen und alles holen.
-      setSyncMeta({ userId, lastPushedAt: null, lastPulledAt: null, uploadedPhotos: [], photosPushedAt: null, photosPulledAt: null });
+      setSyncMeta({ userId, lastPushedAt: null, lastPulledAt: null, uploadedPhotos: [], photosPushedAt: null, photosPulledAt: null, skippedPhotos: [] });
       resetProfileSync();
       meta = getState().sync!;
     }
@@ -109,11 +119,15 @@ async function doSync() {
     const newest = [...arcs, ...entries, ...reviews].map((r) => r.server_updated_at).sort().pop();
     if (newest) setSyncMeta({ lastPulledAt: newest });
 
-    // 3) Tages-Zusammenfassung für Crews (nur Zahlen, keine Inhalte)
-    await publishStatus();
-
-    // 4) Profil und Fotos – eigene Fehler, damit sie den restlichen Abgleich nicht blockieren.
+    // 3) Tages-Zusammenfassung für Crews, Profil und Fotos – eigene Fehler, damit sie sich nicht gegenseitig blockieren.
     const problems: string[] = [];
+    try {
+      await publishStatus();
+    } catch (e) {
+      console.warn('Crew-Status fehlgeschlagen', e);
+      problems.push(`Crew: ${e instanceof Error ? e.message : String(e)}`);
+    }
+
     try {
       await syncProfile(userId);
     } catch (e) {
@@ -142,10 +156,16 @@ async function doSync() {
 export async function deleteRemoteData(): Promise<void> {
   const session = getSession();
   if (!supabase || !session) return;
-  await removeAllPhotos(session.user.id); // zuerst: wirft, falls das nicht klappt
-  const { error } = await supabase.from('arcs').delete().eq('user_id', session.user.id);
-  if (error) throw new Error(error.message);
-  setSyncMeta({ uploadedPhotos: [], photosPushedAt: null, photosPulledAt: null });
+  await pauseSync();
+  try {
+    await removeAllPhotos(session.user.id); // zuerst: wirft, falls das nicht klappt
+    const { error } = await supabase.from('arcs').delete().eq('user_id', session.user.id);
+    if (error) throw new Error(error.message);
+    await removeAllPhotos(session.user.id); // falls in der Zwischenzeit noch etwas ankam
+    setSyncMeta({ uploadedPhotos: [], photosPushedAt: null, photosPulledAt: null, skippedPhotos: [] });
+  } finally {
+    paused = false;
+  }
 }
 
 /** Vor dem Abmelden noch hochladen; lokale Daten bleiben auf dem Gerät. */
@@ -153,7 +173,7 @@ export async function logout(): Promise<void> {
   await syncNow().catch(() => undefined);
   await unregisterPush();
   await signOut();
-  setSyncMeta({ userId: null, lastPushedAt: null, lastPulledAt: null, uploadedPhotos: [], photosPushedAt: null, photosPulledAt: null });
+  setSyncMeta({ userId: null, lastPushedAt: null, lastPulledAt: null, uploadedPhotos: [], photosPushedAt: null, photosPulledAt: null, skippedPhotos: [] });
   resetProfileSync();
 }
 
@@ -161,21 +181,24 @@ export async function logout(): Promise<void> {
 export async function deleteAccount(): Promise<string | null> {
   if (!supabase) return null;
   const session = getSession();
-  if (session) {
-    // Dateien liegen im Speicher, nicht in der Datenbank – vorher löschen, sonst bleiben sie für immer.
-    try {
+  await pauseSync();
+  try {
+    if (session) {
+      // Dateien liegen im Speicher, nicht in der Datenbank – vorher löschen, sonst bleiben sie für immer.
       await removeAvatars(session.user.id);
       await removeAllPhotos(session.user.id);
-    } catch (e) {
-      return e instanceof Error ? e.message : String(e);
     }
+    const { error } = await supabase.rpc('delete_account');
+    if (error) return error.message;
+    await supabase.auth.signOut();
+    setSyncMeta({ userId: null, lastPushedAt: null, lastPulledAt: null, uploadedPhotos: [], photosPushedAt: null, photosPulledAt: null, skippedPhotos: [] });
+    resetProfileSync();
+    return null;
+  } catch (e) {
+    return e instanceof Error ? e.message : String(e);
+  } finally {
+    paused = false;
   }
-  const { error } = await supabase.rpc('delete_account');
-  if (error) return error.message;
-  await supabase.auth.signOut();
-  setSyncMeta({ userId: null, lastPushedAt: null, lastPulledAt: null, uploadedPhotos: [], photosPushedAt: null, photosPulledAt: null });
-  resetProfileSync();
-  return null;
 }
 
 /** Im Root-Layout: gleicht nach Anmeldung, beim Öffnen und nach Änderungen ab. */

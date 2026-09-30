@@ -124,12 +124,18 @@ async function pushProfile(userId: string, serverAvatar: string | null) {
   }
 }
 
-/** Löscht alle Profilbilder des Kontos ausser `keep`. */
+/** Löscht alle Profilbilder des Kontos ausser `keep`. Wirft bei Fehlern. */
 export async function removeAvatars(userId: string, keep: string | null = null): Promise<void> {
   if (!supabase) return;
-  const { data } = await supabase.storage.from(BUCKET).list(userId, { limit: 100 });
+  const { data, error } = await supabase.storage.from(BUCKET).list(userId, { limit: 100 });
+  if (error) {
+    if (/not found/i.test(error.message)) return;
+    throw new Error(`Profilbild konnte nicht gelöscht werden: ${error.message}`);
+  }
   const stale = (data ?? []).map((f) => `${userId}/${f.name}`).filter((p) => p !== keep);
-  if (stale.length) await supabase.storage.from(BUCKET).remove(stale);
+  if (!stale.length) return;
+  const { error: rmError } = await supabase.storage.from(BUCKET).remove(stale);
+  if (rmError) throw new Error(`Profilbild konnte nicht gelöscht werden: ${rmError.message}`);
 }
 
 // ---------- Profile anderer (Crew) ----------

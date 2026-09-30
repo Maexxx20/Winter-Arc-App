@@ -130,6 +130,8 @@ export interface SyncMeta {
   photosPushedAt?: string | null;
   /** Server-Zeit des neuesten heruntergeladenen Foto-Datensatzes. */
   photosPulledAt?: string | null;
+  /** Fotos, die sich nicht hochladen lassen (zu gross, falsches Format). */
+  skippedPhotos?: string[];
 }
 
 export type DayStatus =

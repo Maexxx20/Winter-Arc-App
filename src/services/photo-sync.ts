@@ -28,7 +28,13 @@ export async function syncPhotos(userId: string): Promise<void> {
   const pushStart = new Date().toISOString();
   const meta = getState().sync;
   const rows = photoRowsToPush(getState().photoLog ?? {}, meta?.photosPushedAt ?? null);
-  let complete = true;
+  const skipped = new Set(meta?.skippedPhotos ?? []);
+  /** Ältester Datensatz, der noch nicht fertig ist – dort setzt der nächste Abgleich wieder an. */
+  let retryFrom: string | null = null;
+  const retry = (updatedAt: string) => {
+    const before = new Date(new Date(updatedAt).getTime() - 1).toISOString();
+    if (!retryFrom || before < retryFrom) retryFrom = before;
+  };
   const ready: PhotoRow[] = [];
 
   for (const row of rows) {
@@ -37,36 +43,56 @@ export async function syncPhotos(userId: string): Promise<void> {
     if (!rec) continue;
     const current: PhotoRow = { ...row, deleted: rec.deleted, updated_at: new Date(rec.updatedAt).toISOString() };
 
-    if (current.deleted) {
-      const { error } = await sb.storage.from(PHOTO_BUCKET).remove([remotePhotoPath(userId, current.name)]);
-      if (error) complete = false; // Datensatz trotzdem senden, Datei beim nächsten Mal nochmal löschen
-    } else if (photoExists(current.name) && !getState().sync?.uploadedPhotos?.includes(current.name)) {
-      if (failedThisSession.has(current.name)) {
-        complete = false;
-        continue;
+    if (!current.deleted) {
+      const uploaded = () => !!getState().sync?.uploadedPhotos?.includes(current.name);
+      if (!uploaded() && photoExists(current.name) && !skipped.has(current.name)) {
+        if (failedThisSession.has(current.name)) {
+          retry(current.updated_at);
+          continue;
+        }
+        try {
+          const { error } = await sb.storage
+            .from(PHOTO_BUCKET)
+            .upload(remotePhotoPath(userId, current.name), await photoBytes(current.name), { contentType: 'image/jpeg', upsert: true });
+          if (error) throw new Error(error.message);
+          markPhotoUploaded(current.name);
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          console.warn('Foto-Upload fehlgeschlagen', current.name, msg);
+          if (/size|large|413|mime|type/i.test(msg)) {
+            // Dauerhaft (zu gross, falsches Format): nicht endlos wiederholen.
+            skipped.add(current.name);
+            setSyncMeta({ skippedPhotos: [...skipped] });
+          } else {
+            failedThisSession.add(current.name);
+            retry(current.updated_at);
+          }
+          continue;
+        }
       }
-      try {
-        const { error } = await sb.storage
-          .from(PHOTO_BUCKET)
-          .upload(remotePhotoPath(userId, current.name), await photoBytes(current.name), { contentType: 'image/jpeg', upsert: true });
-        if (error) throw new Error(error.message);
-        markPhotoUploaded(current.name);
-      } catch (e) {
-        console.warn('Foto-Upload fehlgeschlagen', current.name, e);
-        failedThisSession.add(current.name);
-        complete = false;
-        continue; // Datensatz erst senden, wenn die Datei im Konto liegt
-      }
+      // Nur Fotos melden, deren Datei wirklich im Konto liegt – sonst sehen andere Geräte ein leeres Bild.
+      if (!uploaded()) continue;
     }
     ready.push(current);
   }
 
   for (let i = 0; i < ready.length; i += 200) {
-    const { error } = await sb.from(TABLE).upsert(ready.slice(i, i + 200), { onConflict: 'user_id,name' });
+    const { data: saved, error } = await sb
+      .from(TABLE)
+      .upsert(ready.slice(i, i + 200), { onConflict: 'user_id,name' })
+      .select('name, deleted');
     if (error && missingTable(error.message)) return; // Migration 0006 fehlt: Fotos bleiben vorerst lokal
     if (error) throw new Error(`Fotos: ${error.message}`);
+    // Datei erst löschen, wenn der Server die Löschmarke angenommen hat (sonst gewinnt eine neuere Version).
+    const gone = (saved ?? []).filter((r) => r.deleted).map((r) => remotePhotoPath(userId, r.name));
+    if (gone.length) {
+      const { error: rmError } = await sb.storage.from(PHOTO_BUCKET).remove(gone);
+      if (rmError) {
+        for (const r of ready.slice(i, i + 200)) if (r.deleted) retry(r.updated_at);
+      }
+    }
   }
-  if (complete) setSyncMeta({ photosPushedAt: pushStart });
+  setSyncMeta({ photosPushedAt: retryFrom ?? pushStart });
 
   // 2) Herunterladen
   const since = getState().sync?.photosPulledAt ?? null;
