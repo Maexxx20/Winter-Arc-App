@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { isValueDone } from '@/lib/arc';
+import { HEALTH_METRIC_BY_ID } from '@/lib/health';
 import { haptic } from '@/lib/haptics';
 import { describeRule, formatNumber } from '@/lib/templates';
 import type { Rule } from '@/lib/types';
@@ -53,6 +54,7 @@ export function RuleRow({ rule, value, onChange, weekCount, readOnly }: Props) {
   };
 
   let subtitle = describeRule(rule);
+  const auto = rule.health ? ` · ${HEALTH_METRIC_BY_ID[rule.health.metric].icon} auto` : '';
   if (rule.frequency.kind === 'weekly' && weekCount !== undefined) {
     subtitle = `${weekCount}/${rule.frequency.times} diese Woche`;
   }
@@ -79,6 +81,7 @@ export function RuleRow({ rule, value, onChange, weekCount, readOnly }: Props) {
         <T variant="caption" numberOfLines={1}>
           {isAmount ? `${formatNumber(value)} / ${formatNumber(target)} ${rule.measure.kind === 'amount' ? rule.measure.unit : ''}` : subtitle}
           {isAmount && rule.frequency.kind === 'weekly' ? ` · ${subtitle}` : ''}
+          {auto}
         </T>
         {isAmount && (
           <View style={[styles.bar, { backgroundColor: theme.surfaceMuted }]}>

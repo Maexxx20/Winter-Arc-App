@@ -36,7 +36,7 @@ const LENGTHS = [21, 30, 66, 90] as const;
 function templatesFromArc(arc: Arc): RuleTemplate[] {
   return arc.rules
     .filter((r) => !r.removedOn)
-    .map(({ title, icon, category, frequency, measure }) => ({ title, icon, category, frequency, measure }));
+    .map(({ title, icon, category, frequency, measure, health }) => ({ title, icon, category, frequency, measure, health }));
 }
 
 export default function CreateArc() {

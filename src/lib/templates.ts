@@ -1,4 +1,4 @@
-import type { RuleCategory, RuleFrequency, RuleMeasure } from './types';
+import type { HealthLink, RuleCategory, RuleFrequency, RuleMeasure } from './types';
 
 export interface RuleTemplate {
   title: string;
@@ -6,6 +6,7 @@ export interface RuleTemplate {
   category: RuleCategory;
   frequency: RuleFrequency;
   measure: RuleMeasure;
+  health?: HealthLink;
 }
 
 export const CATEGORY_LABELS: Record<RuleCategory, string> = {
@@ -17,16 +18,17 @@ export const CATEGORY_LABELS: Record<RuleCategory, string> = {
 
 export const RULE_TEMPLATES: RuleTemplate[] = [
   // Körper
-  { title: 'Training', icon: '🏋️', category: 'body', frequency: { kind: 'weekly', times: 4 }, measure: { kind: 'check' } },
-  { title: '10 000 Schritte', icon: '🚶', category: 'body', frequency: { kind: 'daily' }, measure: { kind: 'check' } },
+  { title: 'Training', icon: '🏋️', category: 'body', frequency: { kind: 'weekly', times: 4 }, measure: { kind: 'check' }, health: { metric: 'workout', threshold: 30 } },
+  { title: '10 000 Schritte', icon: '🚶', category: 'body', frequency: { kind: 'daily' }, measure: { kind: 'check' }, health: { metric: 'steps', threshold: 10000 } },
   { title: 'Wasser trinken', icon: '💧', category: 'body', frequency: { kind: 'daily' }, measure: { kind: 'amount', target: 2, unit: 'Liter' } },
+  { title: 'Genug schlafen', icon: '🛌', category: 'body', frequency: { kind: 'daily' }, measure: { kind: 'check' }, health: { metric: 'sleep', threshold: 7 } },
   { title: 'Kalt duschen', icon: '🧊', category: 'body', frequency: { kind: 'daily' }, measure: { kind: 'check' } },
   { title: 'Kein Fast Food', icon: '🥗', category: 'body', frequency: { kind: 'daily' }, measure: { kind: 'check' } },
   { title: 'Protein-Ziel', icon: '🍳', category: 'body', frequency: { kind: 'daily' }, measure: { kind: 'amount', target: 120, unit: 'g' } },
   // Kopf
   { title: 'Lesen', icon: '📖', category: 'mind', frequency: { kind: 'daily' }, measure: { kind: 'amount', target: 10, unit: 'Seiten' } },
   { title: 'Journaling', icon: '✍️', category: 'mind', frequency: { kind: 'daily' }, measure: { kind: 'check' } },
-  { title: 'Meditieren', icon: '🧘', category: 'mind', frequency: { kind: 'daily' }, measure: { kind: 'amount', target: 10, unit: 'Min' } },
+  { title: 'Meditieren', icon: '🧘', category: 'mind', frequency: { kind: 'daily' }, measure: { kind: 'amount', target: 10, unit: 'Min' }, health: { metric: 'mindful', threshold: 10 } },
   { title: 'Draussen sein', icon: '🌲', category: 'mind', frequency: { kind: 'daily' }, measure: { kind: 'amount', target: 20, unit: 'Min' } },
   // Disziplin
   { title: 'Früh aufstehen', icon: '⏰', category: 'discipline', frequency: { kind: 'daily' }, measure: { kind: 'check' } },

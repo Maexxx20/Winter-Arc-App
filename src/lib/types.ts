@@ -10,6 +10,15 @@ export type RuleMeasure =
 
 export type RuleCategory = 'body' | 'mind' | 'discipline' | 'growth';
 
+export type HealthMetric = 'steps' | 'workout' | 'sleep' | 'water' | 'mindful';
+
+/** Automatisch abhaken mit Werten aus Apple Health, Health Connect oder Strava. */
+export interface HealthLink {
+  metric: HealthMetric;
+  /** Schwelle: Schritte, Minuten (Training/Achtsamkeit), Stunden (Schlaf), Liter (Wasser) */
+  threshold: number;
+}
+
 export interface Rule {
   id: string;
   title: string;
@@ -21,6 +30,8 @@ export interface Rule {
   activeFrom: ISODate;
   /** Ab diesem Tag gilt die Regel nicht mehr (exklusiv). */
   removedOn?: ISODate;
+  /** Automatisch abhaken (optional) */
+  health?: HealthLink;
 }
 
 export interface Signature {
@@ -96,6 +107,10 @@ export interface Settings {
   seenBadges: string[] | null;
   /** Push bei Reaktionen und neuen Crew-Mitgliedern. null = noch nie gefragt. */
   crewPush: boolean | null;
+  /** Apple Health bzw. Health Connect verbunden (Werte werden nur gelesen). */
+  healthEnabled?: boolean;
+  /** Name des verbundenen Strava-Kontos (null/leer = nicht verbunden). */
+  stravaAthlete?: string | null;
   /** Stunde, zu der ein neuer Tag beginnt (0 = Mitternacht). */
   rolloverHour: number;
   haptics: boolean;

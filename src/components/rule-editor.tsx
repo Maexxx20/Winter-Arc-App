@@ -4,9 +4,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { suggestHealthLink } from '@/lib/health';
 import { CATEGORY_LABELS, ICON_CHOICES, type RuleTemplate } from '@/lib/templates';
 import type { RuleCategory } from '@/lib/types';
 
+import { HealthLinkPicker } from './health-link-picker';
 import { CloseIcon } from './icons';
 import { Button } from './ui/button';
 import { Chip, Segmented, Stepper, TextField } from './ui/controls';
@@ -70,6 +72,7 @@ export function RuleEditor({ visible, initial, onClose, onSave }: Props) {
             placeholder="z. B. 30 Min. Spanisch"
             value={draft.title}
             onChangeText={(title) => setDraft((d) => ({ ...d, title }))}
+            onBlur={() => setDraft((d) => (d.health || initial ? d : { ...d, health: suggestHealthLink(d) ?? undefined }))}
             maxLength={40}
             autoFocus={!initial}
           />
@@ -161,6 +164,11 @@ export function RuleEditor({ visible, initial, onClose, onSave }: Props) {
                 </View>
               </View>
             )}
+          </View>
+
+          <View style={styles.group}>
+            <T variant="label">Automatisch abhaken</T>
+            <HealthLinkPicker value={draft.health} onChange={(health) => setDraft((d) => ({ ...d, health }))} />
           </View>
 
           <T variant="caption" color="textTertiary">

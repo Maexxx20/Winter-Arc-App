@@ -12,7 +12,7 @@ import { deletePhoto } from '@/services/photos';
 import { addDays, type ISODate, toISO } from '@/lib/date';
 import { isSyncablePhoto, mergePhotoRows, type PhotoRow, withLegacyPhotoRecords } from '@/lib/photo-merge';
 import { type ChangeSet, mergeRemote } from '@/lib/sync-merge';
-import type { AppState, Arc, Avatar, DayEntry, ReminderSettings, Rule, Settings, SyncMeta, WeekReview } from '@/lib/types';
+import type { AppState, Arc, Avatar, DayEntry, HealthLink, ReminderSettings, Rule, Settings, SyncMeta, WeekReview } from '@/lib/types';
 
 const STORAGE_KEY = 'arc.state.v1';
 
@@ -315,6 +315,26 @@ export function amendRules(
 
 export function updateArcMeta(arcId: string, patch: Partial<Pick<Arc, 'title' | 'why'>>) {
   setState((s) => ({ ...s, arcs: s.arcs.map((a) => (a.id === arcId ? { ...a, ...patch, updatedAt: now() } : a)) }));
+}
+
+/** Regel mit Health verknüpfen oder lösen. Kostet keine Vertragsänderung – die Regel bleibt dieselbe. */
+export function setRuleHealth(arcId: string, ruleId: string, link: HealthLink | null) {
+  setState((s) => ({
+    ...s,
+    arcs: s.arcs.map((a) =>
+      a.id === arcId
+        ? {
+            ...a,
+            rules: a.rules.map((r) => {
+              if (r.id !== ruleId) return r;
+              const { health: _old, ...rest } = r;
+              return link ? { ...rest, health: link } : rest;
+            }),
+            updatedAt: now(),
+          }
+        : a,
+    ),
+  }));
 }
 
 /** Arc ist vorbei: als beendet ablegen (bleibt im Verlauf). */

@@ -7,6 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
 import { useReminderSync } from '@/services/notifications';
+import { useHealthSync } from '@/services/health-sync';
 import { usePushRegistration } from '@/services/push';
 import { useSyncLoop } from '@/services/sync';
 import { hydrate, useHydrated } from '@/store/store';
@@ -20,6 +21,7 @@ export default function RootLayout() {
   useReminderSync();
   useSyncLoop();
   usePushRegistration();
+  useHealthSync();
 
   useEffect(() => {
     hydrate().finally(() => SplashScreen.hideAsync().catch(() => {}));

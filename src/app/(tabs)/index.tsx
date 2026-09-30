@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ArcGauge } from '@/components/arc-gauge';
@@ -19,6 +19,8 @@ import { useToday } from '@/hooks/use-today';
 import { activeRules, arcPhase, computeStats, dayProgress, dueReviewWeek, ruleValue, weeklyCount } from '@/lib/arc';
 import { diffDays, formatLong, formatShort } from '@/lib/date';
 import { nextSeason } from '@/lib/seasons';
+import { syncHealthNow } from '@/services/health-sync';
+import { syncNow } from '@/services/sync';
 import { describeRule } from '@/lib/templates';
 import { selectActiveArc, selectLog, selectReviews, setRuleValue, useAppState } from '@/store/store';
 
@@ -30,6 +32,20 @@ export default function TodayScreen() {
   const log = selectLog(state, arc?.id);
 
   const stats = useMemo(() => (arc ? computeStats(arc, log, today) : null), [arc, log, today]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Beim Öffnen des Tabs verknüpfte Regeln aus Health/Strava nachziehen.
+  useFocusEffect(
+    useCallback(() => {
+      syncHealthNow().catch(() => undefined);
+    }, []),
+  );
+  const refresh = async () => {
+    setRefreshing(true);
+    await Promise.all([syncHealthNow(true).catch(() => 0), syncNow().catch(() => undefined)]);
+    setRefreshing(false);
+  };
+
   if (!arc || !stats) return null;
 
   const progress = dayProgress(arc, log, today);
@@ -121,7 +137,7 @@ export default function TodayScreen() {
   const reviewWeek = dueReviewWeek(arc, today, selectReviews(state, arc.id));
 
   return (
-    <Screen tabs>
+    <Screen tabs refreshing={refreshing} onRefresh={refresh}>
       <View style={styles.headRow}>
         <View style={[styles.head, styles.flex]}>
           <T variant="label">{formatLong(today)}</T>

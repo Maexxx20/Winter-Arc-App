@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Switch, View } from 'react-native';
 
 import { MyAvatar } from '@/components/avatar';
+import { ConnectionsCard } from '@/components/connections-card';
+import { HealthLinkSheet } from '@/components/health-link-sheet';
 import { ChevronIcon, CloseIcon, PlusIcon } from '@/components/icons';
 import { RuleEditor } from '@/components/rule-editor';
 import { Button } from '@/components/ui/button';
@@ -18,17 +20,21 @@ import { useToday } from '@/hooks/use-today';
 import { currentRules } from '@/lib/arc';
 import { confirm } from '@/lib/confirm';
 import { diffDays, formatNumeric, formatShort, toISO } from '@/lib/date';
+import { describeHealthLink } from '@/lib/health';
 import { describeRule, HARD_MAX_RULES } from '@/lib/templates';
+import type { Rule } from '@/lib/types';
 import {
   abandonActiveArc,
   amendRules,
   resetAll,
   seedDemo,
+  setRuleHealth,
   selectActiveArc,
   updateReminders,
   updateSettings,
   useAppState,
 } from '@/store/store';
+import { syncHealthNow } from '@/services/health-sync';
 import { enableReminders } from '@/services/notifications';
 import { pushProblemText, setCrewPush } from '@/services/push';
 import { supabaseConfigured, useSession } from '@/services/supabase';
@@ -42,6 +48,7 @@ export default function ContractScreen() {
   const today = useToday();
   const arc = selectActiveArc(state);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [linkRule, setLinkRule] = useState<Rule | null>(null);
   const session = useSession();
   const sync = useSyncStatus();
   if (!arc) return null;
@@ -108,11 +115,18 @@ export default function ContractScreen() {
       </SectionTitle>
       <View style={styles.list}>
         {rules.map((r) => (
-          <View key={r.id} style={[styles.rule, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <Pressable
+            key={r.id}
+            onPress={() => setLinkRule(r)}
+            accessibilityHint="Automatisch abhaken einstellen"
+            style={({ pressed }) => [styles.rule, { backgroundColor: theme.surface, borderColor: theme.border, opacity: pressed ? 0.85 : 1 }]}>
             <T style={styles.emoji}>{r.icon}</T>
             <View style={styles.flex}>
               <T variant="bodyStrong">{r.title}</T>
               <T variant="caption">{describeRule(r)}</T>
+              <T variant="caption" color={r.health ? 'accent' : 'textTertiary'}>
+                {r.health ? describeHealthLink(r.health) : 'Automatisch abhaken …'}
+              </T>
             </View>
             {canAmend && rules.length > 1 && (
               <Pressable
@@ -123,9 +137,18 @@ export default function ContractScreen() {
                 <CloseIcon color={theme.textSecondary} size={14} />
               </Pressable>
             )}
-          </View>
+          </Pressable>
         ))}
       </View>
+      <HealthLinkSheet
+        rule={linkRule}
+        onClose={() => setLinkRule(null)}
+        onSave={(link) => {
+          if (linkRule) setRuleHealth(arc.id, linkRule.id, link);
+          setLinkRule(null);
+          if (link) syncHealthNow(true);
+        }}
+      />
       <T variant="caption" color="textTertiary">{amendNotice}</T>
       {canAmend && rules.length < HARD_MAX_RULES && (
         <Button
@@ -167,6 +190,9 @@ export default function ContractScreen() {
         </View>
         <ChevronIcon color={theme.textTertiary} size={16} />
       </Pressable>
+
+      <SectionTitle>Verbindungen</SectionTitle>
+      <ConnectionsCard />
 
       <SectionTitle>Erinnerungen</SectionTitle>
       <Card style={styles.settings}>

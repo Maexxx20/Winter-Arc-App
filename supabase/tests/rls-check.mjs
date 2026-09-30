@@ -29,6 +29,8 @@ for (const f of fs.readdirSync(dir).sort()) await db.exec(fs.readFileSync(dir + 
 console.log('ok zweiter Durchlauf');
 { const r = await db.query(`select tablename from pg_publication_tables where pubname = 'supabase_realtime' order by 1`); if (r.rows.map((x) => x.tablename).join() !== 'crew_challenges,daily_status,reactions') { console.log('FAIL realtime', r.rows); process.exit(1); } }
 await db.exec(`grant all on all tables in schema public to authenticated; grant all on storage.objects to authenticated;`);
+// Wie in Supabase: Tabellen ohne Policies bleiben trotz Grants zu (RLS); zusätzlich den Revoke aus 0008 nachstellen
+await db.exec(`revoke all on public.strava_connections from anon, authenticated;`);
 { const r = await db.query(`select public, file_size_limit from storage.buckets where id = 'avatars'`); if (r.rows[0]?.public !== false) { console.log('FAIL bucket', r.rows); process.exit(1); } }
 
 const A = '00000000-0000-0000-0000-00000000000a', B = '00000000-0000-0000-0000-00000000000b', C = '00000000-0000-0000-0000-00000000000c';
@@ -131,6 +133,12 @@ r = await as(A, `insert into push_tokens (token, user_id) values ('ExponentPushT
 r = await as(A, `insert into push_tokens (token) values ('kein-token')`); check('nur Expo-Tokens', !!r.error, r);
 r = await as(A, `select send_push('${B}', 'x', 'y', '/')`); check('send_push nicht direkt aufrufbar', !!r.error, r);
 await db.exec('delete from net.calls');
+
+// Strava (0008): Tokens für niemanden lesbar ausser Service
+await db.exec(`insert into strava_connections (user_id, athlete_id, access_token, refresh_token, expires_at) values ('${A}', 1, 'geheim', 'geheim2', now())`);
+r = await as(A, `select * from strava_connections`); check('A sieht eigene Strava-Tokens nicht', !!r.error || r.length === 0, r);
+r = await as(B, `select * from strava_connections`); check('B sieht Strava-Tokens nicht', !!r.error || r.length === 0, r);
+r = await as(A, `insert into strava_connections (user_id, athlete_id, access_token, refresh_token, expires_at) values ('${A}', 2, 'x', 'y', now())`); check('App kann keine Tokens schreiben', !!r.error, r);
 
 // Reaktionen
 r = await as(B, `insert into reactions (crew_id, to_user, date, emoji) values ($1, '${A}', '2026-10-05', '🔥') returning id`, [crew.id]); check('B reagiert auf A', r.length === 1, r);

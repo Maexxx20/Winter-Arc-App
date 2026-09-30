@@ -106,12 +106,14 @@ export function Stepper({
   onChange,
   min = 1,
   max = 7,
+  step = 1,
   format,
 }: {
   value: number;
   onChange: (v: number) => void;
   min?: number;
   max?: number;
+  step?: number;
   format?: (v: number) => string;
 }) {
   const theme = useTheme();
@@ -119,7 +121,7 @@ export function Stepper({
     <Pressable
       onPress={() => {
         haptic.tap();
-        onChange(Math.min(max, Math.max(min, value + dir)));
+        onChange(Math.min(max, Math.max(min, Math.round((value + dir * step) * 100) / 100)));
       }}
       disabled={disabled}
       hitSlop={6}
