@@ -1,4 +1,4 @@
-import { Image } from 'expo-image';
+import { Image, type ImageProps } from 'expo-image';
 import { useState } from 'react';
 import { Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,7 +7,8 @@ import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { confirm } from '@/lib/confirm';
 import { haptic } from '@/lib/haptics';
-import { deletePhoto, photoUri, pickPhoto } from '@/services/photos';
+import { usePhotoUri } from '@/services/photo-sync';
+import { deletePhoto, pickPhoto } from '@/services/photos';
 
 import { CloseIcon, PlusIcon } from './icons';
 import { T } from './ui/text';
@@ -64,7 +65,7 @@ export function PhotoStrip({ photos, onAdd, onRemove }: Props) {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}>
         {photos.map((p) => (
           <Pressable key={p} onPress={() => setViewing(p)} accessibilityLabel="Foto ansehen">
-            <Image source={{ uri: photoUri(p) }} style={[styles.thumb, { backgroundColor: theme.surfaceMuted }]} contentFit="cover" />
+            <PhotoImage name={p} style={[styles.thumb, { backgroundColor: theme.surfaceMuted }]} contentFit="cover" />
           </Pressable>
         ))}
         {photos.length < MAX_PHOTOS_PER_DAY && (
@@ -85,7 +86,7 @@ export function PhotoStrip({ photos, onAdd, onRemove }: Props) {
 
       <Modal visible={!!viewing} transparent animationType="fade" onRequestClose={() => setViewing(null)}>
         <View style={styles.viewer}>
-          {viewing && <Image source={{ uri: photoUri(viewing) }} style={styles.full} contentFit="contain" />}
+          {viewing && <PhotoImage name={viewing} style={styles.full} contentFit="contain" />}
           <View style={[styles.viewerBar, { top: insets.top + Spacing.three }]}>
             <Pressable onPress={() => viewing && remove(viewing)} style={styles.viewerBtn} accessibilityLabel="Foto löschen">
               <T variant="bodyStrong" style={styles.white}>
@@ -113,3 +114,9 @@ const styles = StyleSheet.create({
   round: { width: 40, paddingHorizontal: 0, alignItems: 'center' },
   white: { color: '#fff' },
 });
+
+/** Foto vom Gerät oder – auf einem neuen Handy – aus dem Konto. */
+function PhotoImage({ name, ...rest }: { name: string } & Omit<ImageProps, 'source'>) {
+  const uri = usePhotoUri(name);
+  return <Image {...rest} source={uri ? { uri, cacheKey: name } : undefined} transition={150} />;
+}

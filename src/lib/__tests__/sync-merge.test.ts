@@ -42,9 +42,21 @@ describe('collectChanges', () => {
     expect(c.arcs).toHaveLength(0);
     expect(c.entries.map((e) => e.date)).toEqual(['2026-10-02']);
   });
-  it('Fotos werden nicht hochgeladen', () => {
-    const c = collectChanges(base(), null);
-    expect(JSON.stringify(c.entries)).not.toContain('photos');
+  it('nennt nur hochgeladene Fotos', () => {
+    let c = collectChanges(base(), null);
+    expect(c.entries.find((e) => e.date === '2026-10-01')?.photos).toEqual([]);
+    c = collectChanges(base(), null, { uploaded: new Set(['photos/x.jpg']) });
+    expect(c.entries.find((e) => e.date === '2026-10-01')?.photos).toEqual(['photos/x.jpg']);
+  });
+  it('Einträge mit frisch hochgeladenen Fotos kommen mit, auch wenn sie älter sind', () => {
+    const c = collectChanges(base(), '2026-10-05T00:00:00.000Z', { uploaded: new Set(['photos/x.jpg']), alsoEntries: new Set(['a|2026-10-01']) });
+    expect(c.entries.map((e) => e.date)).toEqual(['2026-10-01']);
+  });
+  it('Data-URLs der Web-Vorschau werden nie genannt', () => {
+    const s = base();
+    s.logs.a['2026-10-02'].photos = ['data:image/jpeg;base64,AAA'];
+    const c = collectChanges(s, null, { uploaded: new Set(['data:image/jpeg;base64,AAA']) });
+    expect(c.entries.find((e) => e.date === '2026-10-02')?.photos).toEqual([]);
   });
 });
 
@@ -56,6 +68,22 @@ describe('mergeRemote', () => {
       reviews: [],
     });
     expect(s.logs.a['2026-10-01']).toMatchObject({ values: { r: 0 }, note: 'hi', photos: ['photos/x.jpg'] });
+  });
+  it('Fotos vom Server; noch nicht hochgeladene lokale bleiben', () => {
+    const s = mergeRemote(base(), {
+      arcs: [],
+      entries: [{ arc_id: 'a', date: '2026-10-01', values: {}, note: null, photos: ['photos/y.jpg'], updated_at: '2026-10-03T08:00:00.000Z' }],
+      reviews: [],
+    });
+    expect(s.logs.a['2026-10-01'].photos).toEqual(['photos/y.jpg', 'photos/x.jpg']);
+  });
+  it('hochgeladenes, auf einem anderen Gerät gelöschtes Foto verschwindet', () => {
+    const s = mergeRemote(
+      base(),
+      { arcs: [], entries: [{ arc_id: 'a', date: '2026-10-01', values: {}, note: null, photos: [], updated_at: '2026-10-03T08:00:00.000Z' }], reviews: [] },
+      new Set(['photos/x.jpg']),
+    );
+    expect(s.logs.a['2026-10-01'].photos).toBeUndefined();
   });
   it('ältere Server-Version wird ignoriert → gleicher State', () => {
     const st = base();

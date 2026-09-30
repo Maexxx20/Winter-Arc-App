@@ -1,6 +1,7 @@
 /**
  * Reine Funktionen für den Abgleich mit dem Server (getestet).
- * Regel: Die neuere Version (updatedAt) gewinnt. Fotos bleiben lokal.
+ * Regel: Die neuere Version (updatedAt) gewinnt.
+ * Fotos: Der Eintrag nennt nur die Dateinamen; die Bilder selbst liegen im Speicher-Bucket «photos».
  */
 
 import type { ISODate } from './date';
@@ -17,6 +18,8 @@ export interface EntryRow {
   date: ISODate;
   values: Record<string, number>;
   note: string | null;
+  /** Namen der hochgeladenen Fotos ("photos/<id>.jpg"); fehlt bei Servern ohne Migration 0006. */
+  photos?: string[];
   updated_at: string;
 }
 export interface ReviewRow {
@@ -33,12 +36,22 @@ export interface ChangeSet {
 }
 
 const EPOCH = '1970-01-01T00:00:00.000Z';
+
+/** Nur Fotos aus dem Dokumentenordner lassen sich abgleichen (nicht die Data-URLs der Web-Vorschau). */
+export function isSyncablePhoto(name: string): boolean {
+  return /^photos\/[A-Za-z0-9_-]+\.jpg$/.test(name);
+}
 const ts = (s: string | undefined | null) => (s ? new Date(s).toISOString() : EPOCH);
 const newer = (a: string | undefined | null, b: string | undefined | null) => ts(a) > ts(b);
 
 /** Alles, was seit `since` lokal geändert wurde (oder alles, wenn `since` null ist). */
-export function collectChanges(state: AppState, since: string | null): ChangeSet {
+export function collectChanges(
+  state: AppState,
+  since: string | null,
+  opts: { uploaded?: ReadonlySet<string>; alsoEntries?: ReadonlySet<string> } = {},
+): ChangeSet {
   const after = (u: string | undefined) => since === null || newer(u, since);
+  const uploaded = opts.uploaded ?? new Set<string>();
   const arcs: ArcRow[] = state.arcs
     .filter((a) => after(a.updatedAt ?? a.createdAt))
     .map((a) => ({ id: a.id, data: a, status: a.status, updated_at: ts(a.updatedAt ?? a.createdAt) }));
@@ -46,8 +59,16 @@ export function collectChanges(state: AppState, since: string | null): ChangeSet
   const entries: EntryRow[] = [];
   for (const [arcId, log] of Object.entries(state.logs)) {
     for (const [date, e] of Object.entries(log)) {
-      if (!after(e.updatedAt)) continue;
-      entries.push({ arc_id: arcId, date, values: e.values, note: e.note ?? null, updated_at: ts(e.updatedAt) });
+      if (!after(e.updatedAt) && !opts.alsoEntries?.has(`${arcId}|${date}`)) continue;
+      entries.push({
+        arc_id: arcId,
+        date,
+        values: e.values,
+        note: e.note ?? null,
+        // Nur schon hochgeladene Fotos nennen – sonst zeigt ein anderes Gerät ein leeres Bild.
+        photos: (e.photos ?? []).filter((p) => isSyncablePhoto(p) && uploaded.has(p)),
+        updated_at: ts(e.updatedAt),
+      });
     }
   }
 
@@ -70,7 +91,7 @@ export function collectChanges(state: AppState, since: string | null): ChangeSet
 }
 
 /** Übernimmt Server-Daten, wo sie neuer sind. Gibt denselben State zurück, wenn sich nichts ändert. */
-export function mergeRemote(state: AppState, remote: ChangeSet): AppState {
+export function mergeRemote(state: AppState, remote: ChangeSet, uploaded: ReadonlySet<string> = new Set()): AppState {
   let changed = false;
 
   const arcs = [...state.arcs];
@@ -91,10 +112,13 @@ export function mergeRemote(state: AppState, remote: ChangeSet): AppState {
     const log = logs[row.arc_id] ?? {};
     const local = log[row.date];
     if (local && !newer(row.updated_at, local.updatedAt)) continue;
+    // Fotos vom Server übernehmen; lokale, die noch nicht hochgeladen sind (oder nicht hochladbar), behalten.
+    const keep = (local?.photos ?? []).filter((p) => !isSyncablePhoto(p) || !uploaded.has(p));
+    const photos = row.photos === undefined ? local?.photos : [...new Set([...row.photos, ...keep])];
     const entry: DayEntry = {
       values: row.values ?? {},
       note: row.note ?? undefined,
-      photos: local?.photos, // Fotos sind nur lokal
+      photos: photos?.length ? photos : undefined,
       updatedAt: row.updated_at,
     };
     logs[row.arc_id] = { ...log, [row.date]: entry };

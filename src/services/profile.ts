@@ -1,11 +1,10 @@
-import { useEffect, useState } from 'react';
-
 import { allBadges } from '@/lib/badges';
 import type { ProfileBadge } from '@/lib/crew';
 import { todayISO } from '@/lib/date';
 import { applyRemoteProfile, getState, type RemoteProfile, setAvatarRemote, touchProfile } from '@/store/store';
 
 import { avatarBytes } from './avatar-file';
+import { signedUrls, useSignedUrl } from './storage-urls';
 import { supabase } from './supabase';
 
 const BUCKET = 'avatars';
@@ -140,44 +139,11 @@ export async function fetchProfiles(ids: string[]): Promise<Record<string, Publi
 
 // ---------- Bild-Links (privater Bucket → zeitlich begrenzte Links) ----------
 
-const TTL = 60 * 60 * 24; // 24 h
-const urlCache = new Map<string, { url: string; expires: number }>();
-
-export async function avatarUrls(paths: (string | null | undefined)[]): Promise<Record<string, string>> {
-  const out: Record<string, string> = {};
-  const missing: string[] = [];
-  const now = Date.now();
-  for (const p of new Set(paths.filter((x): x is string => !!x))) {
-    const hit = urlCache.get(p);
-    if (hit && hit.expires > now + 60_000) out[p] = hit.url;
-    else missing.push(p);
-  }
-  if (missing.length && supabase) {
-    const { data } = await supabase.storage.from(BUCKET).createSignedUrls(missing, TTL);
-    for (const d of data ?? []) {
-      if (!d.signedUrl || !d.path) continue;
-      urlCache.set(d.path, { url: d.signedUrl, expires: now + TTL * 1000 });
-      out[d.path] = d.signedUrl;
-    }
-  }
-  return out;
+export function avatarUrls(paths: (string | null | undefined)[]): Promise<Record<string, string>> {
+  return signedUrls(BUCKET, paths);
 }
 
 /** Link zu einem Profilbild auf dem Server (oder null, solange er lädt). */
 export function useAvatarUrl(path: string | null | undefined): string | null {
-  const [loaded, setLoaded] = useState<{ path: string; url: string } | null>(null);
-  useEffect(() => {
-    if (!path) return;
-    let alive = true;
-    avatarUrls([path]).then((m) => {
-      if (alive && m[path]) setLoaded({ path, url: m[path] });
-    });
-    return () => {
-      alive = false;
-    };
-  }, [path]);
-  if (!path) return null;
-  // Nie den Link eines alten Bildes für einen neuen Pfad liefern (sonst landet er unter dem falschen Cache-Schlüssel).
-  if (loaded?.path === path) return loaded.url;
-  return urlCache.get(path)?.url ?? null;
+  return useSignedUrl(BUCKET, path);
 }

@@ -12,3 +12,11 @@ export async function pickPhoto(_source: 'camera' | 'library'): Promise<string |
 }
 
 export function deletePhoto(_name: string) {}
+
+export function photoExists(_name: string): boolean {
+  return true;
+}
+
+export async function photoBytes(name: string): Promise<ArrayBuffer> {
+  return (await fetch(name)).arrayBuffer();
+}

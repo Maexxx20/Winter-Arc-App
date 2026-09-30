@@ -172,7 +172,7 @@ export default function CrewTab() {
       ) : null}
 
       <T variant="caption" color="textTertiary" center>
-        Deine Crew sieht nur, ob du deinen Tag gehalten hast, deinen Streak und deine Quote – keine Regeln, Notizen oder Fotos.
+        Deine Crew sieht dein Profil, ob du deinen Tag gehalten hast, deinen Streak, deine Quote und deine Abzeichen – keine Regeln, Notizen oder Fotos.
       </T>
     </Screen>
   );

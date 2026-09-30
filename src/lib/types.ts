@@ -120,6 +120,10 @@ export interface SyncMeta {
   lastPulledAt: string | null;
   /** Zu welchem Konto gehört der Stand? */
   userId: string | null;
+  /** Fotos, die schon im Konto liegen (Dateinamen). */
+  uploadedPhotos?: string[];
+  /** Hochgeladene Fotos, die lokal gelöscht wurden und noch vom Server müssen. */
+  photoDeletes?: string[];
 }
 
 export type DayStatus =

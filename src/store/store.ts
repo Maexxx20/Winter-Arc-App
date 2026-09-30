@@ -315,8 +315,20 @@ export function abandonActiveArc() {
 
 /** Server-Daten übernehmen (ohne updatedAt zu verändern). */
 export function applyRemote(remote: ChangeSet) {
-  const next = mergeRemote(state, remote);
+  const uploaded = new Set(state.sync?.uploadedPhotos ?? []);
+  const next = mergeRemote(state, remote, uploaded);
   if (next === state) return;
+  // Auf einem anderen Gerät gelöschte Fotos auch hier entfernen.
+  const before = new Set(Object.values(state.logs).flatMap((l) => Object.values(l).flatMap((e) => e.photos ?? [])));
+  const after = new Set(Object.values(next.logs).flatMap((l) => Object.values(l).flatMap((e) => e.photos ?? [])));
+  const gone = [...before].filter((p) => !after.has(p));
+  gone.forEach(deletePhoto);
+  // Fotos, die der Server nennt, liegen dort schon – auch wenn ein anderes Gerät sie hochgeladen hat.
+  if (state.sync) {
+    const onServer = new Set([...uploaded, ...remote.entries.flatMap((r) => r.photos ?? [])]);
+    gone.forEach((p) => onServer.delete(p));
+    next.sync = { ...state.sync, uploadedPhotos: [...onServer].filter((p) => after.has(p)) };
+  }
   state = next;
   emit();
   persist();
@@ -344,6 +356,24 @@ export function removePhoto(arcId: string, date: ISODate, uri: string) {
     const photos = (e.photos ?? []).filter((p) => p !== uri);
     return { ...e, photos: photos.length ? photos : undefined };
   });
+  // War es schon hochgeladen, beim nächsten Abgleich auch auf dem Server löschen.
+  const meta = state.sync;
+  if (meta?.uploadedPhotos?.includes(uri)) {
+    setSyncMeta({
+      uploadedPhotos: meta.uploadedPhotos.filter((p) => p !== uri),
+      photoDeletes: [...(meta.photoDeletes ?? []), uri],
+    });
+  }
+}
+
+/** Nach dem Hochladen bzw. Löschen auf dem Server. */
+export function markPhotosSynced(uploaded: string[], deleted: string[]) {
+  const meta = state.sync;
+  if (!meta) return;
+  const up = new Set(meta.uploadedPhotos ?? []);
+  uploaded.forEach((p) => up.add(p));
+  const del = new Set(deleted);
+  setSyncMeta({ uploadedPhotos: [...up], photoDeletes: (meta.photoDeletes ?? []).filter((p) => !del.has(p)) });
 }
 
 export function saveReview(arcId: string, week: ISODate, review: Omit<WeekReview, 'updatedAt'>) {

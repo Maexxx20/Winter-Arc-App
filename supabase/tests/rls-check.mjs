@@ -103,6 +103,16 @@ r = await as(A, `update profiles set badges = '[{"id":"streak_7","date":"2026-10
 r = await as(B, `select badges from profiles where id = '${A}'`); check('B sieht Abzeichen von A', r[0]?.badges?.length === 1, r);
 r = await as(A, `update profiles set badges = '{"x":1}' where id = '${A}'`); check('Abzeichen nur als Liste', !!r.error, r);
 
+// Fotos (0006): nur Besitzer, auch nicht die Crew
+r = await as(A, `insert into storage.objects (bucket_id, name) values ('photos', '${A}/p1.jpg') returning name`); check('A lädt Foto hoch', r.length === 1, r);
+r = await as(A, `insert into storage.objects (bucket_id, name) values ('photos', '${B}/p1.jpg')`); check('A nicht in Foto-Ordner von B', !!r.error, r);
+r = await as(B, `select name from storage.objects where bucket_id = 'photos'`); check('Crew sieht Fotos von A nicht', r.length === 0, r);
+r = await as(A, `select name from storage.objects where bucket_id = 'photos'`); check('A sieht eigenes Foto', r.length === 1, r);
+r = await as(B, `delete from storage.objects where bucket_id = 'photos' returning name`); check('B kann Foto von A nicht löschen', Array.isArray(r) && r.length === 0, r);
+await as(A, `insert into day_entries (arc_id, date, "values", updated_at) values ('11111111-1111-1111-1111-111111111111', '2026-10-05', '{}', now())`);
+r = await as(A, `update day_entries set photos = '["photos/p1.jpg"]', updated_at = now() + interval '1 second' returning photos`); check('Fotoliste im Eintrag', Array.isArray(r) && r[0]?.photos?.[0] === 'photos/p1.jpg', r);
+r = await as(A, `update day_entries set photos = '"x"', updated_at = now() + interval '2 seconds'`); check('Fotoliste nur als Liste', !!r.error, r);
+
 // Reaktionen
 r = await as(B, `insert into reactions (crew_id, to_user, date, emoji) values ($1, '${A}', '2026-10-05', '🔥') returning id`, [crew.id]); check('B reagiert auf A', r.length === 1, r);
 r = await as(B, `insert into reactions (crew_id, to_user, date, emoji) values ($1, '${B}', '2026-10-05', '🔥')`, [crew.id]); check('keine Reaktion an sich selbst', !!r.error, r);

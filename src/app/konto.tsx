@@ -114,7 +114,7 @@ export default function AccountScreen() {
         </Card>
 
         <T variant="caption" color="textTertiary">
-          Arcs, Häkchen, Notizen und Wochenrückblicke werden gesichert. Fotos bleiben vorerst nur auf diesem Gerät.
+          Arcs, Häkchen, Notizen, Fotos und Wochenrückblicke werden gesichert. Deine Fotos sieht nur du.
         </T>
 
         <Button
