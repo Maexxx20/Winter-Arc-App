@@ -114,9 +114,13 @@ r = await as(A, `insert into storage.objects (bucket_id, name) values ('photos',
 r = await as(B, `select name from storage.objects where bucket_id = 'photos'`); check('Crew sieht Fotos von A nicht', r.length === 0, r);
 r = await as(A, `select name from storage.objects where bucket_id = 'photos'`); check('A sieht eigenes Foto', r.length === 1, r);
 r = await as(B, `delete from storage.objects where bucket_id = 'photos' returning name`); check('B kann Foto von A nicht löschen', Array.isArray(r) && r.length === 0, r);
-await as(A, `insert into day_entries (arc_id, date, "values", updated_at) values ('11111111-1111-1111-1111-111111111111', '2026-10-05', '{}', now())`);
-r = await as(A, `update day_entries set photos = '["photos/p1.jpg"]', updated_at = now() + interval '1 second' returning photos`); check('Fotoliste im Eintrag', Array.isArray(r) && r[0]?.photos?.[0] === 'photos/p1.jpg', r);
-r = await as(A, `update day_entries set photos = '"x"', updated_at = now() + interval '2 seconds'`); check('Fotoliste nur als Liste', !!r.error, r);
+const ARC = '11111111-1111-1111-1111-111111111111';
+r = await as(A, `insert into diary_photos (name, arc_id, date, updated_at) values ('photos/p1.jpg', '${ARC}', '2026-10-05', '2026-10-05T10:00:00Z') returning name`); check('Foto-Datensatz', r.length === 1, r);
+r = await as(A, `insert into diary_photos (name, arc_id, date, updated_at) values ('../boese.jpg', '${ARC}', '2026-10-05', now())`); check('Dateiname geprüft', !!r.error, r);
+r = await as(A, `update diary_photos set deleted = true, updated_at = '2026-10-04T10:00:00Z' returning deleted`); check('ältere Löschung ignoriert', r[0]?.deleted === false, r);
+r = await as(A, `update diary_photos set deleted = true, updated_at = '2026-10-06T10:00:00Z' returning deleted`); check('neuere Löschmarke gilt', r[0]?.deleted === true, r);
+r = await as(B, `select * from diary_photos`); check('Crew sieht Foto-Datensätze nicht', r.length === 0, r);
+r = await as(B, `insert into diary_photos (user_id, name, arc_id, date, updated_at) values ('${A}', 'photos/x.jpg', '${ARC}', '2026-10-05', now())`); check('B schreibt nicht für A', !!r.error, r);
 
 // Push (0007)
 const TA = 'ExponentPushToken[aaaa]', TB = 'ExponentPushToken[bbbb]';
@@ -139,6 +143,11 @@ r = await as(A, `select emoji from reactions`); check('A sieht Reaktion', r.leng
   check('Push an A bei Reaktion', calls.length === 1 && calls[0].body[0].to === TA && calls[0].body[0].body.includes('hat dir 🔥 geschickt') && calls[0].body[0].data.url === '/crew/' + crew.id, calls); }
 await as(B, `insert into reactions (crew_id, to_user, date, emoji) values ($1, '${A}', '2026-10-05', '💪')`, [crew.id]);
 { const n = (await db.query(`select count(*)::int n from net.calls`)).rows[0].n; check('nur eine Mitteilung pro Tag und Person', n === 1, n); }
+await as(B, `delete from reactions where from_user = '${B}'`);
+await as(B, `insert into reactions (crew_id, to_user, date, emoji) values ($1, '${A}', '2026-10-05', '🔥')`, [crew.id]);
+await as(B, `insert into reactions (crew_id, to_user, date, emoji) values ($1, '${A}', '2026-10-01', '🔥')`, [crew.id]);
+{ const n = (await db.query(`select count(*)::int n from net.calls`)).rows[0].n; check('Zurücknehmen/anderes Datum löst keine weitere Mitteilung aus', n === 1, n); }
+r = await as(B, `select * from push_log`); check('push_log nicht lesbar', Array.isArray(r) ? r.length === 0 : !!r.error, r);
 r = await as(A, `delete from reactions returning id`); check('A kann fremde Reaktion nicht löschen', Array.isArray(r) && r.length === 0, r);
 
 // Besitzerwechsel und Austritt

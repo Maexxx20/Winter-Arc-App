@@ -47,6 +47,36 @@ $$;
 revoke all on function public.claim_push_token(text, text) from public, anon;
 grant execute on function public.claim_push_token(text, text) to authenticated;
 
+-- Pro Absender, Empfänger, Crew, Art und Kalendertag höchstens eine Mitteilung.
+create table if not exists public.push_log (
+  crew_id uuid not null references public.crews (id) on delete cascade,
+  from_user uuid not null references auth.users (id) on delete cascade,
+  to_user uuid not null references auth.users (id) on delete cascade,
+  kind text not null check (kind in ('reaction', 'join')),
+  day date not null default current_date,
+  primary key (crew_id, from_user, to_user, kind, day)
+);
+alter table public.push_log enable row level security; -- keine Policies: nur die Datenbank selbst schreibt
+
+-- true, wenn heute noch keine solche Mitteilung verschickt wurde (und merkt sie sich).
+create or replace function public.push_allowed(p_crew uuid, p_from uuid, p_to uuid, p_kind text)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_rows int;
+begin
+  insert into public.push_log (crew_id, from_user, to_user, kind)
+  values (p_crew, p_from, p_to, p_kind)
+  on conflict do nothing;
+  get diagnostics v_rows = row_count;
+  return v_rows = 1;
+end;
+$$;
+revoke all on function public.push_allowed(uuid, uuid, uuid, text) from public, anon, authenticated;
+
 -- ---------- Senden ----------
 
 create or replace function public.send_push(p_user uuid, p_title text, p_body text, p_url text)
@@ -101,7 +131,7 @@ as $$
 $$;
 revoke all on function public.crew_display_name(uuid, uuid) from public, anon, authenticated;
 
--- Reaktion: höchstens eine Mitteilung pro Person, Empfänger und Tag.
+-- Reaktion: höchstens eine Mitteilung pro Person, Empfänger und Tag (auch nach Zurücknehmen und neu Reagieren).
 create or replace function public.notify_reaction()
 returns trigger
 language plpgsql
@@ -111,11 +141,7 @@ as $$
 declare
   v_crew text;
 begin
-  if exists (
-    select 1 from public.reactions r
-    where r.crew_id = new.crew_id and r.from_user = new.from_user and r.to_user = new.to_user
-      and r.date = new.date and r.id <> new.id
-  ) then
+  if not public.push_allowed(new.crew_id, new.from_user, new.to_user, 'reaction') then
     return null;
   end if;
   select name into v_crew from public.crews where id = new.crew_id;
@@ -148,7 +174,9 @@ begin
   select name into v_crew from public.crews where id = new.crew_id;
   v_name := public.crew_display_name(new.crew_id, new.user_id);
   for v_other in select user_id from public.crew_members where crew_id = new.crew_id and user_id <> new.user_id loop
-    perform public.send_push(v_other, coalesce(v_crew, 'Nordwand'), v_name || ' ist der Crew beigetreten', '/crew/' || new.crew_id);
+    if public.push_allowed(new.crew_id, new.user_id, v_other, 'join') then
+      perform public.send_push(v_other, coalesce(v_crew, 'Nordwand'), v_name || ' ist der Crew beigetreten', '/crew/' || new.crew_id);
+    end if;
   end loop;
   return null;
 end;

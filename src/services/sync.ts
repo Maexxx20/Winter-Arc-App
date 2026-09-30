@@ -5,7 +5,7 @@ import { type ArcRow, collectChanges, type ChangeSet, type EntryRow, type Review
 import { applyRemote, getState, isHydrated, resetProfileSync, setSyncMeta, subscribe } from '@/store/store';
 
 import { publishStatus } from './crews';
-import { deleteRemovedPhotos, removeAllPhotos, uploadPendingPhotos } from './photo-sync';
+import { removeAllPhotos, syncPhotos } from './photo-sync';
 import { removeAvatars, syncProfile } from './profile';
 import { unregisterPush } from './push';
 import { getSession, onSession, signOut, supabase } from './supabase';
@@ -34,25 +34,11 @@ export function useSyncStatus(): SyncStatus {
 
 const CHUNK = 500;
 
-/** false, sobald der Server meldet, dass es die Spalte day_entries.photos nicht gibt (Migration 0006 fehlt). */
-let serverHasPhotos = true;
-
 async function upsert(table: string, rows: object[], onConflict: string) {
   for (let i = 0; i < rows.length; i += CHUNK) {
-    let chunk = rows.slice(i, i + CHUNK);
-    if (table === 'day_entries' && !serverHasPhotos) chunk = chunk.map(withoutPhotos);
-    let { error } = await supabase!.from(table).upsert(chunk, { onConflict });
-    if (error && table === 'day_entries' && serverHasPhotos && error.message.includes('photos')) {
-      serverHasPhotos = false;
-      ({ error } = await supabase!.from(table).upsert(chunk.map(withoutPhotos), { onConflict }));
-    }
+    const { error } = await supabase!.from(table).upsert(rows.slice(i, i + CHUNK), { onConflict });
     if (error) throw new Error(`${table}: ${error.message}`);
   }
-}
-
-function withoutPhotos(row: object): object {
-  const { photos: _photos, ...rest } = row as { photos?: unknown };
-  return rest;
 }
 
 async function pullTable<T>(table: string, since: string | null): Promise<(T & { server_updated_at: string })[]> {
@@ -97,21 +83,14 @@ async function doSync() {
     let meta = getState().sync;
     if (!meta || meta.userId !== userId) {
       // Anderes oder neues Konto: alles hochladen und alles holen.
-      setSyncMeta({ userId, lastPushedAt: null, lastPulledAt: null, uploadedPhotos: [], photoDeletes: [] });
+      setSyncMeta({ userId, lastPushedAt: null, lastPulledAt: null, uploadedPhotos: [], photosPushedAt: null, photosPulledAt: null });
       resetProfileSync();
       meta = getState().sync!;
     }
 
-    // 1) Hochladen – neue Fotos zuerst, damit die Einträge nur vorhandene Fotos nennen.
+    // 1) Hochladen
     const pushStart = new Date().toISOString();
-    const photoEntries = await uploadPendingPhotos(userId).catch((e) => {
-      console.warn('Fotos nicht hochgeladen', e);
-      return new Set<string>();
-    });
-    const changes = collectChanges(getState(), meta.lastPushedAt, {
-      uploaded: new Set(getState().sync?.uploadedPhotos ?? []),
-      alsoEntries: photoEntries,
-    });
+    const changes = collectChanges(getState(), meta.lastPushedAt);
     await upsert('arcs', changes.arcs.map((a) => ({ ...a, user_id: userId })), 'id');
     await upsert('day_entries', changes.entries.map((e) => ({ ...e, user_id: userId })), 'arc_id,date');
     await upsert('week_reviews', changes.reviews.map((r) => ({ ...r, user_id: userId })), 'arc_id,week');
@@ -132,14 +111,23 @@ async function doSync() {
 
     // 3) Tages-Zusammenfassung für Crews (nur Zahlen, keine Inhalte)
     await publishStatus();
-    await deleteRemovedPhotos(userId).catch((e) => console.warn('Fotos nicht gelöscht', e));
 
-    // 4) Profil – eigener Fehler, damit ein Problem mit dem Bild den restlichen Abgleich nicht blockiert.
+    // 4) Profil und Fotos – eigene Fehler, damit sie den restlichen Abgleich nicht blockieren.
+    const problems: string[] = [];
     try {
       await syncProfile(userId);
     } catch (e) {
       console.warn('Profil-Abgleich fehlgeschlagen', e);
-      setStatus({ state: 'error', lastSyncAt: new Date(), error: `Profil: ${e instanceof Error ? e.message : String(e)}` });
+      problems.push(`Profil: ${e instanceof Error ? e.message : String(e)}`);
+    }
+    try {
+      await syncPhotos(userId);
+    } catch (e) {
+      console.warn('Foto-Abgleich fehlgeschlagen', e);
+      problems.push(e instanceof Error ? e.message : String(e));
+    }
+    if (problems.length) {
+      setStatus({ state: 'error', lastSyncAt: new Date(), error: problems.join(' · ') });
       return;
     }
 
@@ -154,10 +142,10 @@ async function doSync() {
 export async function deleteRemoteData(): Promise<void> {
   const session = getSession();
   if (!supabase || !session) return;
+  await removeAllPhotos(session.user.id); // zuerst: wirft, falls das nicht klappt
   const { error } = await supabase.from('arcs').delete().eq('user_id', session.user.id);
   if (error) throw new Error(error.message);
-  await removeAllPhotos(session.user.id);
-  setSyncMeta({ uploadedPhotos: [], photoDeletes: [] });
+  setSyncMeta({ uploadedPhotos: [], photosPushedAt: null, photosPulledAt: null });
 }
 
 /** Vor dem Abmelden noch hochladen; lokale Daten bleiben auf dem Gerät. */
@@ -165,7 +153,7 @@ export async function logout(): Promise<void> {
   await syncNow().catch(() => undefined);
   await unregisterPush();
   await signOut();
-  setSyncMeta({ userId: null, lastPushedAt: null, lastPulledAt: null, uploadedPhotos: [], photoDeletes: [] });
+  setSyncMeta({ userId: null, lastPushedAt: null, lastPulledAt: null, uploadedPhotos: [], photosPushedAt: null, photosPulledAt: null });
   resetProfileSync();
 }
 
@@ -173,15 +161,19 @@ export async function logout(): Promise<void> {
 export async function deleteAccount(): Promise<string | null> {
   if (!supabase) return null;
   const session = getSession();
-  // Bilder liegen im Speicher, nicht in der Datenbank – vorher selbst löschen.
   if (session) {
-    await removeAvatars(session.user.id).catch(() => undefined);
-    await removeAllPhotos(session.user.id).catch(() => undefined);
+    // Dateien liegen im Speicher, nicht in der Datenbank – vorher löschen, sonst bleiben sie für immer.
+    try {
+      await removeAvatars(session.user.id);
+      await removeAllPhotos(session.user.id);
+    } catch (e) {
+      return e instanceof Error ? e.message : String(e);
+    }
   }
   const { error } = await supabase.rpc('delete_account');
   if (error) return error.message;
   await supabase.auth.signOut();
-  setSyncMeta({ userId: null, lastPushedAt: null, lastPulledAt: null, uploadedPhotos: [], photoDeletes: [] });
+  setSyncMeta({ userId: null, lastPushedAt: null, lastPulledAt: null, uploadedPhotos: [], photosPushedAt: null, photosPulledAt: null });
   resetProfileSync();
   return null;
 }

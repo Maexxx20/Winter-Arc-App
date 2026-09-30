@@ -13,8 +13,9 @@ export async function pickPhoto(_source: 'camera' | 'library'): Promise<string |
 
 export function deletePhoto(_name: string) {}
 
-export function photoExists(_name: string): boolean {
-  return true;
+/** Im Browser gibt es nur Data-/Blob-URLs; Fotos von anderen Geräten kommen aus dem Konto. */
+export function photoExists(name: string): boolean {
+  return /^(data|blob|https?):/.test(name);
 }
 
 export async function photoBytes(name: string): Promise<ArrayBuffer> {

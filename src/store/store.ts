@@ -10,6 +10,7 @@ import { useSyncExternalStore } from 'react';
 import { uid } from '@/lib/arc';
 import { deletePhoto } from '@/services/photos';
 import { addDays, type ISODate } from '@/lib/date';
+import { isSyncablePhoto, mergePhotoRows, type PhotoRow, withLegacyPhotoRecords } from '@/lib/photo-merge';
 import { type ChangeSet, mergeRemote } from '@/lib/sync-merge';
 import type { AppState, Arc, Avatar, DayEntry, ReminderSettings, Rule, Settings, SyncMeta, WeekReview } from '@/lib/types';
 
@@ -81,6 +82,8 @@ export async function hydrate(): Promise<void> {
         };
       }
     }
+    // Fotos aus älteren Versionen bekommen einen Sync-Datensatz.
+    state = withLegacyPhotoRecords(state);
   } catch (e) {
     console.warn('Laden fehlgeschlagen', e);
   }
@@ -316,20 +319,18 @@ export function abandonActiveArc() {
 
 /** Server-Daten übernehmen (ohne updatedAt zu verändern). */
 export function applyRemote(remote: ChangeSet) {
-  const uploaded = new Set(state.sync?.uploadedPhotos ?? []);
-  const next = mergeRemote(state, remote, uploaded);
+  const next = mergeRemote(state, remote);
   if (next === state) return;
-  // Auf einem anderen Gerät gelöschte Fotos auch hier entfernen.
-  const before = new Set(Object.values(state.logs).flatMap((l) => Object.values(l).flatMap((e) => e.photos ?? [])));
-  const after = new Set(Object.values(next.logs).flatMap((l) => Object.values(l).flatMap((e) => e.photos ?? [])));
-  const gone = [...before].filter((p) => !after.has(p));
-  gone.forEach(deletePhoto);
-  // Fotos, die der Server nennt, liegen dort schon – auch wenn ein anderes Gerät sie hochgeladen hat.
-  if (state.sync) {
-    const onServer = new Set([...uploaded, ...remote.entries.flatMap((r) => r.photos ?? [])]);
-    gone.forEach((p) => onServer.delete(p));
-    next.sync = { ...state.sync, uploadedPhotos: [...onServer].filter((p) => after.has(p)) };
-  }
+  state = next;
+  emit();
+  persist();
+}
+
+/** Foto-Datensätze vom Server übernehmen; gelöschte Fotos auch hier entfernen. */
+export function applyRemotePhotos(rows: PhotoRow[]) {
+  const { state: next, removed } = mergePhotoRows(state, rows);
+  if (next === state) return;
+  removed.forEach(deletePhoto);
   state = next;
   emit();
   persist();
@@ -348,33 +349,33 @@ export function updateReminders(patch: Partial<ReminderSettings>) {
   }));
 }
 
+function setPhotoRecord(name: string, arcId: string, date: ISODate, deleted: boolean) {
+  if (!isSyncablePhoto(name)) return;
+  state = {
+    ...state,
+    photoLog: { ...(state.photoLog ?? {}), [name]: { arcId, date, deleted, updatedAt: now() } },
+  };
+}
+
 export function addPhoto(arcId: string, date: ISODate, uri: string) {
+  setPhotoRecord(uri, arcId, date, false);
   updateEntry(arcId, date, (e) => ({ ...e, photos: [...(e.photos ?? []), uri] }));
 }
 
 export function removePhoto(arcId: string, date: ISODate, uri: string) {
+  // Löschmarke: gilt beim nächsten Abgleich für alle Geräte und das Konto.
+  setPhotoRecord(uri, arcId, date, true);
   updateEntry(arcId, date, (e) => {
     const photos = (e.photos ?? []).filter((p) => p !== uri);
     return { ...e, photos: photos.length ? photos : undefined };
   });
-  // War es schon hochgeladen, beim nächsten Abgleich auch auf dem Server löschen.
-  const meta = state.sync;
-  if (meta?.uploadedPhotos?.includes(uri)) {
-    setSyncMeta({
-      uploadedPhotos: meta.uploadedPhotos.filter((p) => p !== uri),
-      photoDeletes: [...(meta.photoDeletes ?? []), uri],
-    });
-  }
 }
 
-/** Nach dem Hochladen bzw. Löschen auf dem Server. */
-export function markPhotosSynced(uploaded: string[], deleted: string[]) {
+/** Datei liegt im Konto. */
+export function markPhotoUploaded(name: string) {
   const meta = state.sync;
-  if (!meta) return;
-  const up = new Set(meta.uploadedPhotos ?? []);
-  uploaded.forEach((p) => up.add(p));
-  const del = new Set(deleted);
-  setSyncMeta({ uploadedPhotos: [...up], photoDeletes: (meta.photoDeletes ?? []).filter((p) => !del.has(p)) });
+  if (!meta || meta.uploadedPhotos?.includes(name)) return;
+  setSyncMeta({ uploadedPhotos: [...(meta.uploadedPhotos ?? []), name] });
 }
 
 export function saveReview(arcId: string, week: ISODate, review: Omit<WeekReview, 'updatedAt'>) {

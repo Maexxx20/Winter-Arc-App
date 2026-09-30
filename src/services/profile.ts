@@ -26,16 +26,20 @@ export interface PublicProfile {
  */
 export async function syncProfile(userId: string): Promise<void> {
   if (!supabase) return;
-  const { data: row, error } = await supabase
-    .from('profiles')
-    .select('name, motto, instagram, avatar_path, updated_at, badges')
-    .eq('id', userId)
-    .maybeSingle<RemoteProfile & { badges: ProfileBadge[] | null }>();
+  const select = (cols: string) =>
+    supabase!.from('profiles').select(cols).eq('id', userId).maybeSingle<RemoteProfile & { badges?: ProfileBadge[] | null }>();
+  let { data: row, error } = await select('name, motto, instagram, avatar_path, updated_at, badges');
+  let hasBadges = true;
+  if (error && error.message.includes('badges')) {
+    // Migration 0005 fehlt noch: Profil trotzdem abgleichen, Abzeichen später.
+    hasBadges = false;
+    ({ data: row, error } = await select('name, motto, instagram, avatar_path, updated_at'));
+  }
   if (error) throw new Error(`profiles: ${error.message}`);
 
   await syncProfileFields(userId, row);
   // Abzeichen danach, damit die Profilzeile sicher existiert.
-  await publishBadges(userId, row?.badges ?? null);
+  if (hasBadges && (row || getState().settings.name)) await publishBadges(userId, row?.badges ?? null);
 }
 
 /** Verdiente Abzeichen für die Crew veröffentlichen (nur wenn sich etwas geändert hat). */
@@ -132,7 +136,9 @@ export async function removeAvatars(userId: string, keep: string | null = null):
 
 export async function fetchProfiles(ids: string[]): Promise<Record<string, PublicProfile>> {
   if (!supabase || !ids.length) return {};
-  const { data, error } = await supabase.from('profiles').select('id, name, motto, instagram, avatar_path, badges').in('id', ids);
+  const query = (cols: string) => supabase!.from('profiles').select(cols).in('id', ids).returns<PublicProfile[]>();
+  let { data, error } = await query('id, name, motto, instagram, avatar_path, badges');
+  if (error && error.message.includes('badges')) ({ data, error } = await query('id, name, motto, instagram, avatar_path'));
   if (error) return {};
   return Object.fromEntries((data ?? []).map((p) => [p.id, p as PublicProfile]));
 }

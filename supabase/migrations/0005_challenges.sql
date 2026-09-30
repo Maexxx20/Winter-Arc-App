@@ -51,13 +51,13 @@ create policy "challenges create" on public.crew_challenges
 drop policy if exists "challenges change" on public.crew_challenges;
 create policy "challenges change" on public.crew_challenges
   for update to authenticated
-  using (created_by = (select auth.uid()) or public.is_crew_owner(crew_id))
+  using ((created_by = (select auth.uid()) or public.is_crew_owner(crew_id)) and public.is_crew_member(crew_id))
   with check (public.is_crew_member(crew_id));
 
 drop policy if exists "challenges delete" on public.crew_challenges;
 create policy "challenges delete" on public.crew_challenges
   for delete to authenticated
-  using (created_by = (select auth.uid()) or public.is_crew_owner(crew_id));
+  using ((created_by = (select auth.uid()) or public.is_crew_owner(crew_id)) and public.is_crew_member(crew_id));
 
 -- Live-Updates
 do $$

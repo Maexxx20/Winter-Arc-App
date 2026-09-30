@@ -111,6 +111,8 @@ export interface AppState {
   /** arcId → Wochenstart (Montag) → Rückblick */
   reviews: Record<string, Record<ISODate, WeekReview>>;
   settings: Settings;
+  /** Tagebuch-Fotos: Dateiname → Tag, Löschmarke, letzte Änderung (für den Sync). */
+  photoLog?: Record<string, { arcId: string; date: ISODate; deleted: boolean; updatedAt: string }>;
   /** Stand des Server-Abgleichs (nur wenn angemeldet). */
   sync?: SyncMeta;
 }
@@ -122,10 +124,12 @@ export interface SyncMeta {
   lastPulledAt: string | null;
   /** Zu welchem Konto gehört der Stand? */
   userId: string | null;
-  /** Fotos, die schon im Konto liegen (Dateinamen). */
+  /** Fotodateien, die schon im Konto liegen (Dateinamen). */
   uploadedPhotos?: string[];
-  /** Hochgeladene Fotos, die lokal gelöscht wurden und noch vom Server müssen. */
-  photoDeletes?: string[];
+  /** Lokale Zeit des letzten vollständigen Foto-Uploads. */
+  photosPushedAt?: string | null;
+  /** Server-Zeit des neuesten heruntergeladenen Foto-Datensatzes. */
+  photosPulledAt?: string | null;
 }
 
 export type DayStatus =
