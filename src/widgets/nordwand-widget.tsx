@@ -19,6 +19,8 @@ export interface NordwandWidgetProps {
   date: string;
   title: string;
   started: boolean;
+  /** Kein laufender Arc */
+  ended: boolean;
   daysToStart: number;
   dayNumber: number;
   totalDays: number;
@@ -36,6 +38,26 @@ function NordwandWidget(props: NordwandWidgetProps, env: WidgetEnvironment) {
   const accent = '#2657D9';
   const family = env.widgetFamily;
   const open = widgetURL('nordwand://');
+
+  if (props.ended) {
+    if (family === 'accessoryInline') return <Text>Nordwand · Neuer Arc?</Text>;
+    if (family === 'accessoryCircular') {
+      return (
+        <VStack modifiers={[open]}>
+          <Text modifiers={[font({ size: 20 })]}>🏔️</Text>
+        </VStack>
+      );
+    }
+    return (
+      <VStack alignment="leading" spacing={4} modifiers={[open]}>
+        <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle({ type: 'hierarchical', style: 'secondary' }), lineLimit(1)]}>
+          {props.title}
+        </Text>
+        <Text modifiers={[font({ size: 17, weight: 'bold' })]}>Kein laufender Arc</Text>
+        <Text modifiers={[font({ size: 13 })]}>Tippen, um den nächsten zu starten.</Text>
+      </VStack>
+    );
+  }
 
   if (!props.started) {
     if (family === 'accessoryInline') return <Text>{`Nordwand · Start in ${props.daysToStart} T.`}</Text>;

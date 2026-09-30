@@ -1,6 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
-import { combineWorkoutMinutes, describeHealthLink, healthValueForRule, mergeHealthValue, suggestHealthLink, unionMinutes } from '../health';
+import {
+  autoHealthValue,
+  clipIntervals,
+  combineWorkoutMinutes,
+  describeHealthLink,
+  healthDayWindow,
+  healthValueForRule,
+  mergeHealthValue,
+  sleepWindow,
+  subtractIntervals,
+  suggestHealthLink,
+  unionMinutes,
+} from '../health';
 import type { Rule } from '../types';
 
 const rule = (title: string, measure: Rule['measure'] = { kind: 'check' }): Rule => ({
@@ -68,5 +80,58 @@ describe('Zeiträume ohne Überlappung', () => {
   });
   it('leer = 0', () => {
     expect(unionMinutes([])).toBe(0);
+  });
+});
+
+describe('Wasser-Vorschlag', () => {
+  it('Gläser sind keine Liter', () => {
+    expect(suggestHealthLink(rule('Wasser trinken', { kind: 'amount', target: 8, unit: 'Gläser' }))).toEqual({ metric: 'water', threshold: 2 });
+    expect(suggestHealthLink(rule('Wasser trinken', { kind: 'amount', target: 2500, unit: 'ml' }))).toEqual({ metric: 'water', threshold: 2.5 });
+  });
+});
+
+describe('Von Hand geändert bleibt', () => {
+  const check = rule('Training');
+  it('ohne frühere Automatik wie mergeHealthValue', () => {
+    expect(autoHealthValue(check, 0, 1, undefined)).toBe(1);
+    expect(autoHealthValue(check, 1, 1, undefined)).toBeNull();
+  });
+  it('wieder entfernt → Health schreibt nicht erneut', () => {
+    expect(autoHealthValue(check, 0, 1, 1)).toBeNull();
+  });
+  it('Menge steigt weiter, solange nichts von Hand geändert wurde', () => {
+    const steps = rule('Schritte', { kind: 'amount', target: 10000, unit: 'Schritte' });
+    expect(autoHealthValue(steps, 4000, 6000, 4000)).toBe(6000);
+    expect(autoHealthValue(steps, 3000, 6000, 4000)).toBeNull();
+    expect(autoHealthValue(steps, 4000, 4000, 4000)).toBeNull();
+  });
+});
+
+describe('Zeitfenster', () => {
+  it('Tag von Mitternacht bis Mitternacht (lokal)', () => {
+    const w = healthDayWindow('2026-10-05');
+    expect([w.start.getDate(), w.start.getHours()]).toEqual([5, 0]);
+    expect([w.end.getDate(), w.end.getHours()]).toEqual([6, 0]);
+  });
+  it('mit «Tag endet um 3 Uhr»', () => {
+    const w = healthDayWindow('2026-10-31', 3);
+    expect([w.start.getMonth(), w.start.getDate(), w.start.getHours()]).toEqual([9, 31, 3]);
+    expect([w.end.getMonth(), w.end.getDate(), w.end.getHours()]).toEqual([10, 1, 3]);
+  });
+  it('Schlaf: Nacht, die am Morgen endet', () => {
+    const w = sleepWindow('2026-10-01');
+    expect([w.from.getMonth(), w.from.getDate(), w.from.getHours()]).toEqual([8, 30, 12]);
+    expect([w.to.getDate(), w.to.getHours()]).toEqual([1, 18]);
+    expect([w.endFrom.getDate(), w.endFrom.getHours()]).toEqual([1, 0]);
+  });
+  it('Training über Mitternacht zählt je Tag anteilig', () => {
+    const d = healthDayWindow('2026-10-05');
+    const t = (h: number) => d.start.getTime() + h * 3600_000;
+    expect(unionMinutes(clipIntervals([{ start: t(-0.5), end: t(0.5) }], d.start, d.end))).toBe(30);
+  });
+  it('Wachphasen abziehen', () => {
+    const h = 3600_000;
+    expect(unionMinutes(subtractIntervals([{ start: 0, end: 8 * h }], [{ start: 2 * h, end: 3 * h }]))).toBe(7 * 60);
+    expect(subtractIntervals([{ start: 0, end: 10 }], [{ start: -5, end: 20 }])).toEqual([]);
   });
 });

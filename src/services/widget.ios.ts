@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { AppState as RNAppState } from 'react-native';
 
 import { addDays, parseISO, todayISO } from '@/lib/date';
-import { widgetData, widgetTapsToApply } from '@/lib/widget-data';
+import { endedWidgetData, widgetData, widgetTapsToApply } from '@/lib/widget-data';
 import { getState, isHydrated, selectActiveArc, setRuleValue, subscribe } from '@/store/store';
 
 type WidgetModule = typeof import('@/widgets/nordwand-widget');
@@ -11,6 +11,8 @@ type Widgets = typeof import('expo-widgets');
 
 let widget: WidgetModule['default'] | null | undefined;
 let widgets: Widgets | null | undefined;
+/** Erst nach dem ersten Übernehmen der Taps überschreiben – sonst gehen Häkchen aus dem Widget verloren. */
+let ready = false;
 
 /** Widget-Modul laden – in Expo Go gibt es das native Modul nicht. */
 function load() {
@@ -28,71 +30,78 @@ function load() {
   return widget;
 }
 
-/** Im Widget abgehakte Regeln übernehmen. */
+/** Im Widget abgehakte Regeln übernehmen – aus allen Einträgen, jeweils für ihren eigenen Tag. */
 async function applyTaps() {
   const w = load();
-  if (!w) return;
+  if (!w || !isHydrated()) return;
   try {
     const timeline = await w.getTimeline();
-    const now = Date.now();
-    const current = timeline.filter((e) => e.date.getTime() <= now).pop() ?? timeline[0];
-    if (!current?.props?.tapped?.length) return;
-    const s = getState();
-    const arc = selectActiveArc(s);
-    if (!arc) return;
-    const values = widgetTapsToApply(s, current.props);
-    for (const [ruleId, value] of Object.entries(values)) setRuleValue(arc.id, current.props.date, ruleId, value);
+    for (const entry of timeline) {
+      if (!entry.props?.tapped?.length) continue;
+      const s = getState();
+      const arc = selectActiveArc(s);
+      if (!arc) return;
+      const values = widgetTapsToApply(s, entry.props);
+      for (const [ruleId, value] of Object.entries(values)) setRuleValue(arc.id, entry.props.date, ruleId, value);
+    }
   } catch (e) {
     console.warn('Widget lesen fehlgeschlagen', e);
   }
 }
 
-/** Widget mit dem aktuellen Stand füllen; um Mitternacht schaltet es auf den neuen Tag. */
+/** Widget mit dem aktuellen Stand füllen; zum Tageswechsel schaltet es auf den neuen Tag. */
 function push() {
   const w = load();
-  if (!w || !isHydrated()) return;
+  if (!w || !ready || !isHydrated()) return;
   const s = getState();
   const today = todayISO(new Date(), s.settings.rolloverHour);
-  const now = widgetData(s, today);
-  if (!now) return;
   const tomorrow = addDays(today, 1);
-  const next = widgetData(s, tomorrow);
-  const midnight = parseISO(tomorrow);
-  midnight.setHours(s.settings.rolloverHour);
+  const now = widgetData(s, today) ?? endedWidgetData(today);
+  // Der Eintrag für morgen ist eine Vorschau: Häkchen, die du danach nur im Widget setzt,
+  // kennt er noch nicht – beim nächsten Öffnen der App wird er neu berechnet.
+  const next = widgetData(s, tomorrow) ?? endedWidgetData(tomorrow);
+  const switchAt = parseISO(tomorrow);
+  switchAt.setHours(s.settings.rolloverHour, 0, 0, 0);
   try {
     w.updateTimeline([
       { date: new Date(), props: now },
-      ...(next ? [{ date: midnight, props: next }] : []),
+      { date: switchAt, props: next },
     ]);
   } catch (e) {
     console.warn('Widget aktualisieren fehlgeschlagen', e);
   }
 }
 
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 /** Im Root-Layout: Widget aktuell halten und Taps aus dem Widget übernehmen. */
 export function useWidgetSync() {
   useEffect(() => {
     if (!load()) return;
+    let alive = true;
     let timer: ReturnType<typeof setTimeout> | null = null;
     const later = () => {
       if (timer) clearTimeout(timer);
       timer = setTimeout(push, 800);
     };
-    const start = setTimeout(async () => {
+    const refresh = () => applyTaps().then(push);
+    (async () => {
+      while (alive && !isHydrated()) await wait(250);
+      if (!alive) return;
       await applyTaps();
+      ready = true;
       push();
-    }, 1500);
+    })();
     const unsub = subscribe(later);
-    const appSub = RNAppState.addEventListener('change', async (st) => {
-      if (st === 'active') {
-        await applyTaps();
-        push();
-      }
+    const appSub = RNAppState.addEventListener('change', (st) => {
+      if (st === 'active' && ready) refresh();
     });
-    const tapSub = widgets?.addUserInteractionListener(() => applyTaps().then(push));
+    const tapSub = widgets?.addUserInteractionListener(() => {
+      if (ready) refresh();
+    });
     return () => {
+      alive = false;
       if (timer) clearTimeout(timer);
-      clearTimeout(start);
       unsub();
       appSub.remove();
       tapSub?.remove();

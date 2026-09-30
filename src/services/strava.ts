@@ -14,14 +14,41 @@ import { getSession, supabase } from './supabase';
  */
 const REDIRECT = `${String(Constants.expoConfig?.scheme ?? 'nordwand')}://localhost/strava`;
 
+/** Fehler der Edge Function mit Code aus der Antwort (z. B. «not_connected»). */
+export class StravaError extends Error {
+  constructor(
+    message: string,
+    readonly code: string,
+  ) {
+    super(message);
+  }
+}
+
+const MESSAGES: Record<string, string> = {
+  not_configured: 'Strava ist auf dem Server noch nicht eingerichtet (Schlüssel fehlen).',
+  not_deployed: 'Strava ist auf dem Server noch nicht eingerichtet.',
+  not_connected: 'Strava ist nicht mehr verbunden. Bitte verbinde es neu.',
+  not_authenticated: 'Bitte melde dich zuerst an.',
+  bad_state: 'Die Anmeldung bei Strava ist abgelaufen. Bitte versuch es nochmals.',
+  bad_code: 'Strava hat die Anmeldung nicht bestätigt. Bitte versuch es nochmals.',
+};
+
 async function call<T>(action: string, extra: Record<string, unknown> = {}): Promise<T> {
-  if (!supabase || !getSession()) throw new Error('Bitte melde dich zuerst an.');
+  if (!supabase || !getSession()) throw new StravaError(MESSAGES.not_authenticated, 'not_authenticated');
   const { data, error } = await supabase.functions.invoke('strava', { body: { action, ...extra } });
   if (error) {
-    const status = (error as { context?: { status?: number } }).context?.status;
-    if (status === 404 && action !== 'activities') throw new Error('Strava ist auf dem Server noch nicht eingerichtet.');
-    if (status === 503) throw new Error('Strava ist auf dem Server noch nicht eingerichtet (Schlüssel fehlen).');
-    throw new Error(error.message);
+    const res = (error as { context?: Response }).context;
+    let code = '';
+    if (res && typeof res.json === 'function') {
+      try {
+        code = String(((await res.clone().json()) as { error?: string }).error ?? '');
+      } catch {
+        // keine JSON-Antwort
+      }
+    }
+    // 404 ohne eigenen Fehlercode: Funktion ist nicht deployt
+    if (!code && res?.status === 404) code = 'not_deployed';
+    throw new StravaError(MESSAGES[code] ?? `Strava gerade nicht erreichbar (${code || res?.status || error.message}).`, code || 'unknown');
   }
   return data as T;
 }
@@ -39,22 +66,24 @@ export async function connectStrava(): Promise<string | null> {
   const blocked = stravaAvailableHere();
   if (blocked) return blocked;
   try {
-    const { clientId } = await call<{ clientId: string }>('config');
+    const { clientId, state } = await call<{ clientId: string; state: string }>('config');
     const url =
       'https://www.strava.com/oauth/mobile/authorize' +
       `?client_id=${encodeURIComponent(clientId)}` +
       `&redirect_uri=${encodeURIComponent(REDIRECT)}` +
-      '&response_type=code&approval_prompt=auto&scope=activity:read';
+      `&state=${encodeURIComponent(state)}` +
+      '&response_type=code&approval_prompt=auto&scope=activity:read_all';
     const res = await WebBrowser.openAuthSessionAsync(url, REDIRECT);
     if (res.type !== 'success') return null; // abgebrochen
     const params = new URL(res.url).searchParams;
     if (params.get('error')) return 'Strava hat den Zugriff nicht erlaubt.';
     const code = params.get('code');
     if (!code) return 'Strava hat keinen Code geschickt.';
+    if (params.get('state') !== state) return 'Die Anmeldung bei Strava passt nicht zusammen. Bitte versuch es nochmals.';
     if (!(params.get('scope') ?? '').includes('activity:read')) {
       return 'Bitte erlaube Nordwand, deine Aktivitäten zu sehen.';
     }
-    const r = await call<{ athleteName: string }>('connect', { code });
+    const r = await call<{ athleteName: string }>('connect', { code, state });
     updateSettings({ stravaAthlete: r.athleteName || 'Strava' });
     return null;
   } catch (e) {
@@ -68,6 +97,10 @@ export async function disconnectStrava(): Promise<string | null> {
     updateSettings({ stravaAthlete: null });
     return null;
   } catch (e) {
+    if (e instanceof StravaError && e.code === 'not_connected') {
+      updateSettings({ stravaAthlete: null });
+      return null;
+    }
     return e instanceof Error ? e.message : String(e);
   }
 }
@@ -86,8 +119,9 @@ export async function stravaWorkoutMinutes(dates: ISODate[]): Promise<Record<ISO
     }
     return out;
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    if (/not_connected|404/.test(msg)) updateSettings({ stravaAthlete: null }); // auf Strava getrennt
+    // Auf strava.com getrennt: in der App als «nicht verbunden» anzeigen
+    if (e instanceof StravaError && e.code === 'not_connected') updateSettings({ stravaAthlete: null });
+    else console.warn('Strava', e);
     return {};
   }
 }

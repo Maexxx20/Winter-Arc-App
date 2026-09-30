@@ -3,9 +3,9 @@ import { AppState as RNAppState } from 'react-native';
 
 import { isRuleActiveOn, ruleValue } from '@/lib/arc';
 import { addDays, type ISODate, todayISO } from '@/lib/date';
-import { combineWorkoutMinutes, healthValueForRule, mergeHealthValue } from '@/lib/health';
+import { autoHealthValue, combineWorkoutMinutes, healthAutoKey, healthValueForRule } from '@/lib/health';
 import type { HealthMetric } from '@/lib/types';
-import { getState, isHydrated, selectActiveArc, selectLog, setRuleValue } from '@/store/store';
+import { getState, isHydrated, selectActiveArc, selectLog, setHealthValue } from '@/store/store';
 
 import { healthSupport, readHealthDay } from './health-source';
 import { stravaWorkoutMinutes } from './strava';
@@ -49,14 +49,16 @@ async function doSync(): Promise<number> {
   for (const date of dates) {
     const rules = linked.filter((r) => isRuleActiveOn(r, date));
     const metrics = new Set<HealthMetric>(rules.map((r) => r.health!.metric));
-    const day = useHealth ? await readHealthDay(date, metrics) : {};
+    const day = useHealth ? await readHealthDay(date, metrics, s.settings.rolloverHour) : {};
     if (metrics.has('workout')) day.workout = combineWorkoutMinutes(day.workout, strava[date]);
 
-    const log = selectLog(getState(), arc.id);
+    const now = getState();
+    const log = selectLog(now, arc.id);
     for (const rule of rules) {
-      const next = mergeHealthValue(rule, ruleValue(log, date, rule.id), healthValueForRule(rule, rule.health!, day));
+      const last = now.healthAuto?.[healthAutoKey(arc.id, date, rule.id)];
+      const next = autoHealthValue(rule, ruleValue(log, date, rule.id), healthValueForRule(rule, rule.health!, day), last);
       if (next !== null) {
-        setRuleValue(arc.id, date, rule.id, next);
+        setHealthValue(arc.id, date, rule.id, next);
         changed++;
       }
     }

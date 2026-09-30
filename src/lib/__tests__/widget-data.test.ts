@@ -31,6 +31,10 @@ describe('Widget-Daten', () => {
   it('ohne Arc: nichts', () => {
     expect(widgetData({ ...state(), activeArcId: null }, '2026-10-02')).toBeNull();
   });
+  it('nach dem Ende: «vorbei», keine Regeln', () => {
+    expect(widgetData(state(), '2027-01-01')).toMatchObject({ ended: true, rules: [], title: 'Winter Arc 2026' });
+    expect(widgetTapsToApply(state(), { date: '2027-01-01', tapped: ['r1'] })).toEqual({});
+  });
   it('Taps aus dem Widget übernehmen, Erledigtes nicht doppelt', () => {
     expect(widgetTapsToApply(state(), { date: '2026-10-02', tapped: ['r1', 'r2', 'r2', 'x'] })).toEqual({ r2: 20 });
   });

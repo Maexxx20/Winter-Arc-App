@@ -8,6 +8,8 @@ export interface WidgetData {
   date: string;
   title: string;
   started: boolean;
+  /** Kein laufender Arc (keiner angelegt oder vorbei) */
+  ended: boolean;
   daysToStart: number;
   dayNumber: number;
   totalDays: number;
@@ -18,10 +20,16 @@ export interface WidgetData {
   tapped: string[];
 }
 
-/** null, wenn es keinen laufenden Arc gibt. */
+/** Anzeige ohne laufenden Arc («Neuen Arc starten»). */
+export function endedWidgetData(today: ISODate, title = 'Nordwand'): WidgetData {
+  return { date: today, title, started: true, ended: true, daysToStart: 0, dayNumber: 0, totalDays: 0, streak: 0, done: 0, total: 0, rules: [], tapped: [] };
+}
+
+/** null, wenn es keinen aktiven Arc gibt; «ended», wenn der Tag nach dem Arc liegt. */
 export function widgetData(state: AppState, today: ISODate): WidgetData | null {
   const arc = state.arcs.find((a) => a.id === state.activeArcId);
   if (!arc) return null;
+  if (today > arc.endDate || arc.status !== 'active') return endedWidgetData(today, arc.title);
   const log = state.logs[arc.id] ?? {};
   const stats = computeStats(arc, log, today);
   const progress = dayProgress(arc, log, today);
@@ -30,6 +38,7 @@ export function widgetData(state: AppState, today: ISODate): WidgetData | null {
     date: today,
     title: arc.title,
     started: stats.started,
+    ended: false,
     daysToStart: stats.started ? 0 : diffDays(today, arc.startDate),
     dayNumber: Math.min(stats.dayNumber, stats.totalDays),
     totalDays: stats.totalDays,
@@ -49,7 +58,7 @@ export function widgetData(state: AppState, today: ISODate): WidgetData | null {
 /** Im Widget abgehakte Regeln, die in der App noch offen sind: ruleId → einzutragender Wert. */
 export function widgetTapsToApply(state: AppState, data: Pick<WidgetData, 'date' | 'tapped'>): Record<string, number> {
   const arc = state.arcs.find((a) => a.id === state.activeArcId);
-  if (!arc || !data.tapped?.length) return {};
+  if (!arc || !data.tapped?.length || data.date < arc.startDate || data.date > arc.endDate) return {};
   const log = state.logs[arc.id] ?? {};
   const out: Record<string, number> = {};
   for (const id of new Set(data.tapped)) {

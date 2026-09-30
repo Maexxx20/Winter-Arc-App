@@ -9,7 +9,7 @@ import { useSyncExternalStore } from 'react';
 
 import { uid } from '@/lib/arc';
 import { deletePhoto } from '@/services/photos';
-import { addDays, type ISODate, toISO } from '@/lib/date';
+import { addDays, type ISODate, toISO, todayISO } from '@/lib/date';
 import { isSyncablePhoto, mergePhotoRows, type PhotoRow, withLegacyPhotoRecords } from '@/lib/photo-merge';
 import { type ChangeSet, mergeRemote } from '@/lib/sync-merge';
 import type { AppState, Arc, Avatar, DayEntry, HealthLink, ReminderSettings, Rule, Settings, SyncMeta, WeekReview } from '@/lib/types';
@@ -156,7 +156,7 @@ export function createArc(draft: ArcDraft): Arc {
     arcs: [
       ...s.arcs.map((a) =>
         a.id === s.activeArcId && a.status === 'active'
-          ? { ...a, status: a.endDate < toISO(new Date()) ? ('finished' as const) : ('abandoned' as const), updatedAt: now() }
+          ? { ...a, status: a.endDate < todayISO(new Date(), s.settings.rolloverHour) ? ('finished' as const) : ('abandoned' as const), updatedAt: now() }
           : a,
       ),
       arc,
@@ -183,6 +183,18 @@ export function setRuleValue(arcId: string, date: ISODate, ruleId: string, value
     if (value > 0) values[ruleId] = value;
     else delete values[ruleId];
     return { ...e, values };
+  });
+}
+
+/** Wert aus Health/Strava eintragen und merken (damit eine Änderung von Hand danach bestehen bleibt). */
+export function setHealthValue(arcId: string, date: ISODate, ruleId: string, value: number) {
+  setRuleValue(arcId, date, ruleId, value);
+  const cutoff = addDays(toISO(new Date()), -10);
+  setState((s) => {
+    const auto: Record<string, number> = {};
+    for (const [k, v] of Object.entries(s.healthAuto ?? {})) if ((k.split('|')[1] ?? '') >= cutoff) auto[k] = v;
+    auto[`${arcId}|${date}|${ruleId}`] = value;
+    return { ...s, healthAuto: auto };
   });
 }
 

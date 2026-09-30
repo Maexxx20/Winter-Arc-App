@@ -6,8 +6,8 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Platform } from 'react-native';
 
-import { addDays, type ISODate, parseISO } from '@/lib/date';
-import { type HealthDay, unionMinutes } from '@/lib/health';
+import type { ISODate } from '@/lib/date';
+import { clipIntervals, type HealthDay, healthDayWindow, type Interval, sleepWindow, subtractIntervals, unionMinutes } from '@/lib/health';
 import type { HealthMetric } from '@/lib/types';
 
 export type HealthSupport = 'available' | 'expo-go' | 'unsupported' | 'needs-app';
@@ -92,25 +92,23 @@ export async function requestHealthAccess(): Promise<boolean> {
   }
 }
 
-// ---------- Hilfen ----------
-
-/** Lokaler Tagesbeginn */
-const dayStart = (date: ISODate) => parseISO(date);
-const dayEnd = (date: ISODate) => parseISO(addDays(date, 1));
-
-// Schlaf zählt für den Tag, an dem er endet (bis 18 Uhr – ein Mittagsschlaf gehört noch dazu).
-const sleepWindow = (date: ISODate) => ({
-  from: new Date(dayStart(date).getTime() - 12 * 3600_000),
-  to: new Date(dayStart(date).getTime() + 18 * 3600_000),
-  endFrom: dayStart(date),
-});
+// iOS: Rechte einmal pro Start anfragen, bevor gelesen wird (ohne Dialog, wenn schon entschieden).
+let hkAuthorized: Promise<boolean> | null = null;
+function ensureHealthKitAuth(k: HealthKit): Promise<boolean> {
+  if (!hkAuthorized) hkAuthorized = k.requestAuthorization({ toRead: HK_READ }).catch(() => false);
+  return hkAuthorized;
+}
 
 // ---------- Lesen ----------
 
-async function readIOS(date: ISODate, metrics: Set<HealthMetric>): Promise<HealthDay> {
+async function readIOS(date: ISODate, metrics: Set<HealthMetric>, rolloverHour: number): Promise<HealthDay> {
   const k = healthKit();
   if (!k) return {};
-  const range = { startDate: dayStart(date), endDate: dayEnd(date) };
+  await ensureHealthKitAuth(k);
+  const win = healthDayWindow(date, rolloverHour);
+  const range = { startDate: win.start, endDate: win.end };
+  const minutes = (xs: readonly { startDate: Date; endDate: Date }[]) =>
+    unionMinutes(clipIntervals(xs.map((x) => ({ start: x.startDate.getTime(), end: x.endDate.getTime() })), win.start, win.end));
   const out: HealthDay = {};
 
   if (metrics.has('steps')) {
@@ -129,11 +127,11 @@ async function readIOS(date: ISODate, metrics: Set<HealthMetric>): Promise<Healt
   }
   if (metrics.has('workout')) {
     const workouts = await k.queryWorkoutSamples({ limit: 0, filter: { date: range } });
-    out.workout = unionMinutes(workouts.map((w) => ({ start: w.startDate.getTime(), end: w.endDate.getTime() })));
+    out.workout = minutes(workouts);
   }
   if (metrics.has('mindful')) {
     const s = await k.queryCategorySamples('HKCategoryTypeIdentifierMindfulSession', { limit: 0, filter: { date: range } });
-    out.mindful = unionMinutes(s.map((x) => ({ start: x.startDate.getTime(), end: x.endDate.getTime() })));
+    out.mindful = minutes(s);
   }
   if (metrics.has('sleep')) {
     const w = sleepWindow(date);
@@ -148,11 +146,14 @@ async function readIOS(date: ISODate, metrics: Set<HealthMetric>): Promise<Healt
   return out;
 }
 
-async function readAndroid(date: ISODate, metrics: Set<HealthMetric>): Promise<HealthDay> {
+async function readAndroid(date: ISODate, metrics: Set<HealthMetric>, rolloverHour: number): Promise<HealthDay> {
   const c = healthConnect();
   if (!c) return {};
   await c.initialize();
-  const timeRangeFilter = { operator: 'between' as const, startTime: dayStart(date).toISOString(), endTime: dayEnd(date).toISOString() };
+  const win = healthDayWindow(date, rolloverHour);
+  const timeRangeFilter = { operator: 'between' as const, startTime: win.start.toISOString(), endTime: win.end.toISOString() };
+  const minutes = (xs: readonly { startTime: string; endTime: string }[]) =>
+    unionMinutes(clipIntervals(xs.map((x) => ({ start: Date.parse(x.startTime), end: Date.parse(x.endTime) })), win.start, win.end));
   const out: HealthDay = {};
   const safe = async <T,>(fn: () => Promise<T>): Promise<T | undefined> => {
     try {
@@ -172,11 +173,11 @@ async function readAndroid(date: ISODate, metrics: Set<HealthMetric>): Promise<H
   }
   if (metrics.has('workout')) {
     const r = await safe(() => c.readRecords('ExerciseSession', { timeRangeFilter }));
-    if (r) out.workout = unionMinutes(r.records.map((x) => ({ start: Date.parse(x.startTime), end: Date.parse(x.endTime) })));
+    if (r) out.workout = minutes(r.records);
   }
   if (metrics.has('mindful')) {
     const r = await safe(() => c.readRecords('MindfulnessSession', { timeRangeFilter }));
-    if (r) out.mindful = unionMinutes(r.records.map((x) => ({ start: Date.parse(x.startTime), end: Date.parse(x.endTime) })));
+    if (r) out.mindful = minutes(r.records);
   }
   if (metrics.has('sleep')) {
     const w = sleepWindow(date);
@@ -185,24 +186,27 @@ async function readAndroid(date: ISODate, metrics: Set<HealthMetric>): Promise<H
     );
     if (r) {
       const sessions = r.records.filter((x) => Date.parse(x.endTime) >= w.endFrom.getTime());
-      const total = unionMinutes(sessions.map((x) => ({ start: Date.parse(x.startTime), end: Date.parse(x.endTime) })));
-      // Wachphasen abziehen (1 = wach, 3 = aufgestanden, 7 = wach im Bett), falls vorhanden
-      const awake = unionMinutes(
-        sessions.flatMap((x) =>
-          (x.stages ?? []).filter((st) => st.stage === 1 || st.stage === 3 || st.stage === 7).map((st) => ({ start: Date.parse(st.startTime), end: Date.parse(st.endTime) })),
+      // Pro Sitzung die Wachphasen abziehen (1 = wach, 3 = aufgestanden, 7 = wach im Bett),
+      // danach alle Sitzungen ohne Überlappung zusammenzählen.
+      const asleep: Interval[] = sessions.flatMap((x) =>
+        subtractIntervals(
+          [{ start: Date.parse(x.startTime), end: Date.parse(x.endTime) }],
+          (x.stages ?? [])
+            .filter((st) => st.stage === 1 || st.stage === 3 || st.stage === 7)
+            .map((st) => ({ start: Date.parse(st.startTime), end: Date.parse(st.endTime) })),
         ),
       );
-      out.sleep = Math.max(0, total - awake) / 60;
+      out.sleep = unionMinutes(asleep) / 60;
     }
   }
   return out;
 }
 
 /** Tageswerte für die gewünschten Messungen. */
-export async function readHealthDay(date: ISODate, metrics: Set<HealthMetric>): Promise<HealthDay> {
+export async function readHealthDay(date: ISODate, metrics: Set<HealthMetric>, rolloverHour = 0): Promise<HealthDay> {
   if (!metrics.size || (await healthSupport()) !== 'available') return {};
   try {
-    return Platform.OS === 'ios' ? await readIOS(date, metrics) : await readAndroid(date, metrics);
+    return Platform.OS === 'ios' ? await readIOS(date, metrics, rolloverHour) : await readAndroid(date, metrics, rolloverHour);
   } catch (e) {
     console.warn('Health lesen fehlgeschlagen', e);
     return {};

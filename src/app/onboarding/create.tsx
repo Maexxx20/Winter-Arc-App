@@ -28,7 +28,7 @@ import { createArc, getState, useAppState } from '@/store/store';
 
 const STEPS = ['Zeitraum', 'Regeln', 'Warum', 'Vertrag'] as const;
 
-type Plan = { kind: 'season'; index: number } | { kind: 'custom' };
+type Plan = { kind: 'season'; title: string | null } | { kind: 'custom' };
 type StartChoice = 'today' | 'tomorrow';
 const LENGTHS = [21, 30, 66, 90] as const;
 
@@ -48,7 +48,7 @@ export default function CreateArc() {
   const source = from ? state.arcs.find((a) => a.id === from) : undefined;
 
   const options = useMemo(() => seasonOptions(today), [today]);
-  const [plan, setPlan] = useState<Plan>({ kind: 'season', index: 0 });
+  const [plan, setPlan] = useState<Plan>({ kind: 'season', title: null });
   const [startChoice, setStartChoice] = useState<StartChoice>('today');
   const [length, setLength] = useState(66);
 
@@ -58,7 +58,8 @@ export default function CreateArc() {
   const [why, setWhy] = useState(source?.why ?? '');
   const [name, setName] = useState(getState().settings.name);
 
-  const season = plan.kind === 'season' ? options[plan.index] : null;
+  // Nach Titel statt Position: fällt eine Saison um Mitternacht weg, bleibt die Auswahl stimmig.
+  const season = plan.kind === 'season' ? (options.find((o) => o.title === plan.title) ?? options[0]) : null;
   const startDate: ISODate = season ? season.joinDate : startChoice === 'today' ? today : addDays(today, 1);
   const endDate: ISODate = season ? season.endDate : addDays(startDate, length - 1);
   const totalDays = diffDays(startDate, endDate) + 1;
@@ -123,13 +124,13 @@ export default function CreateArc() {
           </View>
 
           <View style={styles.options}>
-            {options.map((o, i) => {
-              const selected = plan.kind === 'season' && plan.index === i;
+            {options.map((o) => {
+              const selected = season?.title === o.title;
               return (
                 <Pressable
                   key={o.title}
                   onPress={() => {
-                    setPlan({ kind: 'season', index: i });
+                    setPlan({ kind: 'season', title: o.title });
                     setCustomTitle(null);
                   }}
                   accessibilityRole="radio"

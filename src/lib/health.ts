@@ -4,6 +4,7 @@
  */
 
 import { isValueDone } from './arc';
+import type { ISODate } from './date';
 import type { HealthLink, HealthMetric, Rule } from './types';
 
 export interface HealthMetricDef {
@@ -44,7 +45,13 @@ export function suggestHealthLink(rule: Pick<Rule, 'title' | 'measure'>): Health
     return { metric: 'steps', threshold: target ?? (n ? Number(n) : 10000) };
   }
   if (has(t, 'schlaf', 'sleep') && !has(t, 'vor ', 'uhr')) return { metric: 'sleep', threshold: target && has(unit, 'std', 'h') ? target : 7 };
-  if (has(t, 'wasser', 'trinken')) return { metric: 'water', threshold: target && has(unit, 'l') ? (has(unit, 'ml') ? target / 1000 : target) : 2 };
+  if (has(t, 'wasser', 'trinken')) {
+    const u = unit.trim();
+    if (target && u === 'ml') return { metric: 'water', threshold: target / 1000 };
+    if (target && (u === 'l' || u.startsWith('liter'))) return { metric: 'water', threshold: target };
+    if (target && (u.startsWith('glas') || u.startsWith('gläs'))) return { metric: 'water', threshold: Math.round(target * 0.25 * 4) / 4 };
+    return { metric: 'water', threshold: 2 };
+  }
   if (has(t, 'medit', 'achtsam', 'atem')) return { metric: 'mindful', threshold: target && has(unit, 'min') ? target : 10 };
   if (has(t, 'training', 'gym', 'sport', 'workout', 'laufen', 'joggen', 'velo', 'rad', 'schwimm', 'eishockey', 'fitness')) {
     return { metric: 'workout', threshold: target && has(unit, 'min') ? target : 30 };
@@ -99,6 +106,78 @@ export function mergeHealthValue(rule: Rule, current: number, fromHealth: number
   return fromHealth > current ? fromHealth : null;
 }
 
+/**
+ * Wie mergeHealthValue, merkt sich aber, was Health zuletzt eingetragen hat (`lastAuto`).
+ * Hast du den Wert danach von Hand geändert (z. B. ein falsch erkanntes Training wieder
+ * entfernt), bleibt deine Änderung – Health schreibt diesen Tag dann nicht mehr.
+ */
+export function autoHealthValue(rule: Rule, current: number, fromHealth: number | null, lastAuto: number | undefined): number | null {
+  if (lastAuto !== undefined && current !== lastAuto) return null;
+  const next = mergeHealthValue(rule, current, fromHealth);
+  if (next === null) return null;
+  return lastAuto !== undefined && next <= lastAuto ? null : next;
+}
+
+/** Schlüssel für `AppState.healthAuto` */
+export const healthAutoKey = (arcId: string, date: ISODate, ruleId: string) => `${arcId}|${date}|${ruleId}`;
+
+// ---------- Zeitfenster ----------
+
+const localDate = (date: ISODate, hour: number) => {
+  const [y, m, d] = date.split('-').map(Number);
+  return new Date(y, m - 1, d, hour, 0, 0, 0);
+};
+
+/** Zeitfenster eines App-Tages: von «Tagesbeginn» bis zum nächsten (berücksichtigt «Tag endet um 3 Uhr»). */
+export function healthDayWindow(date: ISODate, rolloverHour = 0): { start: Date; end: Date } {
+  const start = localDate(date, rolloverHour);
+  const [y, m, d] = date.split('-').map(Number);
+  const end = new Date(y, m - 1, d + 1, rolloverHour, 0, 0, 0);
+  return { start, end };
+}
+
+/**
+ * Schlaf zählt für den Tag, an dem er endet: Suche von 12 Uhr am Vortag bis 18 Uhr,
+ * gezählt werden Phasen, die nach Mitternacht enden (ein Mittagsschlaf gehört noch dazu).
+ */
+export function sleepWindow(date: ISODate): { from: Date; to: Date; endFrom: Date } {
+  const [y, m, d] = date.split('-').map(Number);
+  return {
+    from: new Date(y, m - 1, d - 1, 12, 0, 0, 0),
+    to: new Date(y, m - 1, d, 18, 0, 0, 0),
+    endFrom: localDate(date, 0),
+  };
+}
+
+export interface Interval {
+  start: number;
+  end: number;
+}
+
+/** Intervalle auf ein Zeitfenster zuschneiden (ein Training über Mitternacht zählt je Tag nur anteilig). */
+export function clipIntervals(intervals: Interval[], from: Date, to: Date): Interval[] {
+  const a = from.getTime();
+  const b = to.getTime();
+  return intervals.map((i) => ({ start: Math.max(i.start, a), end: Math.min(i.end, b) })).filter((i) => i.end > i.start);
+}
+
+/** Teile von `base` ohne die Zeiten in `cut` (z. B. Schlaf ohne Wachphasen). */
+export function subtractIntervals(base: Interval[], cut: Interval[]): Interval[] {
+  let out = base.filter((i) => i.end > i.start);
+  for (const c of cut) {
+    const next: Interval[] = [];
+    for (const i of out) {
+      if (c.end <= i.start || c.start >= i.end) next.push(i);
+      else {
+        if (c.start > i.start) next.push({ start: i.start, end: c.start });
+        if (c.end < i.end) next.push({ start: c.end, end: i.end });
+      }
+    }
+    out = next;
+  }
+  return out;
+}
+
 /** Workout-Minuten aus mehreren Quellen: das Maximum, damit nichts doppelt zählt (Garmin → Health und Strava). */
 export function combineWorkoutMinutes(...sources: (number | undefined)[]): number | undefined {
   const values = sources.filter((v): v is number => typeof v === 'number');
@@ -117,7 +196,7 @@ export function describeHealthLink(link: HealthLink): string {
 }
 
 /** Summe der Intervalle ohne Überlappung (z. B. Schlaf von Uhr und Handy), in Minuten. */
-export function unionMinutes(intervals: { start: number; end: number }[]): number {
+export function unionMinutes(intervals: Interval[]): number {
   const sorted = intervals.filter((i) => i.end > i.start).sort((a, b) => a.start - b.start);
   let total = 0;
   let curStart = 0;

@@ -128,6 +128,8 @@ export interface AppState {
   settings: Settings;
   /** Tagebuch-Fotos: Dateiname → Tag, Löschmarke, letzte Änderung (für den Sync). */
   photoLog?: Record<string, { arcId: string; date: ISODate; deleted: boolean; updatedAt: string }>;
+  /** Zuletzt von Health/Strava eingetragene Werte ("arcId|Datum|ruleId" → Wert), nur auf diesem Gerät. */
+  healthAuto?: Record<string, number>;
   /** Stand des Server-Abgleichs (nur wenn angemeldet). */
   sync?: SyncMeta;
 }
