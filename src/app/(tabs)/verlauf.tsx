@@ -68,6 +68,9 @@ export default function HistoryScreen() {
       {stats.started && (
         <Button title="Fortschritt teilen" variant="secondary" onPress={() => router.push('/teilen')} />
       )}
+      {state.arcs.length > 1 && (
+        <Button title="Frühere Arcs" variant="ghost" small onPress={() => router.push('/arcs')} />
+      )}
 
       {weeks.length > 0 && stats.started && (
         <>

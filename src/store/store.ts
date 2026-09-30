@@ -9,7 +9,7 @@ import { useSyncExternalStore } from 'react';
 
 import { uid } from '@/lib/arc';
 import { deletePhoto } from '@/services/photos';
-import { addDays, type ISODate } from '@/lib/date';
+import { addDays, type ISODate, toISO } from '@/lib/date';
 import { isSyncablePhoto, mergePhotoRows, type PhotoRow, withLegacyPhotoRecords } from '@/lib/photo-merge';
 import { type ChangeSet, mergeRemote } from '@/lib/sync-merge';
 import type { AppState, Arc, Avatar, DayEntry, ReminderSettings, Rule, Settings, SyncMeta, WeekReview } from '@/lib/types';
@@ -152,7 +152,15 @@ export function createArc(draft: ArcDraft): Arc {
   };
   setState((s) => ({
     ...s,
-    arcs: [...s.arcs.map((a) => (a.id === s.activeArcId && a.status === 'active' ? { ...a, status: 'abandoned' as const, updatedAt: now() } : a)), arc],
+    // Ein laufender Arc wird abgebrochen, ein abgelaufener gilt als beendet.
+    arcs: [
+      ...s.arcs.map((a) =>
+        a.id === s.activeArcId && a.status === 'active'
+          ? { ...a, status: a.endDate < toISO(new Date()) ? ('finished' as const) : ('abandoned' as const), updatedAt: now() }
+          : a,
+      ),
+      arc,
+    ],
     activeArcId: arc.id,
     logs: { ...s.logs, [arc.id]: {} },
     settings: { ...s.settings, name: s.settings.name || draft.signatureName.trim() },
@@ -307,6 +315,15 @@ export function amendRules(
 
 export function updateArcMeta(arcId: string, patch: Partial<Pick<Arc, 'title' | 'why'>>) {
   setState((s) => ({ ...s, arcs: s.arcs.map((a) => (a.id === arcId ? { ...a, ...patch, updatedAt: now() } : a)) }));
+}
+
+/** Arc ist vorbei: als beendet ablegen (bleibt im Verlauf). */
+export function finishActiveArc() {
+  setState((s) => ({
+    ...s,
+    arcs: s.arcs.map((a) => (a.id === s.activeArcId ? { ...a, status: 'finished' as const, updatedAt: now() } : a)),
+    activeArcId: null,
+  }));
 }
 
 export function abandonActiveArc() {

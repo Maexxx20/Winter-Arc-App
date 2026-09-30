@@ -48,6 +48,8 @@ export default function RootLayout() {
           <Stack.Screen name="crew/mitglied" options={{ presentation: 'modal' }} />
           <Stack.Screen name="crew/challenge" options={{ presentation: 'modal' }} />
           <Stack.Screen name="regel/[id]" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="arcs" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="arc/[id]" />
           <Stack.Screen name="crew/[id]" />
           <Stack.Screen name="crew/beitreten" options={{ presentation: 'modal' }} />
         </Stack>

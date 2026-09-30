@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -7,13 +7,14 @@ import { ChevronIcon, CloseIcon, PlusIcon } from '@/components/icons';
 import { RuleEditor } from '@/components/rule-editor';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Chip, SectionTitle, TextField } from '@/components/ui/controls';
+import { Chip, SectionTitle, Stepper, TextField } from '@/components/ui/controls';
 import { Screen } from '@/components/ui/screen';
 import { T } from '@/components/ui/text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
-import { addDays, diffDays, formatShort, type ISODate, parseISO } from '@/lib/date';
+import { addDays, diffDays, formatShort, type ISODate } from '@/lib/date';
+import { customArcTitle, seasonOptions } from '@/lib/seasons';
 import {
   CATEGORY_LABELS,
   describeRule,
@@ -22,46 +23,48 @@ import {
   RULE_TEMPLATES,
   type RuleTemplate,
 } from '@/lib/templates';
-import type { RuleCategory } from '@/lib/types';
-import { createArc, getState } from '@/store/store';
+import type { Arc, RuleCategory } from '@/lib/types';
+import { createArc, getState, useAppState } from '@/store/store';
 
 const STEPS = ['Zeitraum', 'Regeln', 'Warum', 'Vertrag'] as const;
 
-type StartChoice = 'oct1' | 'today' | 'tomorrow';
-type LengthChoice = 'newyear' | 66 | 90;
+type Plan = { kind: 'season'; index: number } | { kind: 'custom' };
+type StartChoice = 'today' | 'tomorrow';
+const LENGTHS = [21, 30, 66, 90] as const;
 
-function resolveStart(choice: StartChoice, today: ISODate): ISODate {
-  if (choice === 'today') return today;
-  if (choice === 'tomorrow') return addDays(today, 1);
-  return `${parseISO(today).getFullYear()}-10-01`;
-}
-
-function resolveEnd(start: ISODate, len: LengthChoice): ISODate {
-  if (len === 'newyear') return `${parseISO(start).getFullYear()}-12-31`;
-  return addDays(start, len - 1);
+/** Regeln eines früheren Arcs als Vorlagen (aktuelle Regeln, ohne entfernte). */
+function templatesFromArc(arc: Arc): RuleTemplate[] {
+  return arc.rules
+    .filter((r) => !r.removedOn)
+    .map(({ title, icon, category, frequency, measure }) => ({ title, icon, category, frequency, measure }));
 }
 
 export default function CreateArc() {
   const theme = useTheme();
   const today = useToday();
-  const year = parseISO(today).getFullYear();
-  const oct1 = `${year}-10-01`;
-  const oct1InFuture = oct1 > today;
+  const state = useAppState();
+  // Aus einem früheren Arc: Regeln und «Warum» übernehmen.
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const source = from ? state.arcs.find((a) => a.id === from) : undefined;
+
+  const options = useMemo(() => seasonOptions(today), [today]);
+  const [plan, setPlan] = useState<Plan>({ kind: 'season', index: 0 });
+  const [startChoice, setStartChoice] = useState<StartChoice>('today');
+  const [length, setLength] = useState(66);
 
   const [step, setStep] = useState(0);
-  const [startChoice, setStartChoice] = useState<StartChoice>(oct1InFuture ? 'oct1' : 'today');
-  const [lengthChoice, setLengthChoice] = useState<LengthChoice>('newyear');
-  const [rules, setRules] = useState<RuleTemplate[]>([]);
+  const [rules, setRules] = useState<RuleTemplate[]>(() => (source ? templatesFromArc(source) : []));
   const [editor, setEditor] = useState<{ open: boolean; index: number | null }>({ open: false, index: null });
-  const [title, setTitle] = useState(`Winter Arc ${year}`);
-  const [why, setWhy] = useState('');
+  const [why, setWhy] = useState(source?.why ?? '');
   const [name, setName] = useState(getState().settings.name);
 
-  const startDate = resolveStart(startChoice, today);
-  const newYearDays = diffDays(startDate, `${parseISO(startDate).getFullYear()}-12-31`) + 1;
-  const effectiveLength: LengthChoice = lengthChoice === 'newyear' && newYearDays < 21 ? 90 : lengthChoice;
-  const endDate = resolveEnd(startDate, effectiveLength);
+  const season = plan.kind === 'season' ? options[plan.index] : null;
+  const startDate: ISODate = season ? season.joinDate : startChoice === 'today' ? today : addDays(today, 1);
+  const endDate: ISODate = season ? season.endDate : addDays(startDate, length - 1);
   const totalDays = diffDays(startDate, endDate) + 1;
+  const autoTitle = season ? season.title : customArcTitle(length);
+  const [customTitle, setCustomTitle] = useState<string | null>(null);
+  const title = customTitle ?? autoTitle;
 
   const dailyCount = rules.filter((r) => r.frequency.kind === 'daily').length;
   const canContinue = [true, dailyCount > 0, true, name.trim().length > 1][step];
@@ -113,27 +116,76 @@ export default function CreateArc() {
         <>
           <View style={styles.titleBlock}>
             <T variant="label" color="accent">Schritt 1 · Zeitraum</T>
-            <T variant="title">Wann startest du?</T>
+            <T variant="title">{source ? 'Wie geht es weiter?' : 'Welcher Arc?'}</T>
             <T color="textSecondary">
-              Der klassische Winter Arc läuft vom 1. Oktober bis Silvester. Du kannst aber jederzeit einsteigen.
+              Das Jahr hat vier Arcs – so kann deine Crew gemeinsam starten. Oder du legst deinen eigenen Zeitraum fest.
             </T>
           </View>
 
-          <SectionTitle>Start</SectionTitle>
-          <View style={styles.chips}>
-            {oct1InFuture && <Chip label={`1. Oktober`} selected={startChoice === 'oct1'} onPress={() => setStartChoice('oct1')} />}
-            <Chip label="Heute" selected={startChoice === 'today'} onPress={() => setStartChoice('today')} />
-            <Chip label="Morgen" selected={startChoice === 'tomorrow'} onPress={() => setStartChoice('tomorrow')} />
+          <View style={styles.options}>
+            {options.map((o, i) => {
+              const selected = plan.kind === 'season' && plan.index === i;
+              return (
+                <Pressable
+                  key={o.title}
+                  onPress={() => {
+                    setPlan({ kind: 'season', index: i });
+                    setCustomTitle(null);
+                  }}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                  style={[styles.option, { backgroundColor: selected ? theme.accentSoft : theme.surface, borderColor: selected ? theme.accent : theme.border }]}>
+                  <T style={styles.optionIcon}>{o.season.icon}</T>
+                  <View style={styles.flex}>
+                    <T variant="bodyStrong">{o.title}</T>
+                    <T variant="caption">
+                      {o.running
+                        ? `Läuft · heute einsteigen, noch ${o.daysLeft} Tage`
+                        : `${formatShort(o.startDate)} – ${formatShort(o.endDate, true)} · ${o.totalDays} Tage`}
+                    </T>
+                    <T variant="caption" color="textTertiary">{o.season.pitch}</T>
+                  </View>
+                </Pressable>
+              );
+            })}
+            <Pressable
+              onPress={() => {
+                setPlan({ kind: 'custom' });
+                setCustomTitle(null);
+              }}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: plan.kind === 'custom' }}
+              style={[
+                styles.option,
+                {
+                  backgroundColor: plan.kind === 'custom' ? theme.accentSoft : theme.surface,
+                  borderColor: plan.kind === 'custom' ? theme.accent : theme.border,
+                },
+              ]}>
+              <T style={styles.optionIcon}>🧭</T>
+              <View style={styles.flex}>
+                <T variant="bodyStrong">Eigener Arc</T>
+                <T variant="caption">Start und Dauer frei wählen – z. B. 66 Tage für eine neue Gewohnheit.</T>
+              </View>
+            </Pressable>
           </View>
 
-          <SectionTitle>Dauer</SectionTitle>
-          <View style={styles.chips}>
-            {newYearDays >= 21 && (
-              <Chip label={`Bis Silvester · ${newYearDays} Tage`} selected={effectiveLength === 'newyear'} onPress={() => setLengthChoice('newyear')} />
-            )}
-            <Chip label="66 Tage" selected={effectiveLength === 66} onPress={() => setLengthChoice(66)} />
-            <Chip label="90 Tage" selected={effectiveLength === 90} onPress={() => setLengthChoice(90)} />
-          </View>
+          {plan.kind === 'custom' && (
+            <>
+              <SectionTitle>Start</SectionTitle>
+              <View style={styles.chips}>
+                <Chip label="Heute" selected={startChoice === 'today'} onPress={() => setStartChoice('today')} />
+                <Chip label="Morgen" selected={startChoice === 'tomorrow'} onPress={() => setStartChoice('tomorrow')} />
+              </View>
+              <SectionTitle>Dauer</SectionTitle>
+              <View style={styles.chips}>
+                {LENGTHS.map((l) => (
+                  <Chip key={l} label={`${l} Tage`} selected={length === l} onPress={() => setLength(l)} />
+                ))}
+              </View>
+              <Stepper value={length} onChange={setLength} min={7} max={365} format={(v) => `${v} Tage`} />
+            </>
+          )}
 
           <Card tone="accentSoft" bordered={false} style={styles.summary}>
             <T variant="label" color="accent">Dein Arc</T>
@@ -142,6 +194,11 @@ export default function CreateArc() {
             </T>
             <T color="textSecondary">{totalDays} Tage</T>
           </Card>
+          {source ? (
+            <T variant="caption" color="textTertiary">
+              Deine Regeln und dein «Warum» aus «{source.title}» sind schon übernommen – du kannst sie im nächsten Schritt anpassen.
+            </T>
+          ) : null}
         </>
       )}
 
@@ -247,7 +304,7 @@ export default function CreateArc() {
               An Tag 23, wenn es dunkel und kalt ist, zählt nicht Motivation, sondern dein Grund. Schreib ihn auf.
             </T>
           </View>
-          <TextField label="Name deines Arcs" value={title} onChangeText={setTitle} maxLength={40} />
+          <TextField label="Name deines Arcs" value={title} onChangeText={setCustomTitle} maxLength={40} />
           <TextField
             label="Mein Warum"
             value={why}
@@ -308,6 +365,9 @@ const styles = StyleSheet.create({
   dots: { flexDirection: 'row', gap: 6, alignItems: 'center' },
   dot: { height: 8, borderRadius: 4 },
   titleBlock: { gap: Spacing.two, marginTop: Spacing.two, marginBottom: Spacing.two },
+  options: { gap: Spacing.two },
+  option: { flexDirection: 'row', gap: Spacing.three, padding: Spacing.four, borderRadius: Radius.lg, borderWidth: 1.5, alignItems: 'flex-start' },
+  optionIcon: { fontSize: 26, lineHeight: 32 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   summary: { gap: 4, marginTop: Spacing.four, borderRadius: Radius.lg },
   selected: { gap: Spacing.two },

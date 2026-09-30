@@ -219,6 +219,8 @@ export default function ProfileScreen() {
         />
       </View>
 
+      <Button title={stats.arcs > 1 ? `Alle ${stats.arcs} Arcs ansehen` : 'Deine Arcs'} variant="secondary" small onPress={() => router.push('/arcs')} />
+
       <SectionTitle
         action={
           <T variant="caption" color="textSecondary">

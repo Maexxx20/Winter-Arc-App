@@ -8,6 +8,9 @@ import { Screen } from '@/components/ui/screen';
 import { T } from '@/components/ui/text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useToday } from '@/hooks/use-today';
+import { formatShort } from '@/lib/date';
+import { seasonOptions } from '@/lib/seasons';
 import { supabaseConfigured, useSession } from '@/services/supabase';
 import { selectActiveArc, useAppState } from '@/store/store';
 
@@ -15,8 +18,10 @@ export default function Welcome() {
   const theme = useTheme();
   const state = useAppState();
   const session = useSession();
+  const today = useToday();
   // Nach dem Anmelden auf einem neuen Gerät kommt der Arc vom Server → direkt weiter.
   if (selectActiveArc(state)) return <Redirect href="/" />;
+  const season = seasonOptions(today)[0];
 
   const principles = [
     {
@@ -50,13 +55,22 @@ export default function Welcome() {
         <T variant="label" color="accent" style={styles.brand}>
           Nordwand
         </T>
-        <ArcGauge progress={0.62} today={1} dayNumber={92} totalDays={92} label="Tage" sub="1. Okt – 31. Dez" size={220} />
+        <ArcGauge
+          progress={0.62}
+          today={1}
+          dayNumber={season.totalDays}
+          totalDays={season.totalDays}
+          label="Tage"
+          sub={`${formatShort(season.startDate)} – ${formatShort(season.endDate)}`}
+          size={220}
+        />
         <T variant="display" center>
-          Dein Winter Arc.
+          Dein {season.season.title}.
         </T>
         <T variant="body" color="textSecondary" center style={styles.lead}>
-          Während alle anderen in den Winterschlaf gehen, baust du Gewohnheiten auf – und startest als
-          bessere Version ins neue Jahr.
+          {season.season.id === 'winter'
+            ? 'Während alle anderen in den Winterschlaf gehen, baust du Gewohnheiten auf – und startest als bessere Version ins neue Jahr.'
+            : `${season.season.pitch} Ein Arc: feste Zeit, deine Regeln, dein Wort.`}
         </T>
       </View>
 

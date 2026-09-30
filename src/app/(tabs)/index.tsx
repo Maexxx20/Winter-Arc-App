@@ -18,8 +18,9 @@ import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
 import { activeRules, arcPhase, computeStats, dayProgress, dueReviewWeek, ruleValue, weeklyCount } from '@/lib/arc';
 import { diffDays, formatLong, formatShort } from '@/lib/date';
+import { nextSeason } from '@/lib/seasons';
 import { describeRule } from '@/lib/templates';
-import { abandonActiveArc, selectActiveArc, selectLog, selectReviews, setRuleValue, useAppState } from '@/store/store';
+import { selectActiveArc, selectLog, selectReviews, setRuleValue, useAppState } from '@/store/store';
 
 export default function TodayScreen() {
   const theme = useTheme();
@@ -80,6 +81,7 @@ export default function TodayScreen() {
 
   // ---------- Nach dem Ende ----------
   if (stats.finished) {
+    const next = nextSeason(arc.endDate);
     return (
       <Screen tabs>
         <View style={styles.headRow}>
@@ -98,14 +100,18 @@ export default function TodayScreen() {
           <StatTile label="Bester Streak" value={`${stats.streak.best}`} sub="Tage am Stück" />
           <StatTile label="Schilde" value={`${stats.shieldedDays}`} sub="Tage gerettet" />
         </View>
-        <Button title="Rückblick ansehen" variant="secondary" onPress={() => router.push('/verlauf')} />
-        <Button
-          title="Neuen Arc starten"
-          onPress={() => {
-            abandonActiveArc();
-            router.replace('/onboarding/create');
-          }}
-        />
+        <Card tone="accentSoft" bordered={false} style={styles.next}>
+          <T variant="label" color="accent">Wie geht es weiter?</T>
+          <T variant="heading">
+            {next.season.icon} {next.title} · ab {formatShort(next.startDate)}
+          </T>
+          <T variant="caption">
+            Nimm deine Regeln mit in den nächsten Arc – oder fang mit neuen an. Dein {arc.title} bleibt im Verlauf.
+          </T>
+          <Button title="Regeln mitnehmen" onPress={() => router.push({ pathname: '/onboarding/create', params: { from: arc.id } })} />
+          <Button title="Neu beginnen" variant="secondary" onPress={() => router.push('/onboarding/create')} />
+        </Card>
+        <Button title="Rückblick ansehen" variant="ghost" onPress={() => router.push('/verlauf')} />
       </Screen>
     );
   }
@@ -229,6 +235,7 @@ export default function TodayScreen() {
 
 const styles = StyleSheet.create({
   headRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.three },
+  next: { gap: Spacing.three },
   head: { gap: 2 },
   gaugeWrap: { alignItems: 'center', marginTop: Spacing.two },
   gaugeCaption: { marginTop: Spacing.one },
