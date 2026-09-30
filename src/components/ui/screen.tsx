@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet, View, type ScrollViewProps } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View, type ScrollViewProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -13,9 +13,12 @@ type Props = {
   footer?: ReactNode;
   scroll?: boolean;
   topInset?: boolean;
+  /** Nach unten ziehen zum Aktualisieren. */
+  refreshing?: boolean;
+  onRefresh?: () => void;
 } & Pick<ScrollViewProps, 'keyboardShouldPersistTaps'>;
 
-export function Screen({ children, tabs, footer, scroll = true, topInset = true, ...rest }: Props) {
+export function Screen({ children, tabs, footer, scroll = true, topInset = true, refreshing, onRefresh, ...rest }: Props) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const bottom = (tabs ? BottomTabInset : 0) + (footer ? 0 : insets.bottom) + Spacing.six;
@@ -31,6 +34,9 @@ export function Screen({ children, tabs, footer, scroll = true, topInset = true,
             { paddingTop: (topInset ? insets.top : 0) + Spacing.four, paddingBottom: bottom },
           ]}
           keyboardShouldPersistTaps={rest.keyboardShouldPersistTaps ?? 'handled'}
+          refreshControl={
+            onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={theme.textTertiary} /> : undefined
+          }
           showsVerticalScrollIndicator={false}>
           {content}
         </ScrollView>

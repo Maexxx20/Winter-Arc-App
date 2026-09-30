@@ -22,6 +22,7 @@ Weitere Befehle:
 |---|---|
 | `npm test` | Unit-Tests der Arc-Logik (Streak, Schild, Statistik) |
 | `npm run typecheck` | TypeScript prüfen |
+| `npm run test:db` | Datenbankschema und Zugriffsregeln gegen eingebettetes Postgres testen |
 | `npm run web` | Vorschau im Browser |
 
 Konto & Sync einrichten: siehe [docs/SUPABASE.md](docs/SUPABASE.md). Ohne `.env.local` läuft die App rein lokal.
@@ -39,11 +40,15 @@ src/
     rueckblick.tsx      Wochenrückblick
     teilen.tsx          Fortschritts-Karte als Bild teilen
     konto.tsx           Anmeldung per E-Mail-Code, Sync-Status, Konto löschen
+    (tabs)/crew.tsx     Crews: Liste, erstellen, beitreten
+    crew/[id].tsx       Rangliste, Wochenpunkte, Reaktionen, Einladen
+    crew/beitreten.tsx  Einstieg über Einladungslink
   components/           UI-Bausteine (ArcGauge, RuleRow, Heatmap, HoldToSign, …)
   lib/arc.ts            Kernlogik – reine Funktionen, getestet in lib/__tests__
   lib/date.ts           Datumsrechnung mit lokalen Kalendertagen (DST-sicher)
   lib/reminders.ts      Planung der Erinnerungen (reine Funktion, getestet)
   lib/sync-merge.ts     Abgleich-Logik: neuere Version gewinnt (getestet)
+  lib/crew.ts           Tagesstatus für die Crew und Rangliste (getestet)
   services/             Erinnerungen, Fotos, Supabase, Sync
   store/store.ts        Lokaler Zustand, gespeichert in AsyncStorage (offline-first)
 supabase/migrations/    Datenbankschema mit Row Level Security
@@ -63,6 +68,6 @@ supabase/migrations/    Datenbankschema mit Row Level Security
 
 - [x] **Phase 0** – Arc erstellen, Vertrag, Check-in, Streak mit Schild, Heatmap, Tagesnotiz, hell/dunkel
 - [x] **Phase 1** – Erinnerungen, Fotos im Journal, Wochenrückblick, teilbare Fortschritts-Karte, Konto + Sync (Supabase)
-- [ ] **Phase 2** – Crews: gemeinsamer Arc mit Freunden, Check-ins sehen, Reaktionen, Rangliste
+- [x] **Phase 2** – Crews: Einladung per Code, Tagesstatus der anderen, Reaktionen, Rangliste
 - [ ] **Phase 3** – Release: App-Icon, Name, Datenschutzerklärung, Sign in with Apple, Account löschen, TestFlight, Store-Einträge
 - [ ] Danach – Widgets, Apple Health, weitere Arcs (Spring Arc …)

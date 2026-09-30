@@ -1,6 +1,7 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
 import { useTheme } from '@/hooks/use-theme';
+import { supabaseConfigured } from '@/services/supabase';
 
 export default function AppTabs() {
   const theme = useTheme();
@@ -17,6 +18,10 @@ export default function AppTabs() {
       <NativeTabs.Trigger name="verlauf">
         <NativeTabs.Trigger.Label>Verlauf</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'square.grid.3x3', selected: 'square.grid.3x3.fill' }} md="calendar_month" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="crew" hidden={!supabaseConfigured}>
+        <NativeTabs.Trigger.Label>Crew</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf={{ default: 'person.3', selected: 'person.3.fill' }} md="group" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="vertrag">
         <NativeTabs.Trigger.Label>Vertrag</NativeTabs.Trigger.Label>

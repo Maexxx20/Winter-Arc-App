@@ -42,6 +42,8 @@ export default function RootLayout() {
           <Stack.Screen name="rueckblick" options={{ presentation: 'modal' }} />
           <Stack.Screen name="teilen" options={{ presentation: 'modal' }} />
           <Stack.Screen name="konto" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="crew/[id]" />
+          <Stack.Screen name="crew/beitreten" options={{ presentation: 'modal' }} />
         </Stack>
       </ThemeProvider>
     </SafeAreaProvider>

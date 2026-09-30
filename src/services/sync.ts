@@ -4,6 +4,7 @@ import { AppState as RNAppState } from 'react-native';
 import { type ArcRow, collectChanges, type ChangeSet, type EntryRow, type ReviewRow } from '@/lib/sync-merge';
 import { applyRemote, getState, isHydrated, setSyncMeta, subscribe } from '@/store/store';
 
+import { publishStatus } from './crews';
 import { getSession, onSession, supabase } from './supabase';
 
 // ---------- Status für die Oberfläche ----------
@@ -107,6 +108,9 @@ async function doSync() {
 
     const newest = [...arcs, ...entries, ...reviews].map((r) => r.server_updated_at).sort().pop();
     if (newest) setSyncMeta({ lastPulledAt: newest });
+
+    // 3) Tages-Zusammenfassung für Crews (nur Zahlen, keine Inhalte)
+    await publishStatus();
 
     setStatus({ state: 'idle', lastSyncAt: new Date() });
   } catch (e) {

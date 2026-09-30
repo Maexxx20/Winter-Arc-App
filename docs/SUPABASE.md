@@ -7,8 +7,12 @@ und Sync zwischen Geräten dazu.
 
 1. Auf [supabase.com](https://supabase.com) ein neues Projekt erstellen – Name `nordwand`,
    Region **Central EU (Zurich)**.
-2. **SQL Editor → New query**: Inhalt von [`supabase/migrations/0001_init.sql`](../supabase/migrations/0001_init.sql)
-   einfügen und **Run**.
+2. **SQL Editor → New query**: nacheinander den Inhalt dieser Dateien einfügen und **Run**:
+   - [`supabase/migrations/0001_init.sql`](../supabase/migrations/0001_init.sql) – Arcs, Einträge, Rückblicke
+   - [`supabase/migrations/0002_crews.sql`](../supabase/migrations/0002_crews.sql) – Crews, Tagesstatus, Reaktionen
+
+   Beide Dateien lassen sich gefahrlos mehrmals ausführen. Getestet werden sie mit `npm run test:db`
+   (eingebettetes Postgres, prüft alle Zugriffsregeln).
 
 ## 2. Login per Code aktivieren
 
@@ -51,5 +55,6 @@ Danach `npx expo start --clear`. Im Tab **Vertrag** erscheint jetzt «Konto & Sy
 | Wochenrückblicke | ✓ |
 | Fotos | nur lokal (kommt später über Supabase Storage) |
 | Einstellungen, Erinnerungen | nur lokal (pro Gerät) |
+| Crew-Tagesstatus | Status, Anzahl erledigter Regeln, Streak, Quote – sichtbar nur für Crew-Mitglieder |
 
 Konflikte: Die zuletzt geänderte Version gewinnt (pro Tag bzw. pro Arc).

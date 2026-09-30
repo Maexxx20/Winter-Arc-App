@@ -19,6 +19,9 @@ export default function AppTabs() {
           <TabTrigger name="verlauf" href="/verlauf" asChild>
             <TabButton>Verlauf</TabButton>
           </TabTrigger>
+          <TabTrigger name="crew" href="/crew" asChild>
+            <TabButton>Crew</TabButton>
+          </TabTrigger>
           <TabTrigger name="vertrag" href="/vertrag" asChild>
             <TabButton>Vertrag</TabButton>
           </TabTrigger>
