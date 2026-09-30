@@ -104,7 +104,12 @@ export default function HistoryScreen() {
       <SectionTitle>Regeln</SectionTitle>
       <Card style={styles.rules}>
         {stats.ruleStats.map(({ rule, consistency, hits, expected }) => (
-          <View key={rule.id} style={styles.rule}>
+          <Pressable
+            key={rule.id}
+            onPress={() => router.push({ pathname: '/regel/[id]', params: { id: rule.id } })}
+            accessibilityRole="button"
+            accessibilityLabel={`Statistik für ${rule.title}`}
+            style={({ pressed }) => [styles.rule, { opacity: pressed ? 0.7 : 1 }]}>
             <View style={styles.ruleHead}>
               <T style={styles.emoji}>{rule.icon}</T>
               <View style={styles.flex}>
@@ -115,6 +120,7 @@ export default function HistoryScreen() {
                 <T variant="caption">{describeRule(rule)}</T>
               </View>
               <T variant="bodyStrong">{expected ? pct(consistency) : '–'}</T>
+              <ChevronIcon color={theme.textTertiary} size={14} />
             </View>
             <View style={[styles.bar, { backgroundColor: theme.surfaceMuted }]}>
               <View style={[styles.barFill, { width: `${consistency * 100}%`, backgroundColor: theme.accent }]} />
@@ -122,12 +128,12 @@ export default function HistoryScreen() {
             <T variant="caption" color="textTertiary">
               {hits} von {expected} {rule.frequency.kind === 'weekly' ? 'Einheiten' : 'Tagen'}
             </T>
-          </View>
+          </Pressable>
         ))}
       </Card>
 
       <T variant="caption" color="textTertiary" center>
-        Tippe auf einen Tag, um Details zu sehen oder ihn nachzutragen.
+        Tippe auf einen Tag, um ihn nachzutragen, oder auf eine Regel für ihre Statistik.
       </T>
     </Screen>
   );
