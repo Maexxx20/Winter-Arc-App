@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { MyAvatar } from '@/components/avatar';
+import { BadgeGrid } from '@/components/badge';
 import { ChevronIcon, CloseIcon } from '@/components/icons';
 import { StatTile } from '@/components/stat-tile';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,8 @@ import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
 import { computeStats } from '@/lib/arc';
+import { BADGES, badgeSummary } from '@/lib/badges';
+import { useBadges } from '@/hooks/use-badges';
 import { confirm } from '@/lib/confirm';
 import { haptic } from '@/lib/haptics';
 import { pickAvatar } from '@/services/avatar-file';
@@ -60,6 +63,9 @@ export default function ProfileScreen() {
     if (editing !== 'instagram') setInstagram(settings.instagram);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.name, settings.motto, settings.instagram]);
+
+  const earnedBadges = useBadges();
+  const badges = useMemo(() => badgeSummary(earnedBadges), [earnedBadges]);
 
   const hasImage = !!(settings.avatar.local || settings.avatar.remote);
 
@@ -212,6 +218,18 @@ export default function ProfileScreen() {
           sub="aktueller Arc"
         />
       </View>
+
+      <SectionTitle
+        action={
+          <T variant="caption" color="textSecondary">
+            {badges.size} von {BADGES.length}
+          </T>
+        }>
+        Abzeichen
+      </SectionTitle>
+      <Card>
+        <BadgeGrid earned={badges} />
+      </Card>
 
       {supabaseConfigured && (
         <>

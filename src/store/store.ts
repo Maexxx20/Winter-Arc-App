@@ -29,6 +29,7 @@ const initialState: AppState = {
     instagram: '',
     avatar: { local: null, remote: null },
     profileUpdatedAt: null,
+    seenBadges: null,
     rolloverHour: 0,
     haptics: true,
     reminders: { enabled: null, morning: 7 * 60 + 30, evening: 20 * 60 + 30, weeklyReview: true },
@@ -254,6 +255,15 @@ export function applyRemoteProfile(p: RemoteProfile) {
 export function touchProfile() {
   state = { ...state, settings: { ...state.settings, profileUpdatedAt: now() } };
   persist();
+}
+
+/** Abzeichen als gesehen markieren (keine Feier mehr). */
+export function markBadgesSeen(keys: string[]) {
+  const seen = new Set(state.settings.seenBadges ?? []);
+  const before = seen.size;
+  keys.forEach((k) => seen.add(k));
+  if (seen.size === before && state.settings.seenBadges) return;
+  setState((s) => ({ ...s, settings: { ...s.settings, seenBadges: [...seen] } }));
 }
 
 /**

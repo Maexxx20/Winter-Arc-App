@@ -28,7 +28,7 @@ const base = (): AppState => ({
     },
   },
   reviews: {},
-  settings: { name: 'M', motto: '', instagram: '', avatar: { local: null, remote: null }, profileUpdatedAt: null, rolloverHour: 0, haptics: true, reminders: { enabled: null, morning: 450, evening: 1230, weeklyReview: true } },
+  settings: { name: 'M', motto: '', instagram: '', avatar: { local: null, remote: null }, profileUpdatedAt: null, seenBadges: null, rolloverHour: 0, haptics: true, reminders: { enabled: null, morning: 450, evening: 1230, weeklyReview: true } },
 });
 
 describe('collectChanges', () => {

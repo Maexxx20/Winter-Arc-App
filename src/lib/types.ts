@@ -92,6 +92,8 @@ export interface Settings {
   avatar: Avatar;
   /** Letzte Änderung an Name, Motto, Instagram oder Bild (für den Sync). null = nie bearbeitet. */
   profileUpdatedAt: string | null;
+  /** Bereits gefeierte Abzeichen (badgeKey). null = noch nie geprüft → alte still übernehmen. */
+  seenBadges: string[] | null;
   /** Stunde, zu der ein neuer Tag beginnt (0 = Mitternacht). */
   rolloverHour: number;
   haptics: boolean;
