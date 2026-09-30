@@ -80,6 +80,29 @@
             "minSdkVersion": 26
           }
         }
+      ],
+      [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "ch.maxkon.nordwand.widgets",
+          "groupIdentifier": "group.ch.maxkon.nordwand",
+          "widgets": [
+            {
+              "name": "Nordwand",
+              "displayName": "Nordwand",
+              "description": "Tag im Arc, Streak und deine Regeln für heute – direkt abhaken.",
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium",
+                  "accessoryCircular",
+                  "accessoryRectangular",
+                  "accessoryInline"
+                ]
+              }
+            }
+          ]
+        }
       ]
     ],
     "experiments": {

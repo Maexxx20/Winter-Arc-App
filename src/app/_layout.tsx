@@ -10,6 +10,7 @@ import { useReminderSync } from '@/services/notifications';
 import { useHealthSync } from '@/services/health-sync';
 import { usePushRegistration } from '@/services/push';
 import { useSyncLoop } from '@/services/sync';
+import { useWidgetSync } from '@/services/widget';
 import { hydrate, useHydrated } from '@/store/store';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -22,6 +23,7 @@ export default function RootLayout() {
   useSyncLoop();
   usePushRegistration();
   useHealthSync();
+  useWidgetSync();
 
   useEffect(() => {
     hydrate().finally(() => SplashScreen.hideAsync().catch(() => {}));
