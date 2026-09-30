@@ -27,6 +27,13 @@ Weitere Befehle:
 
 Konto & Sync einrichten: siehe [docs/SUPABASE.md](docs/SUPABASE.md). Ohne `.env.local` läuft die App rein lokal.
 
+### Expo Go oder Development-Build?
+
+`npm start` startet für **Expo Go** – damit läuft fast alles. Apple Health, Health Connect, Strava und
+die Widgets brauchen native Teile, die Expo Go nicht hat; dort zeigt die App einen Hinweis statt
+abzustürzen. Zum Testen: einmal `npx eas-cli@latest build --profile development --platform ios`
+(braucht das Apple-Developer-Konto), die App aufs iPhone laden und dann `npm run start:dev`.
+
 ## Aufbau
 
 ```
@@ -46,6 +53,9 @@ src/
     crew/beitreten.tsx  Einstieg über Einladungslink
     crew/mitglied.tsx   Profil eines Crew-Mitglieds
     crew/challenge.tsx  Wochen-Challenge starten/ändern
+    regel/[id].tsx      Statistik einer Regel (Quote, Serie, Wochen, Wochentage)
+    arcs.tsx, arc/[id]  Archiv früherer Arcs
+    +native-intent.tsx  Rücksprung von Strava abfangen
   components/           UI-Bausteine (ArcGauge, RuleRow, Heatmap, HoldToSign, …)
   lib/arc.ts            Kernlogik – reine Funktionen, getestet in lib/__tests__
   lib/date.ts           Datumsrechnung mit lokalen Kalendertagen (DST-sicher)
@@ -54,9 +64,15 @@ src/
   lib/crew.ts           Tagesstatus, Rangliste, Challenges, Feed (getestet)
   lib/badges.ts         Abzeichen – aus den Daten berechnet (getestet)
   lib/photo-merge.ts    Foto-Abgleich mit Löschmarken (getestet)
-  services/             Erinnerungen, Fotos, Supabase, Sync
+  lib/rule-stats.ts     Statistik pro Regel (getestet)
+  lib/seasons.ts        Saison-Arcs (New Year, Spring, Summer, Winter) und eigene Arcs (getestet)
+  lib/health.ts         Welche Messung hakt welche Regel ab, Zeitfenster (getestet)
+  lib/widget-data.ts    Daten fürs Widget, Taps aus dem Widget (getestet)
+  services/             Erinnerungen, Fotos, Supabase, Sync, Health, Strava, Widget
+  widgets/              iOS-Widget (expo-widgets, SwiftUI-Komponenten)
   store/store.ts        Lokaler Zustand, gespeichert in AsyncStorage (offline-first)
-supabase/migrations/    Datenbankschema mit Row Level Security (0001–0007)
+supabase/migrations/    Datenbankschema mit Row Level Security (0001–0008)
+supabase/functions/     Edge Function «strava» (OAuth und Aktivitäten, Secret bleibt auf dem Server)
 supabase/tests/         Zugriffsregeln gegen eingebettetes Postgres (npm run test:db)
 docs/                   Website mit Datenschutzerklärung (für GitHub Pages), Store-Texte, Supabase-Anleitung
 assets/brand/           Icon-Vorlage; node assets/brand/make-icons.mjs erzeugt alle Icons neu
@@ -80,4 +96,5 @@ assets/brand/           Icon-Vorlage; node assets/brand/make-icons.mjs erzeugt a
 - [x] **Phase 3 (Code)** – App-Icon, Live-Updates in Crews, EAS-Build-Profile, Datenschutzerklärung und Website (`docs/`), Store-Texte (`docs/APP_STORE.md`), Review-Zugang
 - [ ] **Phase 3 (Release)** – Apple-Developer-Konto, Builds, TestFlight, Store-Einträge (siehe Checkliste)
 - [x] **Ausbau 1** – Profil, Abzeichen, Wochen-Challenges und Feed in Crews, Fotos im Sync, Push bei Reaktionen
-- [ ] Danach – Widgets, Apple Health, weitere Arcs (Spring Arc …)
+- [x] **Ausbau 2 (Code)** – Statistik pro Regel, Saison-Arcs und eigene Arcs mit Archiv, Apple Health / Health Connect / Strava (automatisch abhaken), Widgets für Home- und Sperrbildschirm
+- [ ] **Ausbau 2 (Test)** – Health, Strava und Widgets im Development-Build prüfen (braucht Apple-Developer-Konto)

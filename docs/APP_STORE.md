@@ -45,6 +45,15 @@ JEDEN TAG SICHTBAR
 • Tagebuch mit Notizen und Fotos
 • Wochenrückblick jeden Sonntag
 
+AUTOMATISCH ABHAKEN
+Verbinde Apple Health (iPhone) oder Health Connect (Android) und Strava: Schritte, Training, Schlaf, Wasser und Achtsamkeit haken deine Regeln von selbst ab – egal ob die Daten von Apple Watch, Garmin oder einer anderen Fitness-App kommen. Nordwand liest nur und schreibt nichts in Health.
+
+WIDGETS
+Tag im Arc und Streak auf dem Homescreen, offene Regeln direkt im Widget abhaken, dazu Widgets für den Sperrbildschirm.
+
+JEDE JAHRESZEIT EIN ARC
+Nach dem Winter Arc kommt der New Year Arc, dann Spring und Summer Arc – oder du legst deinen eigenen Zeitraum fest. Deine Regeln nimmst du mit, frühere Arcs bleiben im Archiv. Pro Regel siehst du Quote, Serie und deinen schwierigsten Wochentag.
+
 ERINNERUNGEN, DIE MITDENKEN
 Morgens ein kurzer Anstoss, abends ein Check-in – aber nur, wenn noch etwas offen ist.
 
@@ -75,7 +84,11 @@ Tracking: **Nein** (keine Daten werden zum Tracking verwendet).
 | Kennungen → Nutzer-ID | Ja (nur mit Konto) | Ja | App-Funktionalität |
 | Nutzerinhalte → Fotos oder Videos | Ja (Profilbild und Tagebuch-Fotos, nur mit Konto) | Ja | App-Funktionalität |
 | Kennungen → Geräte-ID (Push-Token) | Ja (nur wenn Crew-Mitteilungen eingeschaltet) | Ja | App-Funktionalität |
-| Nutzungsdaten, Diagnose, Standort, Gesundheit | Nein | – | – |
+| Gesundheit & Fitness → Gesundheit, Fitness | Ja (nur wenn Apple Health bzw. Strava verbunden **und** Konto: das Ergebnis der verknüpften Regel, z. B. Häkchen «Training» oder Schrittzahl, wird mit den Arc-Daten gesichert; Strava-Aktivitäten der letzten 14 Tage liegen auf dem Server) | Ja | App-Funktionalität |
+| Nutzungsdaten, Diagnose, Standort | Nein | – | – |
+
+HealthKit-Regeln von Apple (Guideline 5.1.3), die Nordwand einhält: Health-Daten nur für die App-Funktion,
+keine Werbung, keine Weitergabe, nicht in iCloud. In der Datenschutzerklärung steht das in Abschnitt 5.
 
 Google Play → «Datensicherheit»: dieselben Angaben; Daten werden verschlüsselt übertragen; Nutzer können die Löschung in der App anfordern (Konto löschen).
 
@@ -90,6 +103,10 @@ Passwort: [REVIEW-PASSWORT]
 
 Im Tab «Crew» ist das Test-Konto bereits Mitglied der Crew «Review Crew» mit Beispieldaten.
 Konto löschen: Tab «Vertrag» → «Konto & Sync» → «Konto löschen».
+
+Apple Health (optional): Tab «Vertrag» → «Verbindungen» → «Apple Health verbinden». Nordwand liest nur Schritte, Workouts, Schlaf, Wasser und Achtsamkeitsminuten, um Regeln automatisch abzuhaken (Regel antippen → «Automatisch abhaken»). Es werden keine Daten in Health geschrieben. Die Health-Werte werden auf dem Gerät ausgewertet; gesichert wird nur das Ergebnis der Regel.
+
+Widgets: Homescreen → Widget hinzufügen → «Nordwand» (klein, mittel mit Abhaken, Sperrbildschirm).
 ```
 
 ## Screenshots

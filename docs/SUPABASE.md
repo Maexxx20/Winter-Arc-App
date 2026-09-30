@@ -15,6 +15,7 @@ und Sync zwischen Geräten dazu.
    - [`supabase/migrations/0005_challenges.sql`](../supabase/migrations/0005_challenges.sql) – Abzeichen im Profil, Wochen-Challenges
    - [`supabase/migrations/0006_photos.sql`](../supabase/migrations/0006_photos.sql) – Tagebuch-Fotos im Sync (privater Bucket `photos`)
    - [`supabase/migrations/0007_push.sql`](../supabase/migrations/0007_push.sql) – Push bei Reaktionen und Beitritten (schaltet die Erweiterung `pg_net` ein)
+   - [`supabase/migrations/0008_strava.sql`](../supabase/migrations/0008_strava.sql) – Strava-Verbindung (Zugangsschlüssel nur für den Server lesbar)
 
    Alle Dateien lassen sich gefahrlos mehrmals ausführen. Getestet werden sie mit `npm run test:db`
    (eingebettetes Postgres, prüft alle Zugriffsregeln).
@@ -72,6 +73,33 @@ Domain in Brevo verifizieren und als Absender z. B. `code@deinedomain.ch` nehmen
 3. In der App: Vertrag → Erinnerungen → «Crew-Mitteilungen» einschalten. In Expo Go geht das nur auf
    dem iPhone; auf Android braucht es einen Development-Build.
 
+## 2d. Strava (optional)
+
+Die Verbindung zu Strava läuft über eine Edge Function, damit das Client-Secret von Strava nie in der
+App steckt.
+
+1. **Strava-API-App anlegen:** [strava.com/settings/api](https://www.strava.com/settings/api) →
+   Anwendungsname `Nordwand`, Kategorie *Training*, Website z. B. die GitHub-Pages-Adresse,
+   **Authorization Callback Domain: `localhost`** (genau so – die App springt über
+   `nordwand://localhost/strava` zurück). Danach *Client ID* und *Client Secret* notieren.
+2. Migration `0008_strava.sql` ausführen (siehe oben).
+3. **Edge Function anlegen:** Supabase → **Edge Functions → Deploy a new function → Via Editor**,
+   Name **`strava`**, den ganzen Inhalt von
+   [`supabase/functions/strava/index.ts`](../supabase/functions/strava/index.ts) einfügen,
+   **Deploy**. «Verify JWT» eingeschaltet lassen.
+4. **Secrets:** Edge Functions → **Secrets** → `STRAVA_CLIENT_ID` und `STRAVA_CLIENT_SECRET` mit den
+   Werten aus Schritt 1 anlegen. (`SUPABASE_URL` usw. setzt Supabase selbst.)
+5. Testen geht erst im Development-Build (Expo Go kann nicht aus dem Browser zurückspringen):
+   Vertrag → Verbindungen → «Mit Strava verbinden».
+
+Gut zu wissen:
+- Neue Strava-Apps dürfen zuerst nur **ein** Konto verbinden (deins). Für alle Nutzer muss die App
+  bei Strava zur Prüfung eingereicht werden (Formular auf der API-Seite). Dafür verlangt Strava den
+  offiziellen Knopf «Connect with Strava» und das Logo «Powered by Strava» – das kommt vor dem Release.
+- Die Funktion speichert die Aktivitäten 15 Minuten zwischen, damit das Abfrage-Limit von Strava
+  (für die ganze App gemeinsam) reicht.
+- Später aktualisieren: dieselbe Funktion im Editor öffnen, neuen Inhalt einfügen, **Deploy**.
+
 ## 3. Schlüssel in die App
 
 Unter **Project Settings → API** die *Project URL* und den *anon / publishable key* kopieren und im
@@ -95,7 +123,9 @@ Danach `npx expo start --clear`. Im Tab **Vertrag** erscheint jetzt «Konto & Sy
 | Profil (Name, Motto, Instagram, Bild) | ✓ – sichtbar nur für Crew-Mitglieder; Bild im privaten Bucket `avatars` |
 | Fotos im Tagebuch | ✓ – nur für dich; ein Datensatz pro Foto (`diary_photos`), Datei im Bucket `photos` |
 | Abzeichen | ✓ – werden berechnet und für die Crew im Profil veröffentlicht |
-| Einstellungen, Erinnerungen | nur lokal (pro Gerät) |
+| Werte aus Apple Health / Health Connect | nur lokal gelesen; gesichert wird nur das Ergebnis der Regel (Häkchen bzw. Menge) |
+| Strava | Zugangsschlüssel und Aktivitäten der letzten 14 Tage in `strava_connections` – nur die Edge Function liest sie |
+| Einstellungen, Erinnerungen, Widget | nur lokal (pro Gerät) |
 | Crew-Tagesstatus | Status, Anzahl erledigter Regeln, Streak, Quote – sichtbar nur für Crew-Mitglieder |
 
 Konflikte: Die zuletzt geänderte Version gewinnt (pro Tag bzw. pro Arc).
