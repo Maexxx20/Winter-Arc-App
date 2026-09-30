@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ArcGauge } from '@/components/arc-gauge';
 import { ChevronIcon, FlameIcon, ShieldIcon } from '@/components/icons';
+import { ProfileButton } from '@/components/profile-button';
 import { ReminderPrompt } from '@/components/reminder-prompt';
 import { RuleRow } from '@/components/rule-row';
 import { StatTile } from '@/components/stat-tile';
@@ -43,9 +44,12 @@ export default function TodayScreen() {
     const inDays = diffDays(today, arc.startDate);
     return (
       <Screen tabs>
-        <View style={styles.head}>
-          <T variant="label">{formatLong(today)}</T>
-          <T variant="display">{firstName ? `Bereit, ${firstName}?` : 'Bereit?'}</T>
+        <View style={styles.headRow}>
+          <View style={[styles.head, styles.flex]}>
+            <T variant="label">{formatLong(today)}</T>
+            <T variant="display">{firstName ? `Bereit, ${firstName}?` : 'Bereit?'}</T>
+          </View>
+          <ProfileButton />
         </View>
         <Card style={styles.countdown}>
           <T variant="label" color="accent">Start am {formatShort(arc.startDate)}</T>
@@ -78,9 +82,12 @@ export default function TodayScreen() {
   if (stats.finished) {
     return (
       <Screen tabs>
-        <View style={styles.head}>
-          <T variant="label">{arc.title}</T>
-          <T variant="display">Arc abgeschlossen.</T>
+        <View style={styles.headRow}>
+          <View style={[styles.head, styles.flex]}>
+            <T variant="label">{arc.title}</T>
+            <T variant="display">Arc abgeschlossen.</T>
+          </View>
+          <ProfileButton />
         </View>
         <Card style={styles.countdown}>
           <T variant="label" color="accent">Gehaltene Tage</T>
@@ -109,9 +116,12 @@ export default function TodayScreen() {
 
   return (
     <Screen tabs>
-      <View style={styles.head}>
-        <T variant="label">{formatLong(today)}</T>
-        <T variant="title">{arc.title}</T>
+      <View style={styles.headRow}>
+        <View style={[styles.head, styles.flex]}>
+          <T variant="label">{formatLong(today)}</T>
+          <T variant="title">{arc.title}</T>
+        </View>
+        <ProfileButton />
       </View>
 
       <View style={styles.gaugeWrap}>
@@ -218,6 +228,7 @@ export default function TodayScreen() {
 }
 
 const styles = StyleSheet.create({
+  headRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.three },
   head: { gap: 2 },
   gaugeWrap: { alignItems: 'center', marginTop: Spacing.two },
   gaugeCaption: { marginTop: Spacing.one },

@@ -6,6 +6,7 @@ import * as WebBrowser from 'expo-web-browser';
  */
 export const WEBSITE_URL = 'https://maexxx20.github.io/Winter-Arc-App/';
 export const PRIVACY_URL = `${WEBSITE_URL}datenschutz.html`;
+export const SUPPORT_EMAIL = 'max.ale.konrad@gmail.com';
 
 export function openLink(url: string) {
   WebBrowser.openBrowserAsync(url).catch(() => {});

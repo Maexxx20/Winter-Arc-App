@@ -13,9 +13,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { confirm } from '@/lib/confirm';
 import { haptic } from '@/lib/haptics';
 import { openLink, PRIVACY_URL } from '@/constants/links';
-import { isReviewEmail, sendLoginCode, signInWithPassword, signOut, supabaseConfigured, useSession, verifyLoginCode } from '@/services/supabase';
-import { deleteAccount, syncNow, useSyncStatus } from '@/services/sync';
-import { setSyncMeta } from '@/store/store';
+import { isReviewEmail, sendLoginCode, signInWithPassword, supabaseConfigured, useSession, verifyLoginCode } from '@/services/supabase';
+import { deleteAccount, logout, syncNow, useSyncStatus } from '@/services/sync';
 
 function timeAgo(d: Date | null): string {
   if (!d) return 'noch nie';
@@ -123,9 +122,7 @@ export default function AccountScreen() {
           variant="secondary"
           onPress={async () => {
             if (!(await confirm('Abmelden?', 'Deine Daten bleiben auf diesem Gerät und im Konto gespeichert.', 'Abmelden'))) return;
-            await syncNow();
-            await signOut();
-            setSyncMeta({ userId: null, lastPushedAt: null, lastPulledAt: null });
+            await logout();
           }}
         />
         <Button

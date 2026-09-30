@@ -11,7 +11,7 @@ Alles zum Kopieren in App Store Connect bzw. die Google Play Console. Sprache: D
 | Bundle-ID / Package | `ch.maxkon.nordwand` |
 | Kategorie | Gesundheit & Fitness (zweite: Produktivität) |
 | Preis | Gratis |
-| Altersfreigabe | 4+ (keine problematischen Inhalte; Crews zeigen nur Namen, Zahlen und Emojis) |
+| Altersfreigabe | Fragebogen ehrlich ausfüllen: Crews zeigen Profilbild, Name, Motto, Zahlen und Emojis nur innerhalb privater Gruppen (Beitritt nur per Code). Mitglieder können über «Melden» eine Mail an den Support schicken. |
 | Datenschutz-URL | `https://maexxx20.github.io/Winter-Arc-App/datenschutz.html` (oder eigene Domain) |
 | Support-URL | `https://maexxx20.github.io/Winter-Arc-App/` |
 
@@ -49,7 +49,7 @@ ERINNERUNGEN, DIE MITDENKEN
 Morgens ein kurzer Anstoss, abends ein Check-in – aber nur, wenn noch etwas offen ist.
 
 ZUSAMMEN MIT DEINER CREW
-Lade Freunde, Team oder Klasse mit einem Code ein. Ihr seht, wer seinen Tag gehalten hat, vergleicht Streak und Quote und feuert euch mit Reaktionen an. Deine Regeln, Notizen und Fotos bleiben privat – geteilt werden nur Zahlen.
+Lade Freunde, Team oder Klasse mit einem Code ein. Ihr seht, wer seinen Tag gehalten hat, vergleicht Streak und Quote und feuert euch mit Reaktionen an. Tippe auf jemanden und sieh Profilbild, Motto und Streak. Deine Regeln, Notizen und Fotos bleiben privat – geteilt werden nur dein Profil und Zahlen.
 
 TEILEN
 Mach aus deinem Fortschritt eine Karte im Story-Format und zeig, dass du dranbleibst.
@@ -71,9 +71,9 @@ Tracking: **Nein** (keine Daten werden zum Tracking verwendet).
 | Datentyp | Erhoben? | Mit Identität verknüpft | Zweck |
 |---|---|---|---|
 | Kontaktinfos → E-Mail-Adresse | Ja (nur mit Konto) | Ja | App-Funktionalität |
-| Nutzerinhalte → Andere Nutzerinhalte (Regeln, Häkchen, Notizen, Rückblicke) | Ja (nur mit Konto) | Ja | App-Funktionalität |
+| Nutzerinhalte → Andere Nutzerinhalte (Regeln, Häkchen, Notizen, Rückblicke, Profil: Name, Motto, Instagram-Name) | Ja (nur mit Konto) | Ja | App-Funktionalität |
 | Kennungen → Nutzer-ID | Ja (nur mit Konto) | Ja | App-Funktionalität |
-| Fotos oder Videos | Nein (bleiben auf dem Gerät) | – | – |
+| Nutzerinhalte → Fotos oder Videos | Ja (nur das Profilbild, nur mit Konto; Tagebuch-Fotos bleiben auf dem Gerät) | Ja | App-Funktionalität |
 | Nutzungsdaten, Diagnose, Standort, Gesundheit | Nein | – | – |
 
 Google Play → «Datensicherheit»: dieselben Angaben; Daten werden verschlüsselt übertragen; Nutzer können die Löschung in der App anfordern (Konto löschen).

@@ -11,13 +11,20 @@ create function auth.uid() returns uuid language sql stable as $$ select nullif(
 create role anon; create role authenticated;
 grant usage on schema public, auth to anon, authenticated;
 grant execute on function auth.uid() to anon, authenticated;
+-- Nachbau des Supabase-Speichers (nur was die Migrationen brauchen)
+create schema storage;
+create table storage.buckets (id text primary key, name text not null, public boolean default false, file_size_limit bigint, allowed_mime_types text[]);
+create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text references storage.buckets (id), name text not null, owner_id text default auth.uid()::text, unique (bucket_id, name));
+alter table storage.objects enable row level security;
+grant usage on schema storage to anon, authenticated;
 `);
 for (const f of fs.readdirSync(dir).sort()) { await db.exec(fs.readFileSync(dir + f, 'utf8')); console.log('ok', f); }
 // Alle Migrationen müssen mehrfach ausführbar sein
 for (const f of fs.readdirSync(dir).sort()) await db.exec(fs.readFileSync(dir + f, 'utf8'));
 console.log('ok zweiter Durchlauf');
 { const r = await db.query(`select tablename from pg_publication_tables where pubname = 'supabase_realtime' order by 1`); if (r.rows.map((x) => x.tablename).join() !== 'daily_status,reactions') { console.log('FAIL realtime', r.rows); process.exit(1); } }
-await db.exec(`grant all on all tables in schema public to authenticated;`);
+await db.exec(`grant all on all tables in schema public to authenticated; grant all on storage.objects to authenticated;`);
+{ const r = await db.query(`select public, file_size_limit from storage.buckets where id = 'avatars'`); if (r.rows[0]?.public !== false) { console.log('FAIL bucket', r.rows); process.exit(1); } }
 
 const A = '00000000-0000-0000-0000-00000000000a', B = '00000000-0000-0000-0000-00000000000b', C = '00000000-0000-0000-0000-00000000000c';
 await db.exec(`insert into auth.users values ('${A}'),('${B}'),('${C}')`);
@@ -58,6 +65,30 @@ r = await as(A, `insert into daily_status (date, status) values ('2026-10-05', '
 check('Upsert eigener Status', r[0]?.status === 'partial', r);
 r = await as(B, `select * from daily_status where user_id = '${A}' and date = '2026-10-05'`);
 
+// Profile (0004): A und B sind in einer Crew, C nicht
+r = await as(A, `insert into profiles (id, name, motto, instagram, avatar_path, updated_at) values ('${A}', 'Mäx', 'Kein Tag ohne Training', 'maexxx20', '${A}/1.jpg', now()) returning motto`);
+check('A legt Profil an', r[0]?.motto === 'Kein Tag ohne Training', r);
+r = await as(B, `select name, motto, instagram, avatar_path from profiles where id = '${A}'`); check('B sieht Profil von A', r[0]?.instagram === 'maexxx20', r);
+r = await as(C, `select * from profiles where id = '${A}'`); check('C sieht Profil von A nicht', r.length === 0, r);
+r = await as(B, `update profiles set motto = 'gehackt' where id = '${A}' returning id`); check('B kann Profil von A nicht ändern', Array.isArray(r) && r.length === 0, r);
+r = await as(A, `update profiles set instagram = 'nicht gültig!' where id = '${A}'`); check('Instagram-Format geprüft', !!r.error, r);
+r = await as(A, `update profiles set motto = repeat('x', 81) where id = '${A}'`); check('Motto max. 80 Zeichen', !!r.error, r);
+r = await as(A, `update profiles set avatar_path = '${B}/1.jpg' where id = '${A}'`); check('fremder Bildpfad abgelehnt', !!r.error, r);
+await as(A, `update profiles set name = 'Max K.', updated_at = now() + interval '1 second' where id = '${A}'`);
+r = await as(B, `select display_name from crew_members where user_id = '${A}'`); check('Name gilt in der Crew', r[0]?.display_name === 'Max K.', r);
+await as(A, `update crew_members set display_name = 'Nur hier' where user_id = '${A}'`);
+await as(A, `update profiles set motto = 'Neu', updated_at = now() + interval '2 seconds' where id = '${A}'`);
+r = await as(B, `select display_name from crew_members where user_id = '${A}'`); check('Motto-Änderung lässt Crew-Namen in Ruhe', r[0]?.display_name === 'Nur hier', r);
+await as(A, `update profiles set motto = 'Alt', updated_at = now() - interval '1 day' where id = '${A}'`);
+r = await as(A, `select motto from profiles where id = '${A}'`); check('ältere Profilversion ignoriert', r[0]?.motto === 'Neu', r);
+r = await as(A, `insert into storage.objects (bucket_id, name) values ('avatars', '${A}/1.jpg') returning name`); check('A lädt eigenes Bild hoch', r.length === 1, r);
+r = await as(A, `insert into storage.objects (bucket_id, name) values ('avatars', '${B}/x.jpg')`); check('A kann nicht in Ordner von B', !!r.error, r);
+r = await as(A, `insert into storage.objects (bucket_id, name) values ('avatars', 'kein-ordner.jpg')`); check('Bild ohne Ordner abgelehnt', !!r.error, r);
+r = await as(B, `select name from storage.objects where bucket_id = 'avatars'`); check('B sieht Bild von A', r.length === 1, r);
+r = await as(C, `select name from storage.objects where bucket_id = 'avatars'`); check('C sieht Bild von A nicht', r.length === 0, r);
+r = await as(B, `delete from storage.objects returning name`); check('B kann Bild von A nicht löschen', Array.isArray(r) && r.length === 0, r);
+r = await as(A, `delete from storage.objects returning name`); check('A löscht eigenes Bild', r.length === 1, r);
+
 // Reaktionen
 r = await as(B, `insert into reactions (crew_id, to_user, date, emoji) values ($1, '${A}', '2026-10-05', '🔥') returning id`, [crew.id]); check('B reagiert auf A', r.length === 1, r);
 r = await as(B, `insert into reactions (crew_id, to_user, date, emoji) values ($1, '${B}', '2026-10-05', '🔥')`, [crew.id]); check('keine Reaktion an sich selbst', !!r.error, r);
@@ -73,6 +104,7 @@ r = await as(A, `select leave_crew($1)`, [crew.id]); check('A tritt aus', !r.err
 r = await as(B, `select user_id, role from crew_members order by joined_at`); check('B wird Besitzer', r[0]?.user_id === B && r[0]?.role === 'owner' && r.length === 2, r);
 r = await as(B, `select created_by from crews`); check('created_by = B', r[0]?.created_by === B, r);
 r = await as(B, `select * from daily_status where user_id = '${A}'`); check('B sieht A nach Austritt nicht mehr', r.length === 0, r);
+r = await as(B, `select * from profiles where id = '${A}'`); check('B sieht Profil von A nach Austritt nicht mehr', r.length === 0, r);
 await as(B, `select leave_crew($1)`, [crew.id]);
 await as(C, `select leave_crew($1)`, [crew.id]);
 r = await db.query(`select count(*)::int n from crews`); check('leere Crew gelöscht', r.rows[0].n === 0, r.rows);

@@ -11,7 +11,7 @@ import { uid } from '@/lib/arc';
 import { deletePhoto } from '@/services/photos';
 import { addDays, type ISODate } from '@/lib/date';
 import { type ChangeSet, mergeRemote } from '@/lib/sync-merge';
-import type { AppState, Arc, DayEntry, ReminderSettings, Rule, Settings, SyncMeta, WeekReview } from '@/lib/types';
+import type { AppState, Arc, Avatar, DayEntry, ReminderSettings, Rule, Settings, SyncMeta, WeekReview } from '@/lib/types';
 
 const STORAGE_KEY = 'arc.state.v1';
 
@@ -25,6 +25,10 @@ const initialState: AppState = {
   reviews: {},
   settings: {
     name: '',
+    motto: '',
+    instagram: '',
+    avatar: { local: null, remote: null },
+    profileUpdatedAt: null,
     rolloverHour: 0,
     haptics: true,
     reminders: { enabled: null, morning: 7 * 60 + 30, evening: 20 * 60 + 30, weeklyReview: true },
@@ -70,6 +74,7 @@ export async function hydrate(): Promise<void> {
             ...initialState.settings,
             ...parsed.settings,
             reminders: { ...initialState.settings.reminders, ...parsed.settings?.reminders },
+            avatar: { ...initialState.settings.avatar, ...parsed.settings?.avatar },
           },
         };
       }
@@ -176,6 +181,81 @@ export function updateSettings(patch: Partial<Settings>) {
   setState((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
 }
 
+// ---------- Profil ----------
+
+export type ProfilePatch = Partial<Pick<Settings, 'name' | 'motto' | 'instagram'>>;
+
+/** Eigenes Profil ändern (wird beim nächsten Sync hochgeladen). */
+export function updateProfile(patch: ProfilePatch) {
+  setState((s) => ({ ...s, settings: { ...s.settings, ...patch, profileUpdatedAt: now() } }));
+}
+
+/** Neues Profilbild (lokale Datei) setzen oder mit null entfernen. */
+export function setAvatar(local: string | null) {
+  const old = state.settings.avatar.local;
+  if (old && old !== local) deletePhoto(old);
+  setState((s) => ({ ...s, settings: { ...s.settings, avatar: { local, remote: null }, profileUpdatedAt: now() } }));
+}
+
+/**
+ * Nach dem Hochladen: Serverpfad merken, ohne das Profil als geändert zu markieren.
+ * Nur wenn inzwischen kein anderes Bild gewählt oder das Bild entfernt wurde.
+ */
+export function setAvatarRemote(uploadedLocal: string, remote: string): boolean {
+  if (state.settings.avatar.local !== uploadedLocal) return false;
+  state = { ...state, settings: { ...state.settings, avatar: { local: uploadedLocal, remote } } };
+  emit();
+  persist();
+  return true;
+}
+
+/** Beim Konto-Wechsel oder Abmelden: Server-Stand des Profils vergessen (Inhalt bleibt). */
+export function resetProfileSync() {
+  state = {
+    ...state,
+    settings: { ...state.settings, profileUpdatedAt: null, avatar: { local: state.settings.avatar.local, remote: null } },
+  };
+  emit();
+  persist();
+}
+
+export interface RemoteProfile {
+  name: string;
+  motto: string;
+  instagram: string;
+  avatar_path: string | null;
+  updated_at: string;
+}
+
+/** Profil vom Server übernehmen (neuere Version von einem anderen Gerät). */
+export function applyRemoteProfile(p: RemoteProfile) {
+  const cur = state.settings;
+  let avatar: Avatar = cur.avatar;
+  if (p.avatar_path !== cur.avatar.remote) {
+    if (cur.avatar.local) deletePhoto(cur.avatar.local);
+    avatar = { local: null, remote: p.avatar_path };
+  }
+  state = {
+    ...state,
+    settings: {
+      ...cur,
+      name: p.name || cur.name,
+      motto: p.motto,
+      instagram: p.instagram,
+      avatar,
+      profileUpdatedAt: p.updated_at,
+    },
+  };
+  emit();
+  persist();
+}
+
+/** Profil als geändert markieren, ohne Inhalt zu ändern (erster Upload). */
+export function touchProfile() {
+  state = { ...state, settings: { ...state.settings, profileUpdatedAt: now() } };
+  persist();
+}
+
 /**
  * Vertragsänderung: Regeln hinzufügen/entfernen.
  * Vor dem Start frei, danach kostet jede Änderung ein Amendment.
@@ -274,6 +354,7 @@ export async function resetAll() {
   for (const log of Object.values(state.logs)) {
     for (const e of Object.values(log)) for (const p of e.photos ?? []) deletePhoto(p);
   }
+  if (state.settings.avatar.local) deletePhoto(state.settings.avatar.local);
   state = initialState;
   emit();
   await AsyncStorage.removeItem(STORAGE_KEY);

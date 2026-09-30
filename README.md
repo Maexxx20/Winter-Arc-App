@@ -40,9 +40,11 @@ src/
     rueckblick.tsx      Wochenrückblick
     teilen.tsx          Fortschritts-Karte als Bild teilen
     konto.tsx           Anmeldung per E-Mail-Code, Sync-Status, Konto löschen
+    profil.tsx          Eigenes Profil: Bild, Name, Motto, Instagram, Statistik, Abmelden
     (tabs)/crew.tsx     Crews: Liste, erstellen, beitreten
     crew/[id].tsx       Rangliste, Wochenpunkte, Reaktionen, Einladen
     crew/beitreten.tsx  Einstieg über Einladungslink
+    crew/mitglied.tsx   Profil eines Crew-Mitglieds
   components/           UI-Bausteine (ArcGauge, RuleRow, Heatmap, HoldToSign, …)
   lib/arc.ts            Kernlogik – reine Funktionen, getestet in lib/__tests__
   lib/date.ts           Datumsrechnung mit lokalen Kalendertagen (DST-sicher)
@@ -51,7 +53,7 @@ src/
   lib/crew.ts           Tagesstatus für die Crew und Rangliste (getestet)
   services/             Erinnerungen, Fotos, Supabase, Sync
   store/store.ts        Lokaler Zustand, gespeichert in AsyncStorage (offline-first)
-supabase/migrations/    Datenbankschema mit Row Level Security (0001–0003)
+supabase/migrations/    Datenbankschema mit Row Level Security (0001–0004)
 supabase/tests/         Zugriffsregeln gegen eingebettetes Postgres (npm run test:db)
 docs/                   Website mit Datenschutzerklärung (für GitHub Pages), Store-Texte, Supabase-Anleitung
 assets/brand/           Icon-Vorlage; node assets/brand/make-icons.mjs erzeugt alle Icons neu

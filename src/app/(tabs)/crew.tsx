@@ -14,7 +14,7 @@ import { normalizeCode } from '@/lib/crew';
 import { haptic } from '@/lib/haptics';
 import { createCrew, type CrewWithCount, joinCrew, listCrews } from '@/services/crews';
 import { useSession } from '@/services/supabase';
-import { updateSettings, useAppState } from '@/store/store';
+import { updateProfile, useAppState } from '@/store/store';
 
 export default function CrewTab() {
   const theme = useTheme();
@@ -52,7 +52,7 @@ export default function CrewTab() {
     setBusy(true);
     setError(null);
     try {
-      if (myName.trim() !== settings.name) updateSettings({ name: myName.trim() });
+      if (myName.trim() !== settings.name) updateProfile({ name: myName.trim() });
       const crew = mode === 'create' ? await createCrew(crewName) : await joinCrew(code);
       haptic.success();
       setMode('none');

@@ -2,7 +2,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, Share, StyleSheet, View } from 'react-native';
 
-import { Avatar } from '@/components/avatar';
+import { MyAvatar, RemoteAvatar } from '@/components/avatar';
 import { ChevronIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -15,7 +15,7 @@ import { useToday } from '@/hooks/use-today';
 import { confirm } from '@/lib/confirm';
 import { inviteMessage, rankMembers, REACTION_EMOJIS, type Reaction, type ReactionEmoji, type StatusRow } from '@/lib/crew';
 import { haptic } from '@/lib/haptics';
-import { addReaction, type CrewDetail, leaveCrew, loadCrew, removeReaction, subscribeCrew } from '@/services/crews';
+import { addReaction, cachedCrew, type CrewDetail, leaveCrew, loadCrew, removeReaction, subscribeCrew } from '@/services/crews';
 import { useSession } from '@/services/supabase';
 
 export default function CrewScreen() {
@@ -24,7 +24,7 @@ export default function CrewScreen() {
   const session = useSession();
   const me = session?.user.id;
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [detail, setDetail] = useState<CrewDetail | null>(null);
+  const [detail, setDetail] = useState<CrewDetail | null>(() => (id ? (cachedCrew(id) ?? null) : null));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -142,7 +142,9 @@ export default function CrewScreen() {
                 key={m.member.user_id}
                 rank={m.rank}
                 userId={m.member.user_id}
-                name={m.member.display_name}
+                name={detail.profiles[m.member.user_id]?.name || m.member.display_name}
+                avatarPath={detail.profiles[m.member.user_id]?.avatar_path}
+                onOpen={() => router.push({ pathname: '/crew/mitglied', params: { crew: detail.crew.id, user: m.member.user_id } })}
                 isMe={m.member.user_id === me}
                 latest={m.latest}
                 week={m.week}
@@ -180,6 +182,8 @@ function MemberRow({
   rank,
   userId,
   name,
+  avatarPath,
+  onOpen,
   isMe,
   latest,
   week,
@@ -191,6 +195,8 @@ function MemberRow({
   rank: number;
   userId: string;
   name: string;
+  avatarPath: string | null | undefined;
+  onOpen: () => void;
   isMe: boolean;
   latest: StatusRow | null;
   week: (StatusRow['status'] | undefined)[];
@@ -232,11 +238,15 @@ function MemberRow({
 
   return (
     <View style={[styles.member, { backgroundColor: theme.surface, borderColor: isMe ? theme.accent : theme.border, opacity: inactive ? 0.6 : 1 }]}>
-      <View style={styles.memberTop}>
+      <Pressable
+        onPress={onOpen}
+        accessibilityRole="button"
+        accessibilityLabel={`Profil von ${name}`}
+        style={({ pressed }) => [styles.memberTop, { opacity: pressed ? 0.7 : 1 }]}>
         <T variant="bodyStrong" color="textTertiary" style={styles.rank}>
           {inactive ? '' : rank}
         </T>
-        <Avatar id={userId} name={name} />
+        {isMe ? <MyAvatar /> : <RemoteAvatar id={userId} name={name} path={avatarPath} />}
         <View style={styles.flex}>
           <T variant="bodyStrong" numberOfLines={1}>
             {name}
@@ -247,7 +257,7 @@ function MemberRow({
           </T>
         </View>
         {badge}
-      </View>
+      </Pressable>
 
       <View style={styles.dots}>
         {week.map((s, i) => (

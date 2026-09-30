@@ -2,6 +2,7 @@ import { buildStatusRows, type Crew, type CrewMember, normalizeCode, type Reacti
 import { addDays, type ISODate, todayISO } from '@/lib/date';
 import { getState, selectActiveArc, selectLog } from '@/store/store';
 
+import { avatarUrls, fetchProfiles, type PublicProfile } from './profile';
 import { getSession, supabase } from './supabase';
 
 export type CrewWithCount = Crew & { member_count: number };
@@ -11,6 +12,14 @@ export interface CrewDetail {
   members: CrewMember[];
   rows: StatusRow[];
   reactions: Reaction[];
+  /** user_id → Profil (Bild, Motto, Instagram) */
+  profiles: Record<string, PublicProfile>;
+}
+
+/** Zuletzt geladene Crews – damit Profile sofort erscheinen. */
+const detailCache = new Map<string, CrewDetail>();
+export function cachedCrew(crewId: string): CrewDetail | undefined {
+  return detailCache.get(crewId);
 }
 
 function translate(message: string): string {
@@ -75,19 +84,24 @@ export async function loadCrew(crewId: string, today: ISODate): Promise<CrewDeta
   if (reactionsRes.error) throw new Error(translate(reactionsRes.error.message));
   const members = (membersRes.data ?? []) as CrewMember[];
 
-  const { data: rows, error } = await sb
-    .from('daily_status')
-    .select('*')
-    .in('user_id', members.map((m) => m.user_id))
-    .gte('date', since);
+  const ids = members.map((m) => m.user_id);
+  const [{ data: rows, error }, profiles] = await Promise.all([
+    sb.from('daily_status').select('*').in('user_id', ids).gte('date', since),
+    fetchProfiles(ids),
+  ]);
   if (error) throw new Error(translate(error.message));
+  // Bild-Links gleich mitholen, damit die Liste nicht flackert.
+  await avatarUrls(Object.values(profiles).map((p) => p.avatar_path)).catch(() => undefined);
 
-  return {
+  const detail: CrewDetail = {
     crew: crewRes.data as Crew,
     members,
     rows: (rows ?? []) as StatusRow[],
     reactions: (reactionsRes.data ?? []) as Reaction[],
+    profiles,
   };
+  detailCache.set(crewId, detail);
+  return detail;
 }
 
 export async function createCrew(name: string): Promise<Crew> {

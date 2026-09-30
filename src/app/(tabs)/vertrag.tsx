@@ -2,11 +2,12 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Switch, View } from 'react-native';
 
+import { MyAvatar } from '@/components/avatar';
 import { ChevronIcon, CloseIcon, PlusIcon } from '@/components/icons';
 import { RuleEditor } from '@/components/rule-editor';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Chip, SectionTitle, TextField } from '@/components/ui/controls';
+import { Chip, SectionTitle } from '@/components/ui/controls';
 import { Screen } from '@/components/ui/screen';
 import { TimeRow } from '@/components/ui/time-row';
 import { T } from '@/components/ui/text';
@@ -40,7 +41,6 @@ export default function ContractScreen() {
   const today = useToday();
   const arc = selectActiveArc(state);
   const [editorOpen, setEditorOpen] = useState(false);
-  const [name, setName] = useState(state.settings.name);
   const session = useSession();
   const sync = useSyncStatus();
   if (!arc) return null;
@@ -147,23 +147,25 @@ export default function ContractScreen() {
         }}
       />
 
-      {supabaseConfigured && (
-        <>
-          <SectionTitle>Konto</SectionTitle>
-          <Pressable
-            onPress={() => router.push('/konto')}
-            style={({ pressed }) => [styles.rule, { backgroundColor: theme.surface, borderColor: theme.border, opacity: pressed ? 0.8 : 1 }]}>
-            <T style={styles.emoji}>{session ? '☁️' : '🔒'}</T>
-            <View style={styles.flex}>
-              <T variant="bodyStrong">{session ? 'Gesichert' : 'Konto & Sync'}</T>
-              <T variant="caption" numberOfLines={1}>
-                {session ? (sync.state === 'error' ? 'Abgleich fehlgeschlagen – antippen' : session.user.email) : 'Arc sichern und auf mehreren Geräten nutzen'}
-              </T>
-            </View>
-            <ChevronIcon color={theme.textTertiary} size={16} />
-          </Pressable>
-        </>
-      )}
+      <SectionTitle>Profil & Konto</SectionTitle>
+      <Pressable
+        onPress={() => router.push('/profil')}
+        style={({ pressed }) => [styles.rule, { backgroundColor: theme.surface, borderColor: theme.border, opacity: pressed ? 0.8 : 1 }]}>
+        <MyAvatar size={36} />
+        <View style={styles.flex}>
+          <T variant="bodyStrong">{state.settings.name || 'Dein Profil'}</T>
+          <T variant="caption" numberOfLines={1}>
+            {!supabaseConfigured
+              ? 'Name, Bild und Statistik'
+              : session
+                ? sync.state === 'error'
+                  ? 'Abgleich fehlgeschlagen – antippen'
+                  : session.user.email
+                : 'Nicht angemeldet · Konto & Sync'}
+          </T>
+        </View>
+        <ChevronIcon color={theme.textTertiary} size={16} />
+      </Pressable>
 
       <SectionTitle>Erinnerungen</SectionTitle>
       <Card style={styles.settings}>
@@ -220,13 +222,6 @@ export default function ContractScreen() {
 
       <SectionTitle>Einstellungen</SectionTitle>
       <Card style={styles.settings}>
-        <TextField
-          label="Dein Name"
-          value={name}
-          onChangeText={setName}
-          onBlur={() => updateSettings({ name: name.trim() })}
-          maxLength={40}
-        />
         <View style={styles.setting}>
           <T variant="label">Neuer Tag beginnt um</T>
           <View style={styles.chips}>

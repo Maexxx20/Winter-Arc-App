@@ -11,6 +11,7 @@ und Sync zwischen Geräten dazu.
    - [`supabase/migrations/0001_init.sql`](../supabase/migrations/0001_init.sql) – Arcs, Einträge, Rückblicke
    - [`supabase/migrations/0002_crews.sql`](../supabase/migrations/0002_crews.sql) – Crews, Tagesstatus, Reaktionen
    - [`supabase/migrations/0003_realtime.sql`](../supabase/migrations/0003_realtime.sql) – Live-Updates in Crews
+   - [`supabase/migrations/0004_profiles.sql`](../supabase/migrations/0004_profiles.sql) – Profil (Motto, Instagram, Bild) und Speicher für Profilbilder
 
    Alle Dateien lassen sich gefahrlos mehrmals ausführen. Getestet werden sie mit `npm run test:db`
    (eingebettetes Postgres, prüft alle Zugriffsregeln).
@@ -79,7 +80,8 @@ Danach `npx expo start --clear`. Im Tab **Vertrag** erscheint jetzt «Konto & Sy
 | Häkchen und Mengen pro Tag | ✓ |
 | Notizen | ✓ |
 | Wochenrückblicke | ✓ |
-| Fotos | nur lokal (kommt später über Supabase Storage) |
+| Profil (Name, Motto, Instagram, Bild) | ✓ – sichtbar nur für Crew-Mitglieder; Bild im privaten Bucket `avatars` |
+| Fotos im Tagebuch | nur lokal (kommt später über Supabase Storage) |
 | Einstellungen, Erinnerungen | nur lokal (pro Gerät) |
 | Crew-Tagesstatus | Status, Anzahl erledigter Regeln, Streak, Quote – sichtbar nur für Crew-Mitglieder |
 

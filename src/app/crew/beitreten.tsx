@@ -13,7 +13,7 @@ import { normalizeCode } from '@/lib/crew';
 import { haptic } from '@/lib/haptics';
 import { joinCrew } from '@/services/crews';
 import { useSession } from '@/services/supabase';
-import { updateSettings, useAppState } from '@/store/store';
+import { updateProfile, useAppState } from '@/store/store';
 
 /** Einstieg über Einladungslink: nordwand://crew/beitreten?code=ABC123 */
 export default function JoinCrewScreen() {
@@ -30,7 +30,7 @@ export default function JoinCrewScreen() {
     setBusy(true);
     setError(null);
     try {
-      if (name.trim() !== settings.name) updateSettings({ name: name.trim() });
+      if (name.trim() !== settings.name) updateProfile({ name: name.trim() });
       const crew = await joinCrew(code);
       haptic.success();
       router.replace({ pathname: '/crew/[id]', params: { id: crew.id } });

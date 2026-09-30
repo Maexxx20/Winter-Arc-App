@@ -75,8 +75,23 @@ export interface WeekReview {
   updatedAt: string;
 }
 
+export interface Avatar {
+  /** Datei im Dokumentenordner der App (relativer Name) – null, wenn nur auf dem Server. */
+  local: string | null;
+  /** Pfad im Speicher-Bucket «avatars» – null, solange nicht hochgeladen. */
+  remote: string | null;
+}
+
 export interface Settings {
+  /** Anzeigename; erscheint im Vertrag und in Crews. */
   name: string;
+  /** Kurzer Satz über dich, max. 80 Zeichen. Sichtbar für Crews. */
+  motto: string;
+  /** Instagram-Name ohne @. Sichtbar für Crews. */
+  instagram: string;
+  avatar: Avatar;
+  /** Letzte Änderung an Name, Motto, Instagram oder Bild (für den Sync). null = nie bearbeitet. */
+  profileUpdatedAt: string | null;
   /** Stunde, zu der ein neuer Tag beginnt (0 = Mitternacht). */
   rolloverHour: number;
   haptics: boolean;
