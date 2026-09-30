@@ -101,6 +101,9 @@ export async function signOut() {
 
 function translateAuthError(msg: string): string {
   const m = msg.toLowerCase();
+  if (m.includes('timed out') || m.includes('timeout') || m.includes('error sending') || m.includes('smtp'))
+    return 'Die Mail konnte nicht verschickt werden. Prüfe in Supabase die SMTP-Einstellungen (Host, Port 587, App-Passwort).';
+  if (m.includes('credentials')) return 'E-Mail oder Passwort ist falsch.';
   if (m.includes('expired') || m.includes('invalid')) return 'Der Code ist falsch oder abgelaufen.';
   if (m.includes('rate') || m.includes('seconds')) return 'Zu viele Versuche. Warte kurz und versuch es nochmal.';
   if (m.includes('email')) return 'Diese E-Mail-Adresse ist ungültig.';
