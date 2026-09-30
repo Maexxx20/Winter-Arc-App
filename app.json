@@ -61,6 +61,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "9b03a7fd-4a21-43ff-aa7e-b2219f815484"
+      }
+    },
+    "owner": "nordwand"
   }
 }
