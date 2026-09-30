@@ -13,6 +13,10 @@ grant usage on schema public, auth to anon, authenticated;
 grant execute on function auth.uid() to anon, authenticated;
 `);
 for (const f of fs.readdirSync(dir).sort()) { await db.exec(fs.readFileSync(dir + f, 'utf8')); console.log('ok', f); }
+// Alle Migrationen müssen mehrfach ausführbar sein
+for (const f of fs.readdirSync(dir).sort()) await db.exec(fs.readFileSync(dir + f, 'utf8'));
+console.log('ok zweiter Durchlauf');
+{ const r = await db.query(`select tablename from pg_publication_tables where pubname = 'supabase_realtime' order by 1`); if (r.rows.map((x) => x.tablename).join() !== 'daily_status,reactions') { console.log('FAIL realtime', r.rows); process.exit(1); } }
 await db.exec(`grant all on all tables in schema public to authenticated;`);
 
 const A = '00000000-0000-0000-0000-00000000000a', B = '00000000-0000-0000-0000-00000000000b', C = '00000000-0000-0000-0000-00000000000c';

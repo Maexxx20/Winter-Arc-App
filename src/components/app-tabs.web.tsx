@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { supabaseConfigured } from '@/services/supabase';
 
 import { T } from './ui/text';
 
@@ -19,9 +20,11 @@ export default function AppTabs() {
           <TabTrigger name="verlauf" href="/verlauf" asChild>
             <TabButton>Verlauf</TabButton>
           </TabTrigger>
-          <TabTrigger name="crew" href="/crew" asChild>
-            <TabButton>Crew</TabButton>
-          </TabTrigger>
+          {supabaseConfigured ? (
+            <TabTrigger name="crew" href="/crew" asChild>
+              <TabButton>Crew</TabButton>
+            </TabTrigger>
+          ) : null}
           <TabTrigger name="vertrag" href="/vertrag" asChild>
             <TabButton>Vertrag</TabButton>
           </TabTrigger>

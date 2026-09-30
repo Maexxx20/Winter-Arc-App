@@ -12,7 +12,8 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { confirm } from '@/lib/confirm';
 import { haptic } from '@/lib/haptics';
-import { sendLoginCode, signOut, supabaseConfigured, useSession, verifyLoginCode } from '@/services/supabase';
+import { openLink, PRIVACY_URL } from '@/constants/links';
+import { isReviewEmail, sendLoginCode, signInWithPassword, signOut, supabaseConfigured, useSession, verifyLoginCode } from '@/services/supabase';
 import { deleteAccount, syncNow, useSyncStatus } from '@/services/sync';
 import { setSyncMeta } from '@/store/store';
 
@@ -30,16 +31,24 @@ export default function AccountScreen() {
   const sync = useSyncStatus();
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
+  const [password, setPassword] = useState('');
   const [step, setStep] = useState<'email' | 'code'>('email');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
+  const review = isReviewEmail(email);
+
   const send = async () => {
     setBusy(true);
     setError(null);
-    const err = await sendLoginCode(email);
+    const err = review ? await signInWithPassword(email, password) : await sendLoginCode(email);
+    if (review) {
+      setBusy(false);
+      if (err) setError(err);
+      return;
+    }
     setBusy(false);
     if (err) setError(err);
     else setStep('code');
@@ -161,7 +170,15 @@ export default function AccountScreen() {
             textContentType="emailAddress"
             onSubmitEditing={() => emailValid && send()}
           />
-          <Button title="Code senden" onPress={send} disabled={!emailValid} loading={busy} />
+          {review && (
+            <TextField label="Passwort" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" />
+          )}
+          <Button title={review ? 'Anmelden' : 'Code senden'} onPress={send} disabled={!emailValid || (review && !password)} loading={busy} />
+          <Pressable onPress={() => openLink(PRIVACY_URL)} hitSlop={8}>
+            <T variant="caption" color="textTertiary" center>
+              Mit der Anmeldung gilt unsere <T variant="caption" color="accent">Datenschutzerklärung</T>.
+            </T>
+          </Pressable>
         </>
       ) : (
         <>

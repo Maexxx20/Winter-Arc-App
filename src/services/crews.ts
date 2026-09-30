@@ -138,3 +138,28 @@ export async function removeReaction(id: string): Promise<void> {
   const { error } = await sb.from('reactions').delete().eq('id', id);
   if (error) throw new Error(translate(error.message));
 }
+
+/**
+ * Live-Updates für eine Crew: ruft `onChange` (entprellt) auf, sobald jemand
+ * reagiert oder seinen Tag aktualisiert. Gibt eine Abmelde-Funktion zurück.
+ */
+export function subscribeCrew(crewId: string, isMember: (userId: string) => boolean, onChange: () => void): () => void {
+  if (!supabase || !getSession()) return () => {};
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const soon = () => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(onChange, 700);
+  };
+  const channel = supabase
+    .channel(`crew-${crewId}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'reactions', filter: `crew_id=eq.${crewId}` }, soon)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_status' }, (payload) => {
+      const row = (payload.new ?? payload.old) as { user_id?: string } | undefined;
+      if (!row?.user_id || isMember(row.user_id)) soon();
+    })
+    .subscribe();
+  return () => {
+    if (timer) clearTimeout(timer);
+    supabase?.removeChannel(channel);
+  };
+}

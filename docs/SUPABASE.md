@@ -10,8 +10,9 @@ und Sync zwischen Geräten dazu.
 2. **SQL Editor → New query**: nacheinander den Inhalt dieser Dateien einfügen und **Run**:
    - [`supabase/migrations/0001_init.sql`](../supabase/migrations/0001_init.sql) – Arcs, Einträge, Rückblicke
    - [`supabase/migrations/0002_crews.sql`](../supabase/migrations/0002_crews.sql) – Crews, Tagesstatus, Reaktionen
+   - [`supabase/migrations/0003_realtime.sql`](../supabase/migrations/0003_realtime.sql) – Live-Updates in Crews
 
-   Beide Dateien lassen sich gefahrlos mehrmals ausführen. Getestet werden sie mit `npm run test:db`
+   Alle Dateien lassen sich gefahrlos mehrmals ausführen. Getestet werden sie mit `npm run test:db`
    (eingebettetes Postgres, prüft alle Zugriffsregeln).
 
 ## 2. Login per Code aktivieren

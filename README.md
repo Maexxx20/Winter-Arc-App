@@ -51,7 +51,10 @@ src/
   lib/crew.ts           Tagesstatus für die Crew und Rangliste (getestet)
   services/             Erinnerungen, Fotos, Supabase, Sync
   store/store.ts        Lokaler Zustand, gespeichert in AsyncStorage (offline-first)
-supabase/migrations/    Datenbankschema mit Row Level Security
+supabase/migrations/    Datenbankschema mit Row Level Security (0001–0003)
+supabase/tests/         Zugriffsregeln gegen eingebettetes Postgres (npm run test:db)
+docs/                   Website mit Datenschutzerklärung (für GitHub Pages), Store-Texte, Supabase-Anleitung
+assets/brand/           Icon-Vorlage; node assets/brand/make-icons.mjs erzeugt alle Icons neu
 ```
 
 ## Regeln der App
@@ -69,5 +72,6 @@ supabase/migrations/    Datenbankschema mit Row Level Security
 - [x] **Phase 0** – Arc erstellen, Vertrag, Check-in, Streak mit Schild, Heatmap, Tagesnotiz, hell/dunkel
 - [x] **Phase 1** – Erinnerungen, Fotos im Journal, Wochenrückblick, teilbare Fortschritts-Karte, Konto + Sync (Supabase)
 - [x] **Phase 2** – Crews: Einladung per Code, Tagesstatus der anderen, Reaktionen, Rangliste
-- [ ] **Phase 3** – Release: App-Icon, Name, Datenschutzerklärung, Sign in with Apple, Account löschen, TestFlight, Store-Einträge
-- [ ] Danach – Widgets, Apple Health, weitere Arcs (Spring Arc …)
+- [x] **Phase 3 (Code)** – App-Icon, Live-Updates in Crews, EAS-Build-Profile, Datenschutzerklärung und Website (`docs/`), Store-Texte (`docs/APP_STORE.md`), Review-Zugang
+- [ ] **Phase 3 (Release)** – Apple-Developer-Konto, Builds, TestFlight, Store-Einträge (siehe Checkliste)
+- [ ] Danach – Push bei Reaktionen, Fotos im Sync, Widgets, Apple Health, weitere Arcs (Spring Arc …)

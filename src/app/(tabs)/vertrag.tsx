@@ -10,6 +10,7 @@ import { Chip, SectionTitle, TextField } from '@/components/ui/controls';
 import { Screen } from '@/components/ui/screen';
 import { TimeRow } from '@/components/ui/time-row';
 import { T } from '@/components/ui/text';
+import { openLink, PRIVACY_URL, WEBSITE_URL } from '@/constants/links';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
@@ -293,6 +294,15 @@ export default function ContractScreen() {
       <T variant="caption" color="textTertiary" center>
         {session ? 'Deine Daten sind in deinem Konto gesichert.' : 'Deine Daten liegen nur auf diesem Gerät.'}
       </T>
+      <View style={styles.links}>
+        <Pressable onPress={() => openLink(PRIVACY_URL)} hitSlop={8}>
+          <T variant="caption" color="accent">Datenschutz</T>
+        </Pressable>
+        <T variant="caption" color="textTertiary">·</T>
+        <Pressable onPress={() => openLink(WEBSITE_URL)} hitSlop={8}>
+          <T variant="caption" color="accent">Support</T>
+        </Pressable>
+      </View>
     </Screen>
   );
 }
@@ -321,4 +331,5 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three },
   disabled: { opacity: 0.45 },
+  links: { flexDirection: 'row', justifyContent: 'center', gap: Spacing.two },
 });

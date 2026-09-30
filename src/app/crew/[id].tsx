@@ -1,5 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, Share, StyleSheet, View } from 'react-native';
 
 import { Avatar } from '@/components/avatar';
@@ -15,7 +15,7 @@ import { useToday } from '@/hooks/use-today';
 import { confirm } from '@/lib/confirm';
 import { inviteMessage, rankMembers, REACTION_EMOJIS, type Reaction, type ReactionEmoji, type StatusRow } from '@/lib/crew';
 import { haptic } from '@/lib/haptics';
-import { addReaction, type CrewDetail, leaveCrew, loadCrew, removeReaction } from '@/services/crews';
+import { addReaction, type CrewDetail, leaveCrew, loadCrew, removeReaction, subscribeCrew } from '@/services/crews';
 import { useSession } from '@/services/supabase';
 
 export default function CrewScreen() {
@@ -46,6 +46,16 @@ export default function CrewScreen() {
       load();
     }, [load]),
   );
+
+  // Live-Updates: neu laden, wenn jemand reagiert oder seinen Tag abhakt.
+  const memberIds = useRef(new Set<string>());
+  useEffect(() => {
+    memberIds.current = new Set(detail?.members.map((m) => m.user_id) ?? []);
+  }, [detail]);
+  useEffect(() => {
+    if (!id) return;
+    return subscribeCrew(id, (uid) => memberIds.current.has(uid), load);
+  }, [id, load]);
 
   const ranked = useMemo(() => (detail ? rankMembers(detail.members, detail.rows, today) : []), [detail, today]);
 

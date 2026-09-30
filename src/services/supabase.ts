@@ -79,6 +79,22 @@ export async function verifyLoginCode(email: string, token: string): Promise<str
   return error ? translateAuthError(error.message) : null;
 }
 
+/**
+ * Zugang für die App-Review von Apple/Google: Diese eine Adresse meldet sich mit
+ * Passwort an (das Review-Team kann keine E-Mail-Codes empfangen).
+ */
+export const REVIEW_EMAIL = (process.env.EXPO_PUBLIC_REVIEW_EMAIL ?? '').trim().toLowerCase();
+
+export function isReviewEmail(email: string): boolean {
+  return !!REVIEW_EMAIL && email.trim().toLowerCase() === REVIEW_EMAIL;
+}
+
+export async function signInWithPassword(email: string, password: string): Promise<string | null> {
+  if (!supabase) return 'Sync ist noch nicht eingerichtet.';
+  const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+  return error ? translateAuthError(error.message) : null;
+}
+
 export async function signOut() {
   await supabase?.auth.signOut();
 }
