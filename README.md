@@ -45,15 +45,18 @@ src/
     crew/[id].tsx       Rangliste, Wochenpunkte, Reaktionen, Einladen
     crew/beitreten.tsx  Einstieg über Einladungslink
     crew/mitglied.tsx   Profil eines Crew-Mitglieds
+    crew/challenge.tsx  Wochen-Challenge starten/ändern
   components/           UI-Bausteine (ArcGauge, RuleRow, Heatmap, HoldToSign, …)
   lib/arc.ts            Kernlogik – reine Funktionen, getestet in lib/__tests__
   lib/date.ts           Datumsrechnung mit lokalen Kalendertagen (DST-sicher)
   lib/reminders.ts      Planung der Erinnerungen (reine Funktion, getestet)
   lib/sync-merge.ts     Abgleich-Logik: neuere Version gewinnt (getestet)
-  lib/crew.ts           Tagesstatus für die Crew und Rangliste (getestet)
+  lib/crew.ts           Tagesstatus, Rangliste, Challenges, Feed (getestet)
+  lib/badges.ts         Abzeichen – aus den Daten berechnet (getestet)
+  lib/photo-merge.ts    Foto-Abgleich mit Löschmarken (getestet)
   services/             Erinnerungen, Fotos, Supabase, Sync
   store/store.ts        Lokaler Zustand, gespeichert in AsyncStorage (offline-first)
-supabase/migrations/    Datenbankschema mit Row Level Security (0001–0004)
+supabase/migrations/    Datenbankschema mit Row Level Security (0001–0007)
 supabase/tests/         Zugriffsregeln gegen eingebettetes Postgres (npm run test:db)
 docs/                   Website mit Datenschutzerklärung (für GitHub Pages), Store-Texte, Supabase-Anleitung
 assets/brand/           Icon-Vorlage; node assets/brand/make-icons.mjs erzeugt alle Icons neu
@@ -76,4 +79,5 @@ assets/brand/           Icon-Vorlage; node assets/brand/make-icons.mjs erzeugt a
 - [x] **Phase 2** – Crews: Einladung per Code, Tagesstatus der anderen, Reaktionen, Rangliste
 - [x] **Phase 3 (Code)** – App-Icon, Live-Updates in Crews, EAS-Build-Profile, Datenschutzerklärung und Website (`docs/`), Store-Texte (`docs/APP_STORE.md`), Review-Zugang
 - [ ] **Phase 3 (Release)** – Apple-Developer-Konto, Builds, TestFlight, Store-Einträge (siehe Checkliste)
-- [ ] Danach – Push bei Reaktionen, Fotos im Sync, Widgets, Apple Health, weitere Arcs (Spring Arc …)
+- [x] **Ausbau 1** – Profil, Abzeichen, Wochen-Challenges und Feed in Crews, Fotos im Sync, Push bei Reaktionen
+- [ ] Danach – Widgets, Apple Health, weitere Arcs (Spring Arc …)

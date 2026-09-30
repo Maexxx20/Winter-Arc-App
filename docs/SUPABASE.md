@@ -12,6 +12,9 @@ und Sync zwischen Geräten dazu.
    - [`supabase/migrations/0002_crews.sql`](../supabase/migrations/0002_crews.sql) – Crews, Tagesstatus, Reaktionen
    - [`supabase/migrations/0003_realtime.sql`](../supabase/migrations/0003_realtime.sql) – Live-Updates in Crews
    - [`supabase/migrations/0004_profiles.sql`](../supabase/migrations/0004_profiles.sql) – Profil (Motto, Instagram, Bild) und Speicher für Profilbilder
+   - [`supabase/migrations/0005_challenges.sql`](../supabase/migrations/0005_challenges.sql) – Abzeichen im Profil, Wochen-Challenges
+   - [`supabase/migrations/0006_photos.sql`](../supabase/migrations/0006_photos.sql) – Tagebuch-Fotos im Sync (privater Bucket `photos`)
+   - [`supabase/migrations/0007_push.sql`](../supabase/migrations/0007_push.sql) – Push bei Reaktionen und Beitritten (schaltet die Erweiterung `pg_net` ein)
 
    Alle Dateien lassen sich gefahrlos mehrmals ausführen. Getestet werden sie mit `npm run test:db`
    (eingebettetes Postgres, prüft alle Zugriffsregeln).
@@ -60,6 +63,15 @@ Supabase den Mailserver nicht oder wird abgewiesen. Den genauen Grund zeigt **Lo
 Mit einer Gmail-Absenderadresse landen Mails manchmal im Spam. Sobald du eine Domain hast, dort die
 Domain in Brevo verifizieren und als Absender z. B. `code@deinedomain.ch` nehmen.
 
+## 2c. Push-Mitteilungen
+
+1. Migration `0007_push.sql` ausführen (siehe oben). Sie schaltet `pg_net` ein; die Datenbank schickt
+   die Mitteilungen dann selbst an den Expo-Push-Dienst.
+2. Im Projektordner einmal `npx eas-cli@latest init` ausführen. Das trägt die Projekt-ID in
+   `app.json` ein – ohne sie kann die App kein Push-Token holen.
+3. In der App: Vertrag → Erinnerungen → «Crew-Mitteilungen» einschalten. In Expo Go geht das nur auf
+   dem iPhone; auf Android braucht es einen Development-Build.
+
 ## 3. Schlüssel in die App
 
 Unter **Project Settings → API** die *Project URL* und den *anon / publishable key* kopieren und im
@@ -81,7 +93,8 @@ Danach `npx expo start --clear`. Im Tab **Vertrag** erscheint jetzt «Konto & Sy
 | Notizen | ✓ |
 | Wochenrückblicke | ✓ |
 | Profil (Name, Motto, Instagram, Bild) | ✓ – sichtbar nur für Crew-Mitglieder; Bild im privaten Bucket `avatars` |
-| Fotos im Tagebuch | nur lokal (kommt später über Supabase Storage) |
+| Fotos im Tagebuch | ✓ – nur für dich; ein Datensatz pro Foto (`diary_photos`), Datei im Bucket `photos` |
+| Abzeichen | ✓ – werden berechnet und für die Crew im Profil veröffentlicht |
 | Einstellungen, Erinnerungen | nur lokal (pro Gerät) |
 | Crew-Tagesstatus | Status, Anzahl erledigter Regeln, Streak, Quote – sichtbar nur für Crew-Mitglieder |
 

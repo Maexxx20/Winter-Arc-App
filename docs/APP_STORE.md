@@ -73,7 +73,8 @@ Tracking: **Nein** (keine Daten werden zum Tracking verwendet).
 | Kontaktinfos → E-Mail-Adresse | Ja (nur mit Konto) | Ja | App-Funktionalität |
 | Nutzerinhalte → Andere Nutzerinhalte (Regeln, Häkchen, Notizen, Rückblicke, Profil: Name, Motto, Instagram-Name) | Ja (nur mit Konto) | Ja | App-Funktionalität |
 | Kennungen → Nutzer-ID | Ja (nur mit Konto) | Ja | App-Funktionalität |
-| Nutzerinhalte → Fotos oder Videos | Ja (nur das Profilbild, nur mit Konto; Tagebuch-Fotos bleiben auf dem Gerät) | Ja | App-Funktionalität |
+| Nutzerinhalte → Fotos oder Videos | Ja (Profilbild und Tagebuch-Fotos, nur mit Konto) | Ja | App-Funktionalität |
+| Kennungen → Geräte-ID (Push-Token) | Ja (nur wenn Crew-Mitteilungen eingeschaltet) | Ja | App-Funktionalität |
 | Nutzungsdaten, Diagnose, Standort, Gesundheit | Nein | – | – |
 
 Google Play → «Datensicherheit»: dieselben Angaben; Daten werden verschlüsselt übertragen; Nutzer können die Löschung in der App anfordern (Konto löschen).

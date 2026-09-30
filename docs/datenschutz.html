@@ -27,34 +27,36 @@ E-Mail: <a href="mailto:max.ale.konrad@gmail.com">max.ale.konrad@gmail.com</a></
 <p>Wenn du ein Konto erstellst, verarbeiten wir:</p>
 <ul>
   <li><strong>E-Mail-Adresse</strong> – für die Anmeldung per Einmal-Code. Ein Passwort gibt es nicht.</li>
-  <li><strong>Deine Arc-Daten</strong> – Arcs, Regeln, Vertrag (inkl. des Namens, mit dem du unterschreibst), tägliche Häkchen und Mengen, Notizen und Wochenrückblicke. Zweck: Sicherung und Nutzung auf mehreren Geräten.</li>
-  <li><strong>Profil</strong> – Anzeigename, Motto (ein kurzer Satz über dich), Instagram-Name und Profilbild, soweit du sie angibst. Alle Angaben sind freiwillig.</li>
+  <li><strong>Deine Arc-Daten</strong> – Arcs, Regeln, Vertrag (inkl. des Namens, mit dem du unterschreibst), tägliche Häkchen und Mengen, Notizen, Fotos im Tagebuch und Wochenrückblicke. Zweck: Sicherung und Nutzung auf mehreren Geräten.</li>
+  <li><strong>Profil</strong> – Anzeigename, Motto (ein kurzer Satz über dich), Instagram-Name und Profilbild, soweit du sie angibst. Alle Angaben sind freiwillig. Dazu die Liste deiner Abzeichen (z. B. «7 Tage am Stück» mit Datum), die die App aus deinen Daten berechnet.</li>
+  <li><strong>Geräte-Token für Mitteilungen</strong> – nur wenn du Crew-Mitteilungen einschaltest (siehe Abschnitt 5).</li>
 </ul>
-<p><strong>Fotos im Tagebuch</strong> werden nicht hochgeladen, sie bleiben auf deinem Gerät. Hochgeladen wird nur ein Profilbild, wenn du eines festlegst; es wird vorher auf 512 × 512 Pixel verkleinert. <strong>Erinnerungen</strong> werden lokal auf dem Gerät geplant; dafür werden keine Daten übertragen.</p>
+<p><strong>Fotos</strong> werden vor dem Hochladen verkleinert (Tagebuch-Fotos auf höchstens 1600 Pixel, Profilbilder auf 512 × 512 Pixel). Fotos im Tagebuch siehst nur du. <strong>Erinnerungen</strong> werden lokal auf dem Gerät geplant; dafür werden keine Daten übertragen.</p>
 
 <h2>4. Crews</h2>
 <p>Wenn du einer Crew beitrittst oder eine erstellst, sehen die anderen Mitglieder dieser Crew:</p>
 <ul>
-  <li>dein Profil: Anzeigename, Profilbild, Motto und Instagram-Name (soweit angegeben),</li>
+  <li>dein Profil: Anzeigename, Profilbild, Motto, Instagram-Name (soweit angegeben) und deine Abzeichen,</li>
   <li>pro Tag eine Zusammenfassung: ob du den Tag gehalten hast, wie viele deiner Regeln erledigt sind, Tag im Arc, aktueller und bester Streak sowie deine Quote,</li>
-  <li>Reaktionen (Emojis), die du ihnen schickst.</li>
+  <li>Reaktionen (Emojis), die du ihnen schickst, und Wochen-Challenges, die du startest.</li>
 </ul>
 <p>Nicht sichtbar für die Crew sind deine Regeln, Notizen, Fotos, Wochenrückblicke und deine E-Mail-Adresse. Wenn du eine Crew verlässt, sieht sie deine Zusammenfassungen nicht mehr.</p>
 
 <h2>5. Wo die Daten liegen</h2>
-<p>Konto- und Sync-Daten werden bei <strong>Supabase</strong> (Supabase Inc., USA) gespeichert, auf Servern in der Region <strong>Zürich (Schweiz)</strong>. Supabase verarbeitet die Daten in unserem Auftrag. Der Zugriff ist technisch so beschränkt, dass jede Person nur ihre eigenen Daten sowie Profil und Crew-Zusammenfassungen ihrer Crew-Mitglieder lesen kann. Profilbilder liegen in einem nicht öffentlichen Speicher und sind nur über zeitlich begrenzte Links abrufbar. E-Mails mit dem Anmeldecode werden über den E-Mail-Versanddienst Brevo (Sendinblue SAS, Frankreich) verschickt; dabei wird nur deine E-Mail-Adresse übermittelt.</p>
+<p>Konto- und Sync-Daten werden bei <strong>Supabase</strong> (Supabase Inc., USA) gespeichert, auf Servern in der Region <strong>Zürich (Schweiz)</strong>. Supabase verarbeitet die Daten in unserem Auftrag. Der Zugriff ist technisch so beschränkt, dass jede Person nur ihre eigenen Daten sowie Profil und Crew-Zusammenfassungen ihrer Crew-Mitglieder lesen kann. Profilbilder und Fotos liegen in einem nicht öffentlichen Speicher und sind nur über zeitlich begrenzte Links abrufbar. E-Mails mit dem Anmeldecode werden über den E-Mail-Versanddienst Brevo (Sendinblue SAS, Frankreich) verschickt; dabei wird nur deine E-Mail-Adresse übermittelt.</p>
+<p><strong>Crew-Mitteilungen</strong> (freiwillig): Wenn du sie einschaltest, speichern wir ein Geräte-Token. Reagiert jemand aus deiner Crew oder tritt jemand bei, schickt unsere Datenbank über den Push-Dienst von <strong>Expo</strong> (650 Industries, Inc., USA) und von Apple bzw. Google eine Mitteilung an dieses Token. Übermittelt werden dabei das Token, der Name der Crew und der kurze Text der Mitteilung (z. B. «Lara hat dir 🔥 geschickt»). Schaltest du die Mitteilungen aus oder meldest dich ab, wird das Token gelöscht.</p>
 
 <h2>6. Kein Tracking, keine Werbung</h2>
 <p>Nordwand enthält keine Werbung, keine Analyse- oder Tracking-Werkzeuge und gibt keine Daten an Dritte zu Werbe- oder Marketingzwecken weiter.</p>
 
 <h2>7. Berechtigungen</h2>
 <ul>
-  <li><strong>Mitteilungen</strong> – nur für die Erinnerungen, die du einschaltest.</li>
+  <li><strong>Mitteilungen</strong> – nur für die Erinnerungen und Crew-Mitteilungen, die du einschaltest.</li>
   <li><strong>Kamera und Fotos</strong> – nur wenn du einem Tag ein Foto hinzufügst oder ein Profilbild wählst.</li>
 </ul>
 
 <h2>8. Speicherdauer und Löschung</h2>
-<p>Daten werden gespeichert, solange dein Konto besteht. Du kannst dein Konto jederzeit in der App unter <em>Vertrag → Konto &amp; Sync → Konto löschen</em> löschen. Dabei werden dein Konto, dein Profilbild und alle zugehörigen Daten auf dem Server sofort und endgültig gelöscht. Daten auf deinem Gerät löschst du unter <em>Vertrag → Alle Daten löschen</em> oder indem du die App entfernst.</p>
+<p>Daten werden gespeichert, solange dein Konto besteht. Du kannst dein Konto jederzeit in der App unter <em>Vertrag → Konto &amp; Sync → Konto löschen</em> löschen. Dabei werden dein Konto, dein Profilbild, deine Fotos und alle zugehörigen Daten auf dem Server sofort und endgültig gelöscht. Daten auf deinem Gerät löschst du unter <em>Vertrag → Alle Daten löschen</em> oder indem du die App entfernst.</p>
 
 <h2>9. Deine Rechte</h2>
 <p>Du hast das Recht auf Auskunft über deine Daten, auf Berichtigung, Löschung und Herausgabe. Schreib dafür an die oben genannte E-Mail-Adresse. Du kannst dich zudem beim Eidgenössischen Datenschutz- und Öffentlichkeitsbeauftragten (EDÖB) bzw. bei der zuständigen Aufsichtsbehörde in deinem Land beschweren.</p>
