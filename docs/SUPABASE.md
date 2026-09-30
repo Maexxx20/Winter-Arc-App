@@ -30,9 +30,23 @@ Standardmässig schickt Supabase einen Link. Die App braucht einen 6-stelligen C
 
 3. Gleich vorgehen beim Template **Confirm signup** (wird beim allerersten Login verschickt).
 
-> Der eingebaute Mailversand von Supabase ist auf wenige Mails pro Stunde begrenzt. Für den
-> Store-Release einen eigenen SMTP-Anbieter eintragen (Authentication → Emails → SMTP Settings),
-> z. B. Resend oder Brevo.
+## 2b. Eigener Mailversand (Pflicht, sobald andere mittesten)
+
+Der eingebaute Mailversand von Supabase schickt **nur an Mitglieder deines Supabase-Teams** und
+höchstens **2 Mails pro Stunde**. Für Freunde in deiner Crew braucht es einen eigenen Anbieter.
+Ohne eigene Domain geht das mit **Brevo** (gratis, 300 Mails pro Tag):
+
+1. Konto auf brevo.com erstellen, unter *Senders, Domains & Dedicated IPs → Senders* deine
+   E-Mail-Adresse als Absender hinzufügen und bestätigen.
+2. Unter *SMTP & API → SMTP* einen SMTP-Schlüssel erzeugen.
+3. Supabase → Authentication → Emails → **SMTP Settings** → *Enable Custom SMTP*:
+   - Sender email: deine bestätigte Adresse, Sender name: `Nordwand`
+   - Host `smtp-relay.brevo.com`, Port `587`
+   - Username: dein Brevo-SMTP-Login, Password: der SMTP-Schlüssel
+4. Supabase → Authentication → **Rate Limits**: «Rate limit for sending emails» auf z. B. 60 pro Stunde.
+
+Mit einer Gmail-Absenderadresse landen Mails manchmal im Spam. Sobald du eine Domain hast, dort die
+Domain in Brevo verifizieren und als Absender z. B. `code@deinedomain.ch` nehmen.
 
 ## 3. Schlüssel in die App
 
