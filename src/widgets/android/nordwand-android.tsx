@@ -1,6 +1,10 @@
+'use no memo';
+
 /**
  * Android-Widget (react-native-android-widget): klein = Tag & Streak, gross = Regeln direkt abhaken.
  * Gezeichnet wird mit den Widget-Bausteinen der Bibliothek, nicht mit normalen React-Native-Views.
+ * «use no memo»: Die Bibliothek ruft die Komponenten direkt als Funktionen auf (ohne React-Renderer) –
+ * vom React Compiler optimierte Komponenten würden dabei abstürzen.
  */
 import { FlexWidget, TextWidget } from 'react-native-android-widget';
 

@@ -109,7 +109,8 @@ export function planReminders(
       let body: string;
       if (rule.frequency.kind === 'weekly') {
         const left = rule.frequency.times - weeklyCount(arc, log, rule, day);
-        if (day === today && (left <= 0 || isValueDone(rule, ruleValue(log, day, rule.id)))) continue;
+        // Wochenziel erreicht: an keinem Tag dieser Woche mehr erinnern (die Zahl kann nur steigen)
+        if (left <= 0 || (day === today && isValueDone(rule, ruleValue(log, day, rule.id)))) continue;
         body = t('ruleReminder.bodyWeekly', { title: rule.title, count: Math.max(1, left) });
       } else {
         if (day === today && isValueDone(rule, ruleValue(log, day, rule.id))) continue;

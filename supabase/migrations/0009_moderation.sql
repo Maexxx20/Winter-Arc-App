@@ -98,28 +98,7 @@ create policy "reactions send" on public.reactions
     and not public.is_blocked_pair(to_user)
   );
 
--- Beitritts-Mitteilung nicht an Personen, die sich blockiert haben
-create or replace function public.notify_join()
-returns trigger
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  v_crew text;
-  v_name text;
-  v_other uuid;
-begin
-  select name into v_crew from public.crews where id = new.crew_id;
-  v_name := public.crew_display_name(new.crew_id, new.user_id);
-  for v_other in select user_id from public.crew_members where crew_id = new.crew_id and user_id <> new.user_id loop
-    if not public.blocked_between(new.user_id, v_other) and public.push_allowed(new.crew_id, new.user_id, v_other, 'join') then
-      perform public.send_push(v_other, coalesce(v_crew, 'Nordwand'), v_name || ' ist der Crew beigetreten', '/crew/' || new.crew_id);
-    end if;
-  end loop;
-  return null;
-end;
-$$;
+-- (Beitritts-Mitteilung ohne blockierte Personen: siehe 0010_push_nudge.sql)
 
 -- ---------- Mitglieder entfernen ----------
 
@@ -269,3 +248,36 @@ grant execute on function public.remove_member(uuid, uuid) to authenticated;
 grant execute on function public.crew_removed(uuid) to authenticated;
 grant execute on function public.unban_member(uuid, uuid) to authenticated;
 grant execute on function public.renew_invite_code(uuid) to authenticated;
+
+-- ---------- Konto löschen: Crews nicht ohne Besitzer zurücklassen ----------
+-- Wer eine Crew gegründet hat und das Konto löscht, übergibt sie an das am längsten dabei
+-- gewesene Mitglied (wie beim Austreten). Ist niemand sonst drin, wird die Crew gelöscht.
+create or replace function public.delete_account()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_me uuid := (select auth.uid());
+  v_crew uuid;
+  v_next uuid;
+begin
+  if v_me is null then
+    raise exception 'not_authenticated';
+  end if;
+  for v_crew in select id from public.crews where created_by = v_me loop
+    select user_id into v_next from public.crew_members
+      where crew_id = v_crew and user_id <> v_me order by joined_at limit 1;
+    if v_next is null then
+      delete from public.crews where id = v_crew;
+    else
+      update public.crews set created_by = v_next where id = v_crew;
+      update public.crew_members set role = 'owner' where crew_id = v_crew and user_id = v_next;
+    end if;
+  end loop;
+  delete from auth.users where id = v_me;
+end;
+$$;
+revoke all on function public.delete_account() from public, anon;
+grant execute on function public.delete_account() to authenticated;

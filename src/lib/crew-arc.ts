@@ -29,6 +29,22 @@ export interface CrewArcSignature {
   signed_at: string;
 }
 
+/** Schutz vor kaputten Vorlagen (die Datenbank prüft auch, ältere Server aber nicht). */
+export function isValidCrewArcRule(r: unknown): r is CrewArcRule {
+  if (!r || typeof r !== 'object') return false;
+  const x = r as Record<string, unknown>;
+  const f = x.frequency as Record<string, unknown> | undefined;
+  const m = x.measure as Record<string, unknown> | undefined;
+  const freqOk = !!f && (f.kind === 'daily' || (f.kind === 'weekly' && typeof f.times === 'number' && f.times >= 1 && f.times <= 7));
+  const measureOk =
+    !!m && (m.kind === 'check' || (m.kind === 'amount' && typeof m.target === 'number' && m.target > 0 && typeof m.unit === 'string'));
+  return typeof x.id === 'string' && typeof x.title === 'string' && x.title.length > 0 && typeof x.icon === 'string' && freqOk && measureOk;
+}
+
+export function isValidCrewArc(a: CrewArc): boolean {
+  return Array.isArray(a.rules) && a.rules.length > 0 && a.rules.every(isValidCrewArcRule) && a.start_date <= a.end_date;
+}
+
 /** Der Crew-Arc, um den es gerade geht: läuft oder kommt noch (der früheste davon). */
 export function relevantCrewArc(arcs: CrewArc[], today: ISODate): CrewArc | null {
   const open = arcs.filter((a) => a.end_date >= today).sort((a, b) => a.start_date.localeCompare(b.start_date));

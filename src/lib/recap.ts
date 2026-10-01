@@ -5,7 +5,7 @@
 
 import { type ArcLog, computeStats, isRuleActiveOn } from './arc';
 import { arcBadges } from './badges';
-import { diffDays, type ISODate, minISO, weekdayIndex, weekStart } from './date';
+import { diffDays, type ISODate, minISO, toISO, weekdayIndex, weekStart } from './date';
 import { type DiaryPhoto, diaryPhotos } from './photo-merge';
 import { ruleDetail } from './rule-stats';
 import type { Arc, Rule, WeekReview } from './types';
@@ -53,6 +53,8 @@ export function buildRecap(
   reviews: Record<ISODate, WeekReview>,
   today: ISODate,
 ): ArcRecap {
+  // Abgebrochener Arc: nur bis zum Abbruch zählen
+  if (arc.status === 'abandoned' && arc.updatedAt) today = minISO(today, toISO(new Date(arc.updatedAt)));
   const stats = computeStats(arc, log, today);
   const end = minISO(arc.endDate, today);
 
@@ -123,7 +125,8 @@ export function buildRecap(
     title: arc.title,
     startDate: arc.startDate,
     endDate: arc.endDate,
-    finished: today > arc.endDate,
+    // Abgebrochene oder beendete Arcs sind fertig – nicht weiter verpasste Tage zählen
+    finished: today > arc.endDate || arc.status !== 'active',
     totalDays: stats.totalDays,
     evaluatedDays: stats.evaluatedDays,
     heldDays: stats.doneDays,

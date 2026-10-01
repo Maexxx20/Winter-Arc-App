@@ -1,5 +1,5 @@
 import { buildStatusRows, type Challenge, type ChallengeKind, type Crew, type CrewMember, normalizeCode, type Reaction, type ReactionEmoji, type StatusRow } from '@/lib/crew';
-import type { CrewArc, CrewArcSignature } from '@/lib/crew-arc';
+import { type CrewArc, type CrewArcSignature, isValidCrewArc } from '@/lib/crew-arc';
 import { addDays, type ISODate, todayISO, weekStart } from '@/lib/date';
 import { t } from '@/i18n';
 import { getState, selectActiveArc, selectLog } from '@/store/store';
@@ -34,6 +34,8 @@ function translate(message: string): string {
   if (message.includes('crew_not_found')) return t('crew.errors.notFound');
   if (message.includes('crew_full')) return t('crew.errors.full');
   if (message.includes('too_many_crews')) return t('crew.errors.tooMany');
+  if (message.includes('crew_arc_exists')) return t('crew.errors.arcExists');
+  if (message.includes('crew_arcs_rules_valid')) return t('crew.errors.arcInvalid');
   if (message.includes('not_authenticated')) return t('common.signInFirst');
   if (message.toLowerCase().includes('fetch') || message.toLowerCase().includes('network')) return t('common.offline');
   return message;
@@ -276,7 +278,7 @@ export async function loadCrewArcs(crewId: string): Promise<{ arcs: CrewArc[]; s
   if (!supabase || !getSession()) return { arcs: [], signatures: [] };
   const { data, error } = await supabase.from('crew_arcs').select('*').eq('crew_id', crewId).order('start_date');
   if (error) return { arcs: [], signatures: [] }; // Migration 0011 fehlt
-  const arcs = (data ?? []) as CrewArc[];
+  const arcs = ((data ?? []) as CrewArc[]).filter(isValidCrewArc);
   if (!arcs.length) return { arcs, signatures: [] };
   const { data: sigs } = await supabase
     .from('crew_arc_signatures')
@@ -305,7 +307,7 @@ export async function deleteCrewArc(id: string): Promise<void> {
 
 export async function signCrewArc(id: string): Promise<void> {
   const sb = need();
-  const { error } = await sb.from('crew_arc_signatures').upsert({ crew_arc_id: id, user_id: getSession()!.user.id }, { onConflict: 'crew_arc_id,user_id' });
+  const { error } = await sb.from('crew_arc_signatures').upsert({ crew_arc_id: id, user_id: getSession()!.user.id }, { onConflict: 'crew_arc_id,user_id', ignoreDuplicates: true });
   if (error) throw new Error(translate(error.message));
 }
 

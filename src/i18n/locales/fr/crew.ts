@@ -122,6 +122,8 @@ const crew: DictOf<typeof de> = {
     full: 'Ce crew est complet (max. 20 personnes).',
     tooMany: 'Tu es déjà dans 5 crews – impossible d’en rejoindre plus.',
     challengeExists: 'Il y a déjà un défi pour cette semaine.',
+    arcExists: 'Il y a déjà un arc du crew en cours ou qui commence bientôt.',
+    arcInvalid: 'Les règles du modèle ne sont pas valides.',
   },
 };
 

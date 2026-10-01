@@ -22,6 +22,74 @@ create table if not exists public.crew_arcs (
 );
 create index if not exists crew_arcs_crew on public.crew_arcs (crew_id, start_date desc);
 
+-- Regeln prüfen, damit eine kaputte Vorlage niemandem die App stört
+create or replace function public.valid_crew_arc_rules(p jsonb)
+returns boolean
+language sql
+immutable
+set search_path = ''
+as $$
+  select jsonb_typeof(p) = 'array'
+    and jsonb_array_length(p) between 1 and 10
+    and not exists (
+      select 1 from jsonb_array_elements(p) e
+      where not (
+        jsonb_typeof(e) = 'object'
+        and jsonb_typeof(e -> 'id') = 'string' and char_length(e ->> 'id') between 1 and 64
+        and jsonb_typeof(e -> 'title') = 'string' and char_length(e ->> 'title') between 1 and 80
+        and jsonb_typeof(e -> 'icon') = 'string' and char_length(e ->> 'icon') <= 16
+        and jsonb_typeof(e -> 'category') = 'string' and char_length(e ->> 'category') <= 20
+        and jsonb_typeof(e -> 'frequency') = 'object'
+        and coalesce(
+          e -> 'frequency' ->> 'kind' = 'daily'
+          or (e -> 'frequency' ->> 'kind' = 'weekly'
+              and jsonb_typeof(e -> 'frequency' -> 'times') = 'number'
+              and (e -> 'frequency' ->> 'times') ~ '^[1-7]$'),
+          false)
+        and jsonb_typeof(e -> 'measure') = 'object'
+        and coalesce(
+          e -> 'measure' ->> 'kind' = 'check'
+          or (e -> 'measure' ->> 'kind' = 'amount'
+              and jsonb_typeof(e -> 'measure' -> 'target') = 'number'
+              and (e -> 'measure' ->> 'target') ~ '^[0-9]{1,6}(\.[0-9]{1,2})?$'
+              and (e -> 'measure' ->> 'target')::numeric > 0
+              and jsonb_typeof(e -> 'measure' -> 'unit') = 'string'
+              and char_length(e -> 'measure' ->> 'unit') between 1 and 20),
+          false)
+      )
+    );
+$$;
+alter table public.crew_arcs drop constraint if exists crew_arcs_rules_valid;
+alter table public.crew_arcs add constraint crew_arcs_rules_valid check (public.valid_crew_arc_rules(rules));
+
+-- Pro Crew höchstens eine Vorlage, die noch nicht vorbei ist; Crew und Ersteller:in bleiben fest.
+create or replace function public.crew_arc_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if tg_op = 'INSERT' then
+    if exists (
+      select 1 from public.crew_arcs
+      where crew_id = new.crew_id and end_date >= (now() at time zone 'Europe/Zurich')::date
+    ) then
+      raise exception 'crew_arc_exists';
+    end if;
+  else
+    if new.id is distinct from old.id or new.crew_id is distinct from old.crew_id or new.created_by is distinct from old.created_by then
+      raise exception 'crew_arc_fixed_fields';
+    end if;
+    new.updated_at := now();
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists crew_arc_guard on public.crew_arcs;
+create trigger crew_arc_guard before insert or update on public.crew_arcs
+  for each row execute function public.crew_arc_guard();
+
 create table if not exists public.crew_arc_signatures (
   crew_arc_id uuid not null references public.crew_arcs (id) on delete cascade,
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
@@ -92,6 +160,25 @@ create policy "crew arc sign" on public.crew_arc_signatures
 drop policy if exists "crew arc unsign" on public.crew_arc_signatures;
 create policy "crew arc unsign" on public.crew_arc_signatures
   for delete to authenticated using (user_id = (select auth.uid()));
+
+-- Wer die Crew verlässt oder entfernt wird, zählt nicht mehr als unterschrieben
+-- (sonst bliebe die Vorlage für die Ersteller:in gesperrt).
+create or replace function public.crew_arc_signature_cleanup()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  delete from public.crew_arc_signatures s
+  using public.crew_arcs a
+  where a.id = s.crew_arc_id and a.crew_id = old.crew_id and s.user_id = old.user_id;
+  return null;
+end;
+$$;
+drop trigger if exists crew_arc_signature_cleanup on public.crew_members;
+create trigger crew_arc_signature_cleanup after delete on public.crew_members
+  for each row execute function public.crew_arc_signature_cleanup();
 
 -- Tagesstatus: zu welchem Crew-Arc und welche seiner Regeln heute erledigt sind
 alter table public.daily_status add column if not exists crew_arc_id uuid;

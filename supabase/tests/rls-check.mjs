@@ -208,7 +208,10 @@ r = await as(A, `select nudge($1, '${C}', ${today}) res`, [mod.id]); check('nur 
 { const calls = (await db.query(`select body from net.calls`)).rows.map((x) => x.body[0]);
   check('Anstupsen auf Französisch', calls.length === 1 && calls[0].to === TC && calls[0].body.startsWith('Max K. te fait signe'), calls); }
 r = await as(A, `select * from my_nudges_today($1) u`, [mod.id]); check('A sieht, wen es angestupst hat', r.length === 1 && r[0].u === C, r);
-r = await as(B, `select nudge($1, '${C}', ${today})`, [mod.id]); check('blockiert → nicht anstupsen', r.error?.includes('blocked'), r);
+await db.exec('delete from net.calls');
+r = await as(B, `select nudge($1, '${C}', ${today}) res`, [mod.id]); check('blockiert → still «sent», ohne Push und ohne zu verraten', r[0]?.res === 'sent', r);
+{ const n = (await db.query(`select count(*)::int n from net.calls`)).rows[0].n; check('blockiert → keine Mitteilung', n === 0, n); }
+r = await as(A, `select nudge($1, '${B}', ${today} + 1)`, [mod.id]); check('nicht für morgen', r.error?.includes('bad_date'), r);
 r = await as(A, `select nudge($1, '${A}', ${today})`, [mod.id]); check('nicht sich selbst', r.error?.includes('cannot_nudge_self'), r);
 r = await as(D, `select nudge($1, '${C}', ${today})`, [mod.id]); check('nur Mitglieder', r.error?.includes('not_member'), r);
 r = await as(A, `select nudge($1, '${B}', '2020-01-01')`, [mod.id]); check('Datum muss stimmen', r.error?.includes('bad_date'), r);
@@ -243,7 +246,23 @@ r = await as(C, `select user_id from crew_arc_signatures order by signed_at`); c
 r = await as(B, `delete from crew_arc_signatures where crew_arc_id = $1 returning user_id`, [ca]); check('B zieht Unterschrift zurück', r.length === 1 && r[0].user_id === B, r);
 r = await as(B, `update daily_status set crew_arc_id = $1, rules_done = '{r1}' where date = ${today} returning rules_done`, [ca]); check('erledigte Crew-Regeln im Status', r[0]?.rules_done?.[0] === 'r1', r);
 r = await as(B, `update daily_status set rules_done = '{1,2,3,4,5,6,7,8,9,10,11}' where date = ${today}`); check('max. 10 Regeln im Status', !!r.error, r);
+r = await as(A, `update crew_arcs set crew_id = gen_random_uuid() where id = $1`, [ca]); check('Crew der Vorlage bleibt fest', !!r.error || (Array.isArray(r) && r.length === 0), r);
+r = await as(A, `update crew_arcs set created_by = '${C}' where id = $1`, [ca]); check('Ersteller:in bleibt fest', !!r.error || (Array.isArray(r) && r.length === 0), r);
+r = await as(C, `insert into crew_arcs (crew_id, title, start_date, end_date, rules) values ($1, 'Zweite', '2026-10-05', '2026-11-03', $2)`, [mod.id, rules]); check('nur eine offene Vorlage pro Crew', r.error?.includes('crew_arc_exists'), r);
+{ const bad = [
+    '[{}]',
+    JSON.stringify([{ id: 'x', title: 'T', icon: '⭐', category: 'body', frequency: { kind: 'weekly', times: 9 }, measure: { kind: 'check' } }]),
+    JSON.stringify([{ id: 'x', title: 'T', icon: '⭐', category: 'body', frequency: { kind: 'daily' }, measure: { kind: 'amount', target: 'viel', unit: 'x' } }]),
+    JSON.stringify([{ id: 'x', title: 'T', icon: '⭐', category: 'body', frequency: { kind: 'daily' }, measure: { kind: 'amount', target: 0, unit: 'x' } }]),
+  ];
+  for (const b of bad) { const q = await db.query(`select public.valid_crew_arc_rules($1::jsonb) ok`, [b]).catch((e) => ({ rows: [{ ok: false, e }] })); check(`kaputte Regeln abgelehnt: ${b.slice(0, 40)}`, q.rows[0].ok === false, q.rows); }
+  const good = JSON.stringify([{ id: 'x', title: 'Lesen', icon: '📖', category: 'mind', frequency: { kind: 'weekly', times: 3 }, measure: { kind: 'amount', target: 12.5, unit: 'Seiten' } }]);
+  const q = await db.query(`select public.valid_crew_arc_rules($1::jsonb) ok`, [good]); check('gültige Regeln angenommen', q.rows[0].ok === true, q.rows); }
 r = await as(B, `delete from crew_arcs returning id`); check('Mitglied löscht Crew-Arc nicht', Array.isArray(r) && r.length === 0, r);
+r = await as(C, `insert into crew_arc_signatures (crew_arc_id) values ($1) returning user_id`, [ca]); check('C unterschreibt', r[0]?.user_id === C, r);
+r = await as(A, `select remove_member($1, '${C}')`, [mod.id]); check('A entfernt C', !r.error, r);
+r = await db.query(`select count(*)::int n from crew_arc_signatures where user_id = '${C}'`); check('Unterschrift entfernter Person verschwindet', r.rows[0].n === 0, r.rows);
+r = await as(A, `select unban_member($1, '${C}')`, [mod.id]); check('A lässt C wieder zu', !r.error, r);
 r = await as(A, `delete from crew_arcs returning id`); check('Besitzer löscht Crew-Arc', r.length === 1, r);
 
 
@@ -271,7 +290,8 @@ r = await db.query(`select count(*)::int n from crews`); check('leere Crew gelö
 r = await as(A, `select * from create_crew('Zwei', 'Mäx')`); const c2 = r[0];
 await as(B, `select * from join_crew($1, 'Ben')`, [c2.invite_code]);
 r = await as(A, `select delete_account()`); check('delete_account', !r.error, r);
-r = await as(B, `select name, created_by from crews`); check('Crew bleibt nach Kontolöschung', r.length === 1 && r[0].created_by === null, r);
+r = await as(B, `select name, created_by from crews`); check('Crew bleibt nach Kontolöschung, B wird Besitzer', r.length === 1 && r[0].created_by === B, r);
+r = await as(B, `select role from crew_members where user_id = '${B}'`); check('B hat Rolle owner', r[0]?.role === 'owner', r);
 r = await as(B, `select count(*)::int n from crew_members`); check('nur B übrig', r[0].n === 1, r);
 r = await db.query(`select count(*)::int n from arcs`); check('Arcs von A gelöscht', r.rows[0].n === 0, r.rows);
 r = await as(B, `select leave_crew($1)`, [c2.id]); check('B verlässt verwaiste Crew', !r.error, r);

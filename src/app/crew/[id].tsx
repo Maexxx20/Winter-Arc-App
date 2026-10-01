@@ -453,7 +453,8 @@ function MemberRow({
         ))}
       </View>
 
-      {!isMe && today !== 'done' && today !== 'shielded' ? (
+      {/* Nur wer heute schon in der App war und noch offen ist (sonst lehnt der Server ab) */}
+      {!isMe && (today === 'open' || today === 'partial' || today === 'missed') ? (
         <Pressable
           onPress={onNudge}
           disabled={nudged}

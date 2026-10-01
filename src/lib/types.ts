@@ -48,6 +48,8 @@ export interface ArcCrewLink {
   crewId: string;
   crewArcId: string;
   crewName?: string;
+  /** IDs der Regeln aus der Vorlage (nur diese werden in der Crew verglichen) */
+  ruleIds?: string[];
 }
 
 export interface Arc {
@@ -64,7 +66,7 @@ export interface Arc {
   createdAt: string;
   /** Letzte Änderung (für den Sync: neuere Version gewinnt). */
   updatedAt?: string;
-  /** Gehört zu einem Crew-Arc: Regeln sind für alle gleich und lassen sich nicht ändern. */
+  /** Aus einer Crew-Vorlage übernommen: übernommene Regeln behalten ihre IDs für den Vergleich in der Crew. */
   crew?: ArcCrewLink;
 }
 

@@ -74,8 +74,11 @@ export function buildStatusRows(arc: Arc, log: ArcLog, today: ISODate, back = 2)
     const crew = arc.crew
       ? {
           crew_arc_id: arc.crew.crewArcId,
-          // Alle Regeln, auch wöchentliche, die an diesem Tag erfüllt wurden
-          rules_done: arc.rules.filter((r) => date >= r.activeFrom && (!r.removedOn || date < r.removedOn) && isDone(r)).map((r) => r.id).slice(0, 10),
+          // Regeln aus der Vorlage (auch wöchentliche), die an diesem Tag erfüllt wurden
+          rules_done: arc.rules
+            .filter((r) => (!arc.crew!.ruleIds || arc.crew!.ruleIds.includes(r.id)) && date >= r.activeFrom && (!r.removedOn || date < r.removedOn) && isDone(r))
+            .map((r) => r.id)
+            .slice(0, 10),
         }
       : {};
     rows.push({

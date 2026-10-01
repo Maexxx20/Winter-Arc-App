@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { HoldToSign } from '@/components/hold-to-sign';
@@ -26,9 +26,10 @@ import {
 import type { Arc, RuleCategory } from '@/lib/types';
 import { t, useLang } from '@/i18n';
 import { uid } from '@/lib/arc';
-import { toCrewArcRules } from '@/lib/crew-arc';
+import { type CrewArc, toCrewArcRules } from '@/lib/crew-arc';
 import { cachedCrew, publishCrewArc, signCrewArc } from '@/services/crews';
-import { createArc, getState, useAppState } from '@/store/store';
+import { confirm } from '@/lib/confirm';
+import { createArc, getState, selectActiveArc, useAppState } from '@/store/store';
 
 const STEPS = ['period', 'rules', 'why', 'contract'] as const;
 
@@ -94,6 +95,9 @@ export default function CreateArc() {
   const back = () => (step === 0 ? router.back() : setStep(step - 1));
   const next = () => setStep(Math.min(STEPS.length - 1, step + 1));
 
+  // Schon veröffentlichte Vorlage (falls danach etwas schiefging) – nicht doppelt veröffentlichen
+  const published = useRef<CrewArc | null>(null);
+
   const sign = async () => {
     if (!crewId) {
       createArc({ title, startDate, endDate, why, rules, signatureName: name });
@@ -101,9 +105,27 @@ export default function CreateArc() {
       return;
     }
     // Crew-Arc: zuerst für die Crew veröffentlichen und unterschreiben, dann lokal anlegen.
+    const running = selectActiveArc(getState());
+    if (running && running.status === 'active' && running.endDate >= today) {
+      const ok = await confirm(t('crewx.arc.replaceTitle'), t('crewx.arc.replaceText', { title: running.title }), t('crewx.arc.replaceConfirm'), true);
+      if (!ok) {
+        setSignKey((k) => k + 1);
+        return;
+      }
+    }
     try {
-      const crewRules = toCrewArcRules(rules, uid);
-      const ca = await publishCrewArc({ crew_id: crewId, title: title.trim() || t('today.create.crewArcFallback'), why: why.trim(), start_date: startDate, end_date: endDate, rules: crewRules });
+      const ca =
+        published.current ??
+        (await publishCrewArc({
+          crew_id: crewId,
+          title: title.trim() || t('today.create.crewArcFallback'),
+          why: why.trim(),
+          start_date: startDate,
+          end_date: endDate,
+          rules: toCrewArcRules(rules, uid),
+        }));
+      published.current = ca;
+      const crewRules = ca.rules;
       await signCrewArc(ca.id);
       createArc({
         title: ca.title,
@@ -113,7 +135,7 @@ export default function CreateArc() {
         // Eigene Health-Verknüpfungen behalten
         rules: crewRules.map((r, i) => ({ ...r, health: rules[i]?.health })),
         signatureName: name,
-        crew: { crewId, crewArcId: ca.id, crewName: crewName ?? undefined },
+        crew: { crewId, crewArcId: ca.id, crewName: crewName ?? undefined, ruleIds: ca.rules.map((r) => r.id) },
       });
       setTimeout(() => router.replace({ pathname: '/crew/[id]', params: { id: crewId } }), 500);
     } catch (e) {

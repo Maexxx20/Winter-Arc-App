@@ -95,7 +95,9 @@ export function t(key: TKey, vars?: Record<string, string | number>): string {
   if (v === undefined) v = lookup(DICTS.de, key);
   if (isPlural(v)) {
     const n = Number(vars?.count ?? 0);
-    v = n === 1 ? v.one : v.other;
+    // Französisch: 0 und 1 sind Einzahl («0 jour»)
+    const singular = current === 'fr' ? Math.abs(n) < 2 : n === 1;
+    v = singular ? v.one : v.other;
   }
   if (typeof v !== 'string') return key;
   return fill(v, vars);

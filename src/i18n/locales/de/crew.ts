@@ -120,5 +120,7 @@ export default {
     full: 'Diese Crew ist voll (max. 20 Personen).',
     tooMany: 'Du bist schon in 5 Crews – mehr geht nicht.',
     challengeExists: 'Für diese Woche gibt es schon eine Challenge.',
+    arcExists: 'Es gibt schon einen Crew-Arc, der noch läuft oder bald startet.',
+    arcInvalid: 'Die Regeln der Vorlage sind ungültig.',
   },
 };

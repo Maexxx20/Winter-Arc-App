@@ -70,8 +70,16 @@ function setState(updater: (s: AppState) => AppState) {
 }
 
 /** `beforeShow` läuft nach dem Laden, aber bevor die App gezeigt wird (z. B. Sprache setzen). */
-export async function hydrate(beforeShow?: () => void): Promise<void> {
-  if (hydrated) return;
+let hydrating: Promise<void> | null = null;
+
+/** Lädt nur einmal, auch wenn App und Android-Widget gleichzeitig starten. */
+export function hydrate(beforeShow?: () => void): Promise<void> {
+  if (hydrated) return Promise.resolve();
+  if (!hydrating) hydrating = doHydrate(beforeShow);
+  return hydrating;
+}
+
+async function doHydrate(beforeShow?: () => void): Promise<void> {
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
     if (raw) {
@@ -164,7 +172,8 @@ export function createArc(draft: ArcDraft): Arc {
     status: 'active',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    ...(draft.crew ? { crew: draft.crew, amendmentsLeft: 0 } : {}),
+    // Aus einer Crew-Vorlage: wie ein eigener Arc änderbar, die Verbindung dient nur dem Vergleich
+    ...(draft.crew ? { crew: draft.crew } : {}),
   };
   setState((s) => ({
     ...s,

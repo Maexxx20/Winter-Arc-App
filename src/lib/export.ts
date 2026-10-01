@@ -16,7 +16,8 @@ export function exportJSON(state: AppState, exportedAt: string): string {
 }
 
 function cell(v: string | number, sep: string): string {
-  const s = String(v);
+  // Texte, die Excel als Formel lesen würde, entschärfen
+  const s = typeof v === 'string' && /^[=+\-@\t\r]/.test(v) ? `'${v}` : String(v);
   return /["\n\r]/.test(s) || s.includes(sep) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 

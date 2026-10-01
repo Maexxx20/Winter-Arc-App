@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildStatusRows } from '../crew';
-import { compareRules, type CrewArc, crewRuleRates, isMyCrewArc, joinPeriod, relevantCrewArc, toCrewArcRules } from '../crew-arc';
+import { compareRules, type CrewArc, crewRuleRates, isMyCrewArc, isValidCrewArcRule, joinPeriod, relevantCrewArc, toCrewArcRules } from '../crew-arc';
 import type { Arc } from '../types';
 
 const ca = (id: string, start: string, end: string): CrewArc => ({
@@ -51,5 +51,14 @@ describe('Crew-Arc', () => {
     const rows = buildStatusRows(arc, { '2026-10-02': { values: { r1: 1, r2: 5 }, updatedAt: '' } }, '2026-10-02', 0);
     expect(rows[0]).toMatchObject({ crew_arc_id: 'x', rules_done: ['r1'], done: 1, total: 2 });
     expect(isMyCrewArc(arc, ca('x', '2026-10-01', '2026-10-30'))).toBe(true);
+  });
+});
+
+describe('Vorlage prüfen', () => {
+  it('lehnt kaputte Regeln ab', () => {
+    expect(isValidCrewArcRule({})).toBe(false);
+    expect(isValidCrewArcRule({ id: 'a', title: 'T', icon: '⭐', category: 'body', frequency: { kind: 'weekly', times: 9 }, measure: { kind: 'check' } })).toBe(false);
+    expect(isValidCrewArcRule({ id: 'a', title: 'T', icon: '⭐', category: 'body', frequency: { kind: 'daily' }, measure: { kind: 'amount', target: '3', unit: 'x' } })).toBe(false);
+    expect(isValidCrewArcRule({ id: 'a', title: 'T', icon: '⭐', category: 'body', frequency: { kind: 'daily' }, measure: { kind: 'amount', target: 3, unit: 'x' } })).toBe(true);
   });
 });

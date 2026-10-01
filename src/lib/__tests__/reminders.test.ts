@@ -73,6 +73,17 @@ describe('Erinnerungen', () => {
     expect(r).toEqual([]);
   });
 
+  it('Wochenziel erreicht: keine Regel-Erinnerung mehr in dieser Woche', () => {
+    const weekly: Arc = {
+      ...arc,
+      rules: [{ id: 'w', title: 'Gym', icon: '🏋️', category: 'body', frequency: { kind: 'weekly', times: 2 }, measure: { kind: 'check' }, activeFrom: '2026-10-01', reminder: 17 * 60 }],
+    };
+    const log: ArcLog = { '2026-10-05': { values: { w: 1 }, updatedAt: '' }, '2026-10-06': { values: { w: 1 }, updatedAt: '' } };
+    const r = planReminders(weekly, log, settings, new Date(2026, 9, 6, 8), '2026-10-06').filter((x) => x.id.startsWith('rule-w-'));
+    expect(r.filter((x) => x.id <= 'rule-w-2026-10-11')).toEqual([]);
+    expect(r.some((x) => x.id === 'rule-w-2026-10-12')).toBe(true);
+  });
+
   it('höchstens 60 geplante Mitteilungen', () => {
     const many: Arc = {
       ...arc,

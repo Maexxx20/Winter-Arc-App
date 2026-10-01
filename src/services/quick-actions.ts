@@ -8,6 +8,7 @@ import { useEffect } from 'react';
 import { Platform } from 'react-native';
 
 import { onLangChange, t } from '@/i18n';
+import { getState, selectActiveArc } from '@/store/store';
 
 type QuickActionsModule = typeof import('expo-quick-actions');
 
@@ -53,6 +54,8 @@ function setItems() {
 function open(action: { params?: Record<string, unknown> | null } | undefined) {
   const href = action?.params?.href;
   if (typeof href !== 'string') return;
+  // Ohne laufenden Arc zeigt die App das Onboarding – dort nichts darüberlegen
+  if (!selectActiveArc(getState())) return;
   // «/tag/heute» öffnet den heutigen Tag (ungültiges Datum → heute)
   setTimeout(() => router.navigate(href as Href), 0);
 }

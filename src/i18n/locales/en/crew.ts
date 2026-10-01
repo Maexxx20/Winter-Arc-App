@@ -122,6 +122,8 @@ const crew: DictOf<typeof de> = {
     full: 'This crew is full (max. 20 people).',
     tooMany: 'You’re already in 5 crews – that’s the limit.',
     challengeExists: 'There’s already a challenge for this week.',
+    arcExists: 'There’s already a crew arc that is running or starting soon.',
+    arcInvalid: 'The template’s rules aren’t valid.',
   },
 };
 

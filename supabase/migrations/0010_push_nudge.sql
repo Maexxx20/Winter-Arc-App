@@ -170,12 +170,13 @@ begin
      or not exists (select 1 from public.crew_members where crew_id = p_crew and user_id = p_user) then
     raise exception 'not_member';
   end if;
-  if public.blocked_between(v_me, p_user) then
-    raise exception 'blocked';
-  end if;
-  -- Nur, wenn der Tag noch nicht gehalten ist (Datum ± 1 Tag, wegen Zeitzonen und Tageswechsel)
-  if abs(p_date - (now() at time zone 'Europe/Zurich')::date) > 1 then
+  -- Nur heute oder gestern (Tageswechsel nach Mitternacht), nie für künftige Tage
+  if p_date not in ((now() at time zone 'Europe/Zurich')::date, (now() at time zone 'Europe/Zurich')::date - 1) then
     raise exception 'bad_date';
+  end if;
+  -- Blockiert: nichts schicken, aber auch nichts verraten (die blockierte Person erfährt es nicht)
+  if public.blocked_between(v_me, p_user) then
+    return 'sent';
   end if;
   select status into v_status from public.daily_status where user_id = p_user and date = p_date;
   if v_status in ('done', 'shielded', 'neutral') then

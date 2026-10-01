@@ -60,7 +60,6 @@ export default function ContractScreen() {
   const beforeStart = today < arc.startDate;
   const reminders = state.settings.reminders;
   const rules = currentRules(arc);
-  // Crew-Arc: Regeln sind für alle gleich und bleiben fest.
   const canAmend = beforeStart || arc.amendmentsLeft > 0;
   const total = diffDays(arc.startDate, arc.endDate) + 1;
 

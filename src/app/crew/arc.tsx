@@ -90,7 +90,7 @@ export default function CrewArcScreen() {
           why: ca.why,
           rules: ca.rules.map((r) => ({ ...r })),
           signatureName: name,
-          crew: { crewId: detail.crew.id, crewArcId: ca.id, crewName: detail.crew.name },
+          crew: { crewId: detail.crew.id, crewArcId: ca.id, crewName: detail.crew.name, ruleIds: ca.rules.map((r) => r.id) },
         });
       }
       await load();
