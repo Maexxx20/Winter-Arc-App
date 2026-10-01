@@ -12,7 +12,7 @@ import { deletePhoto } from '@/services/photos';
 import { addDays, type ISODate, toISO, todayISO } from '@/lib/date';
 import { isSyncablePhoto, mergePhotoRows, type PhotoRow, withLegacyPhotoRecords } from '@/lib/photo-merge';
 import { type ChangeSet, mergeRemote } from '@/lib/sync-merge';
-import type { AppState, Arc, Avatar, DayEntry, HealthLink, ReminderSettings, Rule, Settings, SyncMeta, WeekReview } from '@/lib/types';
+import type { AppState, Arc, ArcCrewLink, Avatar, DayEntry, HealthLink, ReminderSettings, Rule, Settings, SyncMeta, WeekReview } from '@/lib/types';
 
 const STORAGE_KEY = 'arc.state.v1';
 
@@ -62,7 +62,8 @@ function setState(updater: (s: AppState) => AppState) {
   persist();
 }
 
-export async function hydrate(): Promise<void> {
+/** `beforeShow` läuft nach dem Laden, aber bevor die App gezeigt wird (z. B. Sprache setzen). */
+export async function hydrate(beforeShow?: () => void): Promise<void> {
   if (hydrated) return;
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
@@ -86,6 +87,11 @@ export async function hydrate(): Promise<void> {
     state = withLegacyPhotoRecords(state);
   } catch (e) {
     console.warn('Laden fehlgeschlagen', e);
+  }
+  try {
+    beforeShow?.();
+  } catch (e) {
+    console.warn(e);
   }
   hydrated = true;
   emit();
@@ -130,8 +136,10 @@ export interface ArcDraft {
   startDate: ISODate;
   endDate: ISODate;
   why: string;
-  rules: Omit<Rule, 'id' | 'activeFrom'>[];
+  /** Regeln; bei Crew-Arcs mit fester ID (gleich wie in der Crew) */
+  rules: (Omit<Rule, 'id' | 'activeFrom'> & { id?: string })[];
   signatureName: string;
+  crew?: ArcCrewLink;
 }
 
 export const DEFAULT_AMENDMENTS = 3;
@@ -143,12 +151,13 @@ export function createArc(draft: ArcDraft): Arc {
     startDate: draft.startDate,
     endDate: draft.endDate,
     why: draft.why.trim(),
-    rules: draft.rules.map((r) => ({ ...r, id: uid(), activeFrom: draft.startDate })),
+    rules: draft.rules.map((r) => ({ ...r, id: draft.crew && r.id ? r.id : uid(), activeFrom: draft.startDate })),
     signature: { name: draft.signatureName.trim(), signedAt: new Date().toISOString() },
     amendmentsLeft: DEFAULT_AMENDMENTS,
     status: 'active',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    ...(draft.crew ? { crew: draft.crew, amendmentsLeft: 0 } : {}),
   };
   setState((s) => ({
     ...s,
@@ -196,6 +205,14 @@ export function setHealthValue(arcId: string, date: ISODate, ruleId: string, val
     auto[`${arcId}|${date}|${ruleId}`] = value;
     return { ...s, healthAuto: auto };
   });
+}
+
+/** Crew-Arc verlassen: der Arc läuft als eigener Arc weiter. */
+export function unlinkCrewArc(crewArcId: string) {
+  setState((s) => ({
+    ...s,
+    arcs: s.arcs.map((a) => (a.crew?.crewArcId === crewArcId ? { ...a, crew: undefined, updatedAt: now() } : a)),
+  }));
 }
 
 export function setNote(arcId: string, date: ISODate, note: string) {

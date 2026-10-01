@@ -8,6 +8,7 @@ import { ChevronIcon, CloseIcon } from '@/components/icons';
 import { StatTile } from '@/components/stat-tile';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { BlockedList } from '@/components/blocked-list';
 import { SectionTitle, TextField } from '@/components/ui/controls';
 import { Screen } from '@/components/ui/screen';
 import { T } from '@/components/ui/text';
@@ -250,6 +251,7 @@ export default function ProfileScreen() {
                 </View>
                 <ChevronIcon color={theme.textTertiary} size={16} />
               </Pressable>
+              <BlockedList />
               <Button
                 title="Abmelden"
                 variant="secondary"

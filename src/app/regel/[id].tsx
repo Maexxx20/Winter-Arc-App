@@ -107,7 +107,7 @@ export default function RuleScreen() {
               <Card style={styles.card}>
                 <BarChart
                   bars={d.weekdays.map((w) => ({
-                    label: weekdayShortNames[w.weekday],
+                    label: weekdayShortNames()[w.weekday],
                     ratio: w.rate,
                     value: w.days ? pct(w.rate) : '–',
                   }))}

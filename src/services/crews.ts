@@ -1,5 +1,7 @@
 import { buildStatusRows, type Challenge, type ChallengeKind, type Crew, type CrewMember, normalizeCode, type Reaction, type ReactionEmoji, type StatusRow } from '@/lib/crew';
+import type { CrewArc, CrewArcSignature } from '@/lib/crew-arc';
 import { addDays, type ISODate, todayISO, weekStart } from '@/lib/date';
+import { t } from '@/i18n';
 import { getState, selectActiveArc, selectLog } from '@/store/store';
 
 import { avatarUrls, fetchProfiles, type PublicProfile } from './profile';
@@ -25,6 +27,10 @@ export function cachedCrew(crewId: string): CrewDetail | undefined {
 }
 
 function translate(message: string): string {
+  if (message.includes('removed_from_crew')) return t('crewx.errors.removed');
+  if (message.includes('not_owner')) return t('crewx.errors.notOwner');
+  if (message.includes('already_done')) return t('crewx.errors.alreadyDone');
+  if (message.includes('blocked')) return t('crewx.errors.blocked');
   if (message.includes('crew_not_found')) return 'Diesen Code gibt es nicht. Prüf ihn nochmal.';
   if (message.includes('crew_full')) return 'Diese Crew ist voll (max. 20 Personen).';
   if (message.includes('too_many_crews')) return 'Du bist schon in 5 Crews – mehr geht nicht.';
@@ -56,7 +62,13 @@ export async function publishStatus(): Promise<void> {
     updated_at: new Date().toISOString(),
   }));
   if (!rows.length) return;
-  const { error } = await supabase.from('daily_status').upsert(rows, { onConflict: 'user_id,date' });
+  let { error } = await supabase.from('daily_status').upsert(rows, { onConflict: 'user_id,date' });
+  if (error && /crew_arc_id|rules_done/.test(error.message)) {
+    // Migration 0011 noch nicht ausgeführt: ohne Crew-Arc-Felder
+    ({ error } = await supabase
+      .from('daily_status')
+      .upsert(rows.map(({ crew_arc_id: _a, rules_done: _b, ...r }) => r), { onConflict: 'user_id,date' }));
+  }
   if (error) throw new Error(`daily_status: ${error.message}`);
 }
 
@@ -200,4 +212,105 @@ export function subscribeCrew(crewId: string, isMember: (userId: string) => bool
     if (timer) clearTimeout(timer);
     supabase?.removeChannel(channel);
   };
+}
+
+// ---------- Moderation (Migration 0009) ----------
+
+export interface RemovedMember {
+  user_id: string;
+  display_name: string;
+  banned_at: string;
+}
+
+/** Nur Besitzer: Mitglied entfernen (kommt mit dem Code nicht wieder rein). */
+export async function removeMember(crewId: string, userId: string): Promise<void> {
+  const sb = need();
+  const { error } = await sb.rpc('remove_member', { p_crew: crewId, p_user: userId });
+  if (error) throw new Error(translate(error.message));
+}
+
+export async function removedMembers(crewId: string): Promise<RemovedMember[]> {
+  const sb = need();
+  const { data, error } = await sb.rpc('crew_removed', { p_crew: crewId });
+  if (error) throw new Error(translate(error.message));
+  return (data ?? []) as RemovedMember[];
+}
+
+export async function unbanMember(crewId: string, userId: string): Promise<void> {
+  const sb = need();
+  const { error } = await sb.rpc('unban_member', { p_crew: crewId, p_user: userId });
+  if (error) throw new Error(translate(error.message));
+}
+
+/** Nur Besitzer: neuer Einladungscode, der alte gilt nicht mehr. */
+export async function renewInviteCode(crewId: string): Promise<string> {
+  const sb = need();
+  const { data, error } = await sb.rpc('renew_invite_code', { p_crew: crewId });
+  if (error) throw new Error(translate(error.message));
+  const cached = detailCache.get(crewId);
+  if (cached) detailCache.set(crewId, { ...cached, crew: { ...cached.crew, invite_code: data as string } });
+  return data as string;
+}
+
+// ---------- Anstupsen (Migration 0010) ----------
+
+/** 'sent' oder 'already' (heute schon). */
+export async function nudge(crewId: string, userId: string, date: ISODate): Promise<'sent' | 'already'> {
+  const sb = need();
+  const { data, error } = await sb.rpc('nudge', { p_crew: crewId, p_user: userId, p_date: date });
+  if (error) throw new Error(translate(error.message));
+  return data as 'sent' | 'already';
+}
+
+/** Wen ich heute in dieser Crew schon angestupst habe (leer, wenn die Migration fehlt). */
+export async function myNudgesToday(crewId: string): Promise<string[]> {
+  if (!supabase || !getSession()) return [];
+  const { data, error } = await supabase.rpc('my_nudges_today', { p_crew: crewId });
+  if (error) return [];
+  return ((data ?? []) as (string | { my_nudges_today: string })[]).map((x) => (typeof x === 'string' ? x : x.my_nudges_today));
+}
+
+// ---------- Crew-Arc (Migration 0011) ----------
+
+export async function loadCrewArcs(crewId: string): Promise<{ arcs: CrewArc[]; signatures: CrewArcSignature[] }> {
+  if (!supabase || !getSession()) return { arcs: [], signatures: [] };
+  const { data, error } = await supabase.from('crew_arcs').select('*').eq('crew_id', crewId).order('start_date');
+  if (error) return { arcs: [], signatures: [] }; // Migration 0011 fehlt
+  const arcs = (data ?? []) as CrewArc[];
+  if (!arcs.length) return { arcs, signatures: [] };
+  const { data: sigs } = await supabase
+    .from('crew_arc_signatures')
+    .select('crew_arc_id, user_id, signed_at')
+    .in('crew_arc_id', arcs.map((a) => a.id));
+  return { arcs, signatures: (sigs ?? []) as CrewArcSignature[] };
+}
+
+/** Nur Besitzer: Crew-Arc veröffentlichen. */
+export async function publishCrewArc(input: Omit<CrewArc, 'id' | 'created_by' | 'created_at' | 'updated_at'>): Promise<CrewArc> {
+  const sb = need();
+  const { data, error } = await sb
+    .from('crew_arcs')
+    .insert({ ...input, created_by: getSession()!.user.id })
+    .select('*')
+    .single();
+  if (error) throw new Error(translate(error.message));
+  return data as CrewArc;
+}
+
+export async function deleteCrewArc(id: string): Promise<void> {
+  const sb = need();
+  const { error } = await sb.from('crew_arcs').delete().eq('id', id);
+  if (error) throw new Error(translate(error.message));
+}
+
+export async function signCrewArc(id: string): Promise<void> {
+  const sb = need();
+  const { error } = await sb.from('crew_arc_signatures').upsert({ crew_arc_id: id, user_id: getSession()!.user.id }, { onConflict: 'crew_arc_id,user_id' });
+  if (error) throw new Error(translate(error.message));
+}
+
+export async function unsignCrewArc(id: string): Promise<void> {
+  const sb = need();
+  const { error } = await sb.from('crew_arc_signatures').delete().eq('crew_arc_id', id).eq('user_id', getSession()!.user.id);
+  if (error) throw new Error(translate(error.message));
 }

@@ -45,7 +45,7 @@ export function Heatmap({ startDate, endDate, today, statuses, onPressDay }: Pro
     <View style={styles.wrap}>
       <View style={styles.row}>
         <View style={styles.monthCol} />
-        {weekdayShortNames.map((d) => (
+        {weekdayShortNames().map((d) => (
           <View key={d} style={styles.cellWrap}>
             <T variant="caption" color="textTertiary" center style={styles.wd}>
               {d}

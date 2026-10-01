@@ -1,0 +1,8 @@
+{
+  "ios": {
+    "NSHealthShareUsageDescription": "Nordwand legge passi, allenamenti, sonno, acqua e minuti di consapevolezza per spuntare automaticamente le tue regole. I valori vengono solo letti.",
+    "NSHealthUpdateUsageDescription": "Nordwand non scrive dati in Apple Salute.",
+    "NSCameraUsageDescription": "Nordwand ha bisogno della fotocamera per scattare foto per il tuo diario e le tue foto dei progressi.",
+    "NSPhotoLibraryUsageDescription": "Nordwand ha bisogno di accedere alle tue foto per aggiungere immagini al tuo diario."
+  }
+}

@@ -13,7 +13,8 @@
       "supportsTablet": false,
       "icon": "./assets/images/icon.png",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleAllowMixedLocalizations": true
       }
     },
     "android": {
@@ -103,6 +104,17 @@
             }
           ]
         }
+      ],
+      [
+        "expo-localization",
+        {
+          "supportedLocales": [
+            "de",
+            "en",
+            "fr",
+            "it"
+          ]
+        }
       ]
     ],
     "experiments": {
@@ -115,6 +127,18 @@
         "projectId": "9b03a7fd-4a21-43ff-aa7e-b2219f815484"
       }
     },
-    "owner": "nordwand"
+    "owner": "nordwand",
+    "locales": {
+      "de": "./locales/de.json",
+      "en": "./locales/en.json",
+      "fr": "./locales/fr.json",
+      "it": "./locales/it.json"
+    },
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/9b03a7fd-4a21-43ff-aa7e-b2219f815484"
+    }
   }
 }

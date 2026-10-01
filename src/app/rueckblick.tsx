@@ -72,7 +72,7 @@ export default function ReviewScreen() {
 
       <Card style={styles.summary}>
         <View style={styles.weekRow}>
-          {weekdayShortNames.map((wd, i) => {
+          {weekdayShortNames().map((wd, i) => {
             const d = summary.days.find((x) => x.date === addDays(week, i));
             return (
               <View key={wd} style={styles.dayCol}>

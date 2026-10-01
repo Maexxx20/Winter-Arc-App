@@ -1,0 +1,8 @@
+{
+  "ios": {
+    "NSHealthShareUsageDescription": "Nordwand liest Schritte, Workouts, Schlaf, Wasser und Achtsamkeitsminuten, um deine Regeln automatisch abzuhaken. Die Werte werden nur gelesen.",
+    "NSHealthUpdateUsageDescription": "Nordwand schreibt keine Daten in Apple Health.",
+    "NSCameraUsageDescription": "Nordwand braucht Zugriff auf die Kamera, damit du Fotos für dein Tagebuch und deine Fortschrittsfotos aufnehmen kannst.",
+    "NSPhotoLibraryUsageDescription": "Nordwand braucht Zugriff auf deine Fotos, damit du Bilder zu deinem Tagebuch hinzufügen kannst."
+  }
+}

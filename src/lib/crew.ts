@@ -37,6 +37,9 @@ export interface StatusRow {
   best_streak: number;
   rate: number;
   updated_at?: string;
+  /** Nur bei Crew-Arcs: welcher Crew-Arc und welche seiner Regeln an dem Tag erledigt sind */
+  crew_arc_id?: string | null;
+  rules_done?: string[] | null;
 }
 
 export interface Reaction {
@@ -61,11 +64,20 @@ export function buildStatusRows(arc: Arc, log: ArcLog, today: ISODate, back = 2)
     const dayRules = arc.rules.filter(
       (r) => r.frequency.kind === 'daily' && date >= r.activeFrom && (!r.removedOn || date < r.removedOn),
     );
-    const done = dayRules.filter((r) => {
+    const isDone = (r: Arc['rules'][number]) => {
       const v = log[date]?.values[r.id] ?? 0;
       return r.measure.kind === 'check' ? v >= 1 : v >= r.measure.target;
-    }).length;
+    };
+    const done = dayRules.filter(isDone).length;
+    const crew = arc.crew
+      ? {
+          crew_arc_id: arc.crew.crewArcId,
+          // Alle Regeln, auch wöchentliche, die an diesem Tag erfüllt wurden
+          rules_done: arc.rules.filter((r) => date >= r.activeFrom && (!r.removedOn || date < r.removedOn) && isDone(r)).map((r) => r.id).slice(0, 10),
+        }
+      : {};
     rows.push({
+      ...crew,
       date,
       status: s,
       done,

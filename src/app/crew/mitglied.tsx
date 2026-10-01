@@ -17,7 +17,10 @@ import { useToday } from '@/hooks/use-today';
 import { BADGES } from '@/lib/badges';
 import { rankMembers } from '@/lib/crew';
 import { formatShort, toISO } from '@/lib/date';
-import { cachedCrew, type CrewDetail, loadCrew } from '@/services/crews';
+import { t } from '@/i18n';
+import { confirm } from '@/lib/confirm';
+import { blockUser, loadBlocks, unblockUser, useBlocks } from '@/services/blocks';
+import { cachedCrew, type CrewDetail, loadCrew, removeMember } from '@/services/crews';
 import { instagramUrl } from '@/lib/profile';
 import { useSession } from '@/services/supabase';
 
@@ -29,6 +32,12 @@ export default function MemberScreen() {
   const { crew, user } = useLocalSearchParams<{ crew: string; user: string }>();
   const [detail, setDetail] = useState<CrewDetail | null>(() => (crew ? (cachedCrew(crew) ?? null) : null));
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const blocks = useBlocks();
+
+  useEffect(() => {
+    loadBlocks().catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     if (!crew) return;
@@ -41,6 +50,8 @@ export default function MemberScreen() {
   const entry = ranked.find((m) => m.member.user_id === user);
   const profile = user ? detail?.profiles[user] : undefined;
   const isMe = !!user && user === session?.user.id;
+  const blocked = !!user && blocks.some((b) => b.blocked === user);
+  const iAmOwner = !!detail && !!session && detail.crew.created_by === session.user.id;
 
   const name = profile?.name || entry?.member.display_name || '';
   const latest = entry?.latest ?? null;
@@ -63,9 +74,15 @@ export default function MemberScreen() {
         </Pressable>
       </View>
 
-      {error && !detail ? (
+      {error ? (
         <Card tone="surfaceMuted" bordered={false}>
           <T variant="caption" color="danger">{error}</T>
+        </Card>
+      ) : null}
+
+      {entry && blocked ? (
+        <Card tone="surfaceMuted" bordered={false}>
+          <T variant="caption">{t('crewx.mod.blockedHint')}</T>
         </Card>
       ) : null}
 
@@ -137,18 +154,67 @@ export default function MemberScreen() {
           {isMe ? (
             <Button title="Profil bearbeiten" variant="secondary" onPress={() => router.push('/profil')} />
           ) : (
-            <Button
-              title="Profil melden"
-              variant="ghost"
-              small
-              onPress={() => {
-                const subject = encodeURIComponent('Nordwand: Profil melden');
-                const body = encodeURIComponent(
-                  `Crew: ${detail?.crew.name ?? ''}\nPerson: ${name}\nID: ${user}\n\nWas ist das Problem?\n`,
-                );
-                Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`).catch(() => undefined);
-              }}
-            />
+            <View style={styles.actions}>
+              <Button
+                title={blocked ? t('crewx.mod.unblock') : t('crewx.mod.block')}
+                variant="secondary"
+                small
+                disabled={busy}
+                onPress={async () => {
+                  if (!user) return;
+                  if (!blocked && !(await confirm(t('crewx.mod.blockTitle', { name }), t('crewx.mod.blockText', { name }), t('crewx.mod.block'), true))) return;
+                  setBusy(true);
+                  try {
+                    if (blocked) await unblockUser(user);
+                    else await blockUser(user, name);
+                    if (crew) setDetail(await loadCrew(crew, today));
+                  } catch (e) {
+                    setError(e instanceof Error ? e.message : String(e));
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              />
+              {iAmOwner ? (
+                <Button
+                  title={t('crewx.mod.remove')}
+                  variant="danger"
+                  small
+                  disabled={busy}
+                  onPress={async () => {
+                    if (!user || !detail) return;
+                    const ok = await confirm(
+                      t('crewx.mod.removeTitle', { name }),
+                      t('crewx.mod.removeText', { name, crew: detail.crew.name }),
+                      t('common.remove'),
+                      true,
+                    );
+                    if (!ok) return;
+                    setBusy(true);
+                    try {
+                      await removeMember(detail.crew.id, user);
+                      router.back();
+                    } catch (e) {
+                      setError(e instanceof Error ? e.message : String(e));
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                />
+              ) : null}
+              <Button
+                title={t('crewx.mod.report')}
+                variant="ghost"
+                small
+                onPress={() => {
+                  const subject = encodeURIComponent('Nordwand: Profil melden');
+                  const body = encodeURIComponent(
+                    `Crew: ${detail?.crew.name ?? ''}\nPerson: ${name}\nID: ${user}\n\nWas ist das Problem?\n`,
+                  );
+                  Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`).catch(() => undefined);
+                }}
+              />
+            </View>
           )}
         </>
       )}
@@ -168,4 +234,5 @@ const styles = StyleSheet.create({
   badges: { flexDirection: 'row', flexWrap: 'wrap', rowGap: Spacing.three },
   badge: { width: '25%', alignItems: 'center', gap: 4 },
   badgeTitle: { fontSize: 11, lineHeight: 14 },
+  actions: { gap: Spacing.two },
 });

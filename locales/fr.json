@@ -1,0 +1,8 @@
+{
+  "ios": {
+    "NSHealthShareUsageDescription": "Nordwand lit les pas, les entraînements, le sommeil, l’eau et les minutes de pleine conscience pour cocher tes règles automatiquement. Les valeurs sont uniquement lues.",
+    "NSHealthUpdateUsageDescription": "Nordwand n’écrit aucune donnée dans Apple Santé.",
+    "NSCameraUsageDescription": "Nordwand a besoin de l’appareil photo pour que tu puisses prendre des photos pour ton journal et tes photos de progression.",
+    "NSPhotoLibraryUsageDescription": "Nordwand a besoin d’accéder à tes photos pour que tu puisses ajouter des images à ton journal."
+  }
+}

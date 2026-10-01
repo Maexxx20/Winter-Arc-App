@@ -41,6 +41,13 @@ export interface Signature {
 
 export type ArcStatus = 'active' | 'finished' | 'abandoned';
 
+/** Verbindung eines Arcs zu einem Crew-Arc (alle in der Crew haben dieselben Regeln). */
+export interface ArcCrewLink {
+  crewId: string;
+  crewArcId: string;
+  crewName?: string;
+}
+
 export interface Arc {
   id: string;
   title: string;
@@ -55,6 +62,8 @@ export interface Arc {
   createdAt: string;
   /** Letzte Änderung (für den Sync: neuere Version gewinnt). */
   updatedAt?: string;
+  /** Gehört zu einem Crew-Arc: Regeln sind für alle gleich und lassen sich nicht ändern. */
+  crew?: ArcCrewLink;
 }
 
 export interface DayEntry {
@@ -111,6 +120,8 @@ export interface Settings {
   healthEnabled?: boolean;
   /** Name des verbundenen Strava-Kontos (null/leer = nicht verbunden). */
   stravaAthlete?: string | null;
+  /** Sprache der App; 'system' bzw. leer = wie das Gerät. */
+  language?: 'system' | 'de' | 'en' | 'fr' | 'it';
   /** Stunde, zu der ein neuer Tag beginnt (0 = Mitternacht). */
   rolloverHour: number;
   haptics: boolean;

@@ -4,6 +4,7 @@ import * as Notifications from 'expo-notifications';
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
 
+import { getLang, onLangChange } from '@/i18n';
 import { getState, subscribe, updateSettings } from '@/store/store';
 
 import { getSession, onSession, supabase } from './supabase';
@@ -58,7 +59,12 @@ export async function registerPush(): Promise<PushProblem | null> {
   try {
     const { token, problem } = await getToken();
     if (!token) return problem ?? 'failed';
-    const { error } = await supabase.rpc('claim_push_token', { p_token: token, p_platform: Platform.OS === 'android' ? 'android' : 'ios' });
+    const platform = Platform.OS === 'android' ? 'android' : 'ios';
+    // Mit Sprache (Migration 0010); fehlt die Funktion noch, ohne Sprache.
+    let { error } = await supabase.rpc('claim_push_token', { p_token: token, p_platform: platform, p_lang: getLang() });
+    if (error && /function|schema cache|p_lang/i.test(error.message)) {
+      ({ error } = await supabase.rpc('claim_push_token', { p_token: token, p_platform: platform }));
+    }
     if (error) return 'failed';
     currentToken = token;
     return null;
@@ -108,10 +114,13 @@ export function usePushRegistration() {
       checked = true;
       refresh();
     });
+    // Sprache gewechselt → Mitteilungen in der neuen Sprache
+    const offLang = onLangChange(refresh);
     return () => {
       clearTimeout(timer);
       off();
       unsub();
+      offLang();
     };
   }, []);
 }

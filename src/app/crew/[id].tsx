@@ -18,7 +18,26 @@ import { confirm } from '@/lib/confirm';
 import { buildFeed, challengeProgress, inviteMessage, rankMembers, REACTION_EMOJIS, type Reaction, type ReactionEmoji, type StatusRow } from '@/lib/crew';
 import { weekStart } from '@/lib/date';
 import { haptic } from '@/lib/haptics';
-import { addReaction, cachedCrew, type CrewDetail, leaveCrew, loadCrew, removeReaction, subscribeCrew } from '@/services/crews';
+import { CrewArcCard } from '@/components/crew-arc-card';
+import { t } from '@/i18n';
+import { type CrewArc, type CrewArcSignature, relevantCrewArc } from '@/lib/crew-arc';
+import { loadBlocks, useBlocks } from '@/services/blocks';
+import {
+  addReaction,
+  cachedCrew,
+  type CrewDetail,
+  leaveCrew,
+  loadCrew,
+  loadCrewArcs,
+  myNudgesToday,
+  nudge,
+  type RemovedMember,
+  removedMembers,
+  removeReaction,
+  renewInviteCode,
+  subscribeCrew,
+  unbanMember,
+} from '@/services/crews';
 import { useSession } from '@/services/supabase';
 
 export default function CrewScreen() {
@@ -30,12 +49,19 @@ export default function CrewScreen() {
   const [detail, setDetail] = useState<CrewDetail | null>(() => (id ? (cachedCrew(id) ?? null) : null));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [crewArcs, setCrewArcs] = useState<{ arcs: CrewArc[]; signatures: CrewArcSignature[] }>({ arcs: [], signatures: [] });
+  const [nudged, setNudged] = useState<Set<string>>(new Set());
+  const [removed, setRemoved] = useState<RemovedMember[] | null>(null);
+  const blocks = useBlocks();
 
   const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     try {
-      setDetail(await loadCrew(id, today));
+      const [d, arcs, nudges] = await Promise.all([loadCrew(id, today), loadCrewArcs(id), myNudgesToday(id), loadBlocks()]);
+      setDetail(d);
+      setCrewArcs(arcs);
+      setNudged(new Set(nudges));
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -60,16 +86,21 @@ export default function CrewScreen() {
     return subscribeCrew(id, (uid) => memberIds.current.has(uid), load);
   }, [id, load]);
 
-  const ranked = useMemo(() => (detail ? rankMembers(detail.members, detail.rows, today) : []), [detail, today]);
+  const blockedIds = useMemo(() => new Set(blocks.map((b) => b.blocked)), [blocks]);
+  const visibleMembers = useMemo(() => (detail?.members ?? []).filter((m) => !blockedIds.has(m.user_id)), [detail, blockedIds]);
+  const hiddenCount = (detail?.members.length ?? 0) - visibleMembers.length;
+  const ranked = useMemo(() => (detail ? rankMembers(visibleMembers, detail.rows, today) : []), [detail, visibleMembers, today]);
+  const isOwner = !!detail && !!me && detail.crew.created_by === me;
+  const crewArc = useMemo(() => relevantCrewArc(crewArcs.arcs, today), [crewArcs, today]);
 
   const people = useMemo(() => {
     const out: Record<string, FeedPerson> = {};
-    for (const m of detail?.members ?? []) {
+    for (const m of visibleMembers) {
       const p = detail?.profiles[m.user_id];
       out[m.user_id] = { name: p?.name || m.display_name, avatarPath: p?.avatar_path };
     }
     return out;
-  }, [detail]);
+  }, [detail, visibleMembers]);
   const names = useMemo(() => Object.fromEntries(Object.entries(people).map(([k, v]) => [k, v.name])), [people]);
 
   const challenge = detail?.challenges.find((c) => c.week === weekStart(today));
@@ -82,16 +113,16 @@ export default function CrewScreen() {
       detail
         ? buildFeed(
             {
-              members: detail.members,
-              rows: detail.rows,
-              reactions: detail.reactions,
+              members: visibleMembers,
+              rows: detail.rows.filter((r) => !r.user_id || !blockedIds.has(r.user_id)),
+              reactions: detail.reactions.filter((r) => !blockedIds.has(r.from_user) && !blockedIds.has(r.to_user)),
               badges: Object.fromEntries(Object.entries(detail.profiles).map(([k, p]) => [k, p.badges])),
               challenges: detail.challenges,
             },
             today,
           )
         : [],
-    [detail, today],
+    [detail, visibleMembers, blockedIds, today],
   );
   const canEditChallenge = !!challenge && !!me && (challenge.created_by === me || detail?.crew.created_by === me);
   const openChallenge = () => detail && router.push({ pathname: '/crew/challenge', params: { crew: detail.crew.id } });
@@ -112,6 +143,42 @@ export default function CrewScreen() {
       } catch {
         load();
       }
+    }
+  };
+
+  const sendNudge = async (userId: string) => {
+    if (!detail) return;
+    haptic.light();
+    setNudged((n) => new Set(n).add(userId));
+    try {
+      await nudge(detail.crew.id, userId, today);
+    } catch (e) {
+      setNudged((n) => {
+        const next = new Set(n);
+        next.delete(userId);
+        return next;
+      });
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const renewCode = async () => {
+    if (!detail) return;
+    if (!(await confirm(t('crewx.mod.renewTitle'), t('crewx.mod.renewText'), t('crewx.mod.renewConfirm')))) return;
+    try {
+      const code = await renewInviteCode(detail.crew.id);
+      setDetail({ ...detail, crew: { ...detail.crew, invite_code: code } });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const showRemoved = async () => {
+    if (!detail) return;
+    try {
+      setRemoved(await removedMembers(detail.crew.id));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -172,6 +239,28 @@ export default function CrewScreen() {
             </View>
           </Card>
 
+          {crewArc ? (
+            <CrewArcCard
+              arc={crewArc}
+              signatures={crewArcs.signatures}
+              people={people}
+              me={me}
+              today={today}
+              onPress={() => router.push({ pathname: '/crew/arc', params: { crew: detail.crew.id, id: crewArc.id } })}
+            />
+          ) : isOwner ? (
+            <Card style={styles.arcStart}>
+              <T variant="label" color="accent">{t('crewx.arc.label')}</T>
+              <T variant="caption">{t('crewx.arc.startHint')}</T>
+              <Button
+                title={t('crewx.arc.start')}
+                variant="secondary"
+                small
+                onPress={() => router.push({ pathname: '/onboarding/create', params: { crew: detail.crew.id } })}
+              />
+            </Card>
+          ) : null}
+
           {challenge && progress ? (
             <ChallengeCard challenge={challenge} progress={progress} names={names} onPress={canEditChallenge ? openChallenge : undefined} />
           ) : (
@@ -195,9 +284,16 @@ export default function CrewScreen() {
                 reactions={detail.reactions.filter((r) => r.to_user === m.member.user_id && r.date === today)}
                 me={me}
                 onReact={(emoji) => toggleReaction(m.member.user_id, emoji)}
+                nudged={nudged.has(m.member.user_id)}
+                onNudge={() => sendNudge(m.member.user_id)}
               />
             ))}
           </View>
+          {hiddenCount > 0 ? (
+            <T variant="caption" color="textTertiary" center>
+              {t('crewx.mod.hiddenBlocked', { count: hiddenCount })}
+            </T>
+          ) : null}
 
           <SectionTitle>Was läuft</SectionTitle>
           <CrewFeed items={feed.slice(0, 15)} people={people} me={me} today={today} />
@@ -209,6 +305,41 @@ export default function CrewScreen() {
             </View>
             <Button title="Einladen" small onPress={invite} />
           </Card>
+
+          {isOwner ? (
+            <>
+              <SectionTitle>{t('crewx.mod.manage')}</SectionTitle>
+              <Card style={styles.manage}>
+                <Button title={t('crewx.mod.renewCode')} variant="secondary" small onPress={renewCode} />
+                {removed === null ? (
+                  <Button title={t('crewx.mod.removedTitle')} variant="ghost" small onPress={showRemoved} />
+                ) : (
+                  <View style={styles.manage}>
+                    <T variant="label">{t('crewx.mod.removedTitle')}</T>
+                    {removed.length === 0 ? <T variant="caption">{t('crewx.mod.noneRemoved')}</T> : null}
+                    {removed.map((r) => (
+                      <View key={r.user_id} style={styles.removedRow}>
+                        <T style={styles.flex}>{r.display_name}</T>
+                        <Button
+                          title={t('crewx.mod.readmit')}
+                          variant="ghost"
+                          small
+                          onPress={async () => {
+                            try {
+                              await unbanMember(detail.crew.id, r.user_id);
+                              setRemoved((list) => (list ?? []).filter((x) => x.user_id !== r.user_id));
+                            } catch (e) {
+                              setError(e instanceof Error ? e.message : String(e));
+                            }
+                          }}
+                        />
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </Card>
+            </>
+          ) : null}
 
           <Button title="Crew verlassen" variant="ghost" small onPress={leave} />
         </>
@@ -237,6 +368,8 @@ function MemberRow({
   reactions,
   me,
   onReact,
+  nudged,
+  onNudge,
 }: {
   rank: number;
   userId: string;
@@ -250,6 +383,8 @@ function MemberRow({
   reactions: Reaction[];
   me: string | undefined;
   onReact: (emoji: ReactionEmoji) => void;
+  nudged: boolean;
+  onNudge: () => void;
 }) {
   const theme = useTheme();
   const today = week[6];
@@ -318,6 +453,22 @@ function MemberRow({
         ))}
       </View>
 
+      {!isMe && today !== 'done' && today !== 'shielded' ? (
+        <Pressable
+          onPress={onNudge}
+          disabled={nudged}
+          accessibilityRole="button"
+          accessibilityLabel={t('crewx.nudge.label', { name })}
+          style={({ pressed }) => [
+            styles.nudge,
+            { backgroundColor: nudged ? 'transparent' : theme.accentSoft, borderColor: nudged ? theme.border : theme.accent, opacity: pressed ? 0.7 : 1 },
+          ]}>
+          <T variant="caption" color={nudged ? 'textTertiary' : 'accent'} style={styles.nudgeText}>
+            {nudged ? `✓ ${t('crewx.nudge.done')}` : t('crewx.nudge.button')}
+          </T>
+        </Pressable>
+      ) : null}
+
       {inactive ? null : isMe ? (
         counts.some((c) => c.count) ? (
           <T variant="caption">
@@ -383,5 +534,10 @@ const styles = StyleSheet.create({
   pillEmoji: { fontSize: 16, lineHeight: 20 },
   pillCount: { fontWeight: '700' },
   invite: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+  arcStart: { gap: Spacing.two },
+  manage: { gap: Spacing.two },
+  removedRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  nudge: { alignSelf: 'flex-start', marginLeft: 20 + Spacing.three, paddingHorizontal: 12, height: 30, borderRadius: 15, borderWidth: 1.5, justifyContent: 'center' },
+  nudgeText: { fontWeight: '600' },
   code: { fontSize: 26, lineHeight: 32, fontWeight: '700', letterSpacing: 4, fontVariant: ['tabular-nums'] },
 });

@@ -6,6 +6,8 @@ import { useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
+import { useLang } from '@/i18n';
+import { applyLanguage, useLanguageSync } from '@/services/language';
 import { useReminderSync } from '@/services/notifications';
 import { useHealthSync } from '@/services/health-sync';
 import { usePushRegistration } from '@/services/push';
@@ -19,6 +21,8 @@ export default function RootLayout() {
   const scheme = useColorScheme();
   const hydrated = useHydrated();
   const palette = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const lang = useLang();
+  useLanguageSync();
   useReminderSync();
   useSyncLoop();
   usePushRegistration();
@@ -26,7 +30,7 @@ export default function RootLayout() {
   useWidgetSync();
 
   useEffect(() => {
-    hydrate().finally(() => SplashScreen.hideAsync().catch(() => {}));
+    hydrate(applyLanguage).finally(() => SplashScreen.hideAsync().catch(() => {}));
   }, []);
 
   if (!hydrated) return null;
@@ -41,7 +45,8 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider value={navTheme}>
         <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: palette.background } }}>
+        {/* Bei einem Sprachwechsel alles neu aufbauen, damit überall die neuen Texte stehen. */}
+        <Stack key={lang} screenOptions={{ headerShown: false, contentStyle: { backgroundColor: palette.background } }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
           <Stack.Screen name="tag/[date]" options={{ presentation: 'modal' }} />
@@ -51,6 +56,7 @@ export default function RootLayout() {
           <Stack.Screen name="profil" options={{ presentation: 'modal' }} />
           <Stack.Screen name="crew/mitglied" options={{ presentation: 'modal' }} />
           <Stack.Screen name="crew/challenge" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="crew/arc" options={{ presentation: 'modal' }} />
           <Stack.Screen name="regel/[id]" options={{ presentation: 'modal' }} />
           <Stack.Screen name="arcs" options={{ presentation: 'modal' }} />
           <Stack.Screen name="arc/[id]" />

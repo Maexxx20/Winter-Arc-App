@@ -1,0 +1,8 @@
+{
+  "ios": {
+    "NSHealthShareUsageDescription": "Nordwand reads steps, workouts, sleep, water and mindful minutes to check off your rules automatically. Values are only read.",
+    "NSHealthUpdateUsageDescription": "Nordwand does not write any data to Apple Health.",
+    "NSCameraUsageDescription": "Nordwand needs camera access so you can take photos for your journal and your progress photos.",
+    "NSPhotoLibraryUsageDescription": "Nordwand needs access to your photos so you can add pictures to your journal."
+  }
+}

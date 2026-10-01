@@ -15,6 +15,7 @@ import { TimeRow } from '@/components/ui/time-row';
 import { T } from '@/components/ui/text';
 import { openLink, PRIVACY_URL, WEBSITE_URL } from '@/constants/links';
 import { Radius, Spacing } from '@/constants/theme';
+import { LANG_NAMES, LANGS, t } from '@/i18n';
 import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
 import { currentRules } from '@/lib/arc';
@@ -56,7 +57,8 @@ export default function ContractScreen() {
   const beforeStart = today < arc.startDate;
   const reminders = state.settings.reminders;
   const rules = currentRules(arc);
-  const canAmend = beforeStart || arc.amendmentsLeft > 0;
+  // Crew-Arc: Regeln sind für alle gleich und bleiben fest.
+  const canAmend = !arc.crew && (beforeStart || arc.amendmentsLeft > 0);
   const total = diffDays(arc.startDate, arc.endDate) + 1;
 
   const amendNotice = beforeStart
@@ -105,7 +107,7 @@ export default function ContractScreen() {
 
       <SectionTitle
         action={
-          !beforeStart ? (
+          !beforeStart && !arc.crew ? (
             <T variant="caption" color={arc.amendmentsLeft > 0 ? 'textSecondary' : 'warning'}>
               {arc.amendmentsLeft} {arc.amendmentsLeft === 1 ? 'Änderung' : 'Änderungen'} übrig
             </T>
@@ -113,6 +115,11 @@ export default function ContractScreen() {
         }>
         Regeln
       </SectionTitle>
+      {arc.crew ? (
+        <T variant="caption" color="textSecondary">
+          {t('crewx.arc.locked', { crew: arc.crew.crewName ?? '' })}
+        </T>
+      ) : null}
       <View style={styles.list}>
         {rules.map((r) => (
           <Pressable
@@ -149,7 +156,7 @@ export default function ContractScreen() {
           if (link) syncHealthNow(true);
         }}
       />
-      <T variant="caption" color="textTertiary">{amendNotice}</T>
+      {arc.crew ? null : <T variant="caption" color="textTertiary">{amendNotice}</T>}
       {canAmend && rules.length < HARD_MAX_RULES && (
         <Button
           title="Regel hinzufügen"
@@ -265,6 +272,20 @@ export default function ContractScreen() {
 
       <SectionTitle>Einstellungen</SectionTitle>
       <Card style={styles.settings}>
+        <View style={styles.setting}>
+          <T variant="label">{t('language.title')}</T>
+          <View style={styles.chips}>
+            {(['system', ...LANGS] as const).map((l) => (
+              <Chip
+                key={l}
+                label={l === 'system' ? t('language.system') : LANG_NAMES[l]}
+                selected={(state.settings.language ?? 'system') === l}
+                onPress={() => updateSettings({ language: l })}
+              />
+            ))}
+          </View>
+          <T variant="caption" color="textTertiary">{t('language.hint')}</T>
+        </View>
         <View style={styles.setting}>
           <T variant="label">Neuer Tag beginnt um</T>
           <View style={styles.chips}>

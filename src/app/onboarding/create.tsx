@@ -24,6 +24,10 @@ import {
   type RuleTemplate,
 } from '@/lib/templates';
 import type { Arc, RuleCategory } from '@/lib/types';
+import { t } from '@/i18n';
+import { uid } from '@/lib/arc';
+import { toCrewArcRules } from '@/lib/crew-arc';
+import { cachedCrew, publishCrewArc, signCrewArc } from '@/services/crews';
 import { createArc, getState, useAppState } from '@/store/store';
 
 const STEPS = ['Zeitraum', 'Regeln', 'Warum', 'Vertrag'] as const;
@@ -44,8 +48,12 @@ export default function CreateArc() {
   const today = useToday();
   const state = useAppState();
   // Aus einem früheren Arc: Regeln und «Warum» übernehmen.
-  const { from } = useLocalSearchParams<{ from?: string }>();
+  // `crew`: Besitzer legt einen Crew-Arc für diese Crew an.
+  const { from, crew: crewId } = useLocalSearchParams<{ from?: string; crew?: string }>();
   const source = from ? state.arcs.find((a) => a.id === from) : undefined;
+  const crewName = crewId ? (cachedCrew(crewId)?.crew.name ?? '') : null;
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [signKey, setSignKey] = useState(0);
 
   const options = useMemo(() => seasonOptions(today), [today]);
   const [plan, setPlan] = useState<Plan>({ kind: 'season', title: null });
@@ -83,9 +91,32 @@ export default function CreateArc() {
   const back = () => (step === 0 ? router.back() : setStep(step - 1));
   const next = () => setStep(Math.min(STEPS.length - 1, step + 1));
 
-  const sign = () => {
-    createArc({ title, startDate, endDate, why, rules, signatureName: name });
-    setTimeout(() => router.replace('/'), 500);
+  const sign = async () => {
+    if (!crewId) {
+      createArc({ title, startDate, endDate, why, rules, signatureName: name });
+      setTimeout(() => router.replace('/'), 500);
+      return;
+    }
+    // Crew-Arc: zuerst für die Crew veröffentlichen und unterschreiben, dann lokal anlegen.
+    try {
+      const crewRules = toCrewArcRules(rules, uid);
+      const ca = await publishCrewArc({ crew_id: crewId, title: title.trim() || 'Crew Arc', why: why.trim(), start_date: startDate, end_date: endDate, rules: crewRules });
+      await signCrewArc(ca.id);
+      createArc({
+        title: ca.title,
+        startDate,
+        endDate,
+        why,
+        // Eigene Health-Verknüpfungen behalten
+        rules: crewRules.map((r, i) => ({ ...r, health: rules[i]?.health })),
+        signatureName: name,
+        crew: { crewId, crewArcId: ca.id, crewName: crewName ?? undefined },
+      });
+      setTimeout(() => router.replace({ pathname: '/crew/[id]', params: { id: crewId } }), 500);
+    } catch (e) {
+      setPublishError(t('crewx.arc.publishFailed', { error: e instanceof Error ? e.message : String(e) }));
+      setSignKey((k) => k + 1);
+    }
   };
 
   const header = (
@@ -106,12 +137,24 @@ export default function CreateArc() {
     step < 3 ? (
       <Button title="Weiter" onPress={next} disabled={!canContinue} />
     ) : (
-      <HoldToSign onSigned={sign} disabled={!canContinue} />
+      <HoldToSign key={signKey} onSigned={sign} disabled={!canContinue} />
     );
 
   return (
     <Screen footer={footer}>
       {header}
+
+      {crewId ? (
+        <Card tone="accentSoft" bordered={false} style={styles.crewNote}>
+          <T variant="label" color="accent">{t('crewx.arc.createFor', { crew: crewName ?? '' })}</T>
+          {step === 0 ? <T variant="caption">{t('crewx.arc.createIntro')}</T> : null}
+        </Card>
+      ) : null}
+      {publishError ? (
+        <Card tone="surfaceMuted" bordered={false}>
+          <T variant="caption" color="danger">{publishError}</T>
+        </Card>
+      ) : null}
 
       {step === 0 && (
         <>
@@ -349,8 +392,9 @@ export default function CreateArc() {
             ) : null}
             <View style={[styles.divider, { backgroundColor: theme.border }]} />
             <T variant="caption">
-              Ein verpasster Tag ist kein Scheitern. Ich verpasse nie zwei Tage hintereinander. Ich darf diesen Vertrag
-              höchstens dreimal ändern.
+              {crewId
+                ? t('crewx.arc.signHint')
+                : 'Ein verpasster Tag ist kein Scheitern. Ich verpasse nie zwei Tage hintereinander. Ich darf diesen Vertrag höchstens dreimal ändern.'}
             </T>
           </Card>
         </>
@@ -389,4 +433,5 @@ const styles = StyleSheet.create({
   contractRule: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   why: { fontStyle: 'italic' },
   divider: { height: StyleSheet.hairlineWidth },
+  crewNote: { gap: 4 },
 });

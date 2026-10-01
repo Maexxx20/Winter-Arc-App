@@ -5,6 +5,8 @@
  * Sommerzeit-Umstellungen (Ende Oktober!) keine Tage verschieben.
  */
 
+import { t, tl } from '@/i18n';
+
 export type ISODate = string; // "YYYY-MM-DD"
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -69,35 +71,36 @@ export function maxISO(a: ISODate, b: ISODate): ISODate {
   return a > b ? a : b;
 }
 
-const WEEKDAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
-const WEEKDAYS_SHORT = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-const MONTHS = [
-  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
-  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
-];
-const MONTHS_SHORT = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+// Namen und Formate kommen aus den Übersetzungen (Deutsch, Englisch, Französisch, Italienisch).
 
-export const weekdayShortNames = WEEKDAYS_SHORT;
+/** Kurze Wochentage, Montag zuerst («Mo», «Mon», «lu» …) */
+export function weekdayShortNames(): readonly string[] {
+  return tl('date.weekdaysShort');
+}
+
+export function weekdayName(index: number): string {
+  return tl('date.weekdays')[index] ?? '';
+}
 
 /** "Mittwoch, 1. Oktober" */
 export function formatLong(iso: ISODate): string {
   const d = parseISO(iso);
-  return `${WEEKDAYS[weekdayIndex(iso)]}, ${d.getDate()}. ${MONTHS[d.getMonth()]}`;
+  return t('date.long', { weekday: weekdayName(weekdayIndex(iso)), day: d.getDate(), month: tl('date.months')[d.getMonth()] });
 }
 
 /** "1. Okt 2026" */
 export function formatShort(iso: ISODate, withYear = false): string {
   const d = parseISO(iso);
-  const base = `${d.getDate()}. ${MONTHS_SHORT[d.getMonth()]}`;
-  return withYear ? `${base} ${d.getFullYear()}` : base;
+  const base = t('date.short', { day: d.getDate(), month: tl('date.monthsShort')[d.getMonth()] });
+  return withYear ? t('date.withYear', { date: base, year: d.getFullYear() }) : base;
 }
 
 /** "1.10.2026" */
 export function formatNumeric(iso: ISODate): string {
   const d = parseISO(iso);
-  return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
+  return t('date.numeric', { day: d.getDate(), month: d.getMonth() + 1, year: d.getFullYear() });
 }
 
 export function monthName(iso: ISODate): string {
-  return MONTHS[parseISO(iso).getMonth()];
+  return tl('date.months')[parseISO(iso).getMonth()] ?? '';
 }
