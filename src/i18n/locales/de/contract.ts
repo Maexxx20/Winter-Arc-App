@@ -1,0 +1,2 @@
+/** Texte: contract */
+export default {};

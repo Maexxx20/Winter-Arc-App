@@ -1,0 +1,2 @@
+/** Texte: today */
+export default {};

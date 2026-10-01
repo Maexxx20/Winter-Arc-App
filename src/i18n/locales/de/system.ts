@@ -1,0 +1,2 @@
+/** Texte: system */
+export default {};

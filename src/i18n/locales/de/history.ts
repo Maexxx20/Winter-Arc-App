@@ -1,0 +1,2 @@
+/** Texte: history */
+export default {};

@@ -1,0 +1,2 @@
+/** Texte: crew */
+export default {};
