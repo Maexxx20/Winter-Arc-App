@@ -30,6 +30,11 @@ function load() {
   return widget;
 }
 
+/** Gibt es Widgets in diesem Build? (Nicht in Expo Go.) */
+export function widgetsAvailable(): boolean {
+  return !!load();
+}
+
 /** Im Widget abgehakte Regeln übernehmen – aus allen Einträgen, jeweils für ihren eigenen Tag. */
 async function applyTaps() {
   const w = load();

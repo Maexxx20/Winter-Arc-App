@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isSyncablePhoto, mergePhotoRows, photoRowsToPush, withLegacyPhotoRecords } from '../photo-merge';
+import { diaryPhotos, isSyncablePhoto, mergePhotoRows, photoRowsToPush, withLegacyPhotoRecords } from '../photo-merge';
 import type { AppState } from '../types';
 
 const base = (): AppState => ({
@@ -70,5 +70,22 @@ describe('Foto-Sync', () => {
       { name: 'photos/x.jpg', arc_id: 'a', date: '2026-10-01', deleted: false, updated_at: '2026-10-03T08:00:00.000Z' },
     ]);
     expect(state).toBe(s);
+  });
+});
+
+describe('Tagebuch-Fotos für Vorher/Nachher', () => {
+  const s: AppState = {
+    schemaVersion: 1, arcs: [], activeArcId: null, reviews: {}, settings: {} as AppState['settings'],
+    logs: {
+      a: { '2026-10-08': { values: {}, photos: ['photos/c.jpg', 'photos/b.jpg'], updatedAt: '' }, '2026-10-01': { values: {}, photos: ['photos/a.jpg'], updatedAt: '' } },
+      z: { '2026-01-02': { values: {}, photos: ['photos/old.jpg'], updatedAt: '' } },
+    },
+  };
+  it('ältestes zuerst, optional nur ein Arc', () => {
+    expect(diaryPhotos(s).map((p) => p.name)).toEqual(['photos/old.jpg', 'photos/a.jpg', 'photos/b.jpg', 'photos/c.jpg']);
+    expect(diaryPhotos(s, 'a').map((p) => p.date)).toEqual(['2026-10-01', '2026-10-08', '2026-10-08']);
+  });
+  it('Web-Vorschauen werden nicht hochgeladen', () => {
+    expect(photoRowsToPush({ 'data:image/jpeg;base64,xx': { arcId: 'a', date: '2026-10-01', deleted: false, updatedAt: '2026-10-01' } }, null)).toEqual([]);
   });
 });

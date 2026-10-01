@@ -32,6 +32,8 @@ export interface Rule {
   removedOn?: ISODate;
   /** Automatisch abhaken (optional) */
   health?: HealthLink;
+  /** Eigene Erinnerung für diese Regel (Minuten seit Mitternacht), nur wenn sie an dem Tag offen ist */
+  reminder?: TimeOfDay;
 }
 
 export interface Signature {
@@ -120,6 +122,8 @@ export interface Settings {
   healthEnabled?: boolean;
   /** Name des verbundenen Strava-Kontos (null/leer = nicht verbunden). */
   stravaAthlete?: string | null;
+  /** Hinweis aufs Widget schon gezeigt */
+  widgetHintSeen?: boolean;
   /** Sprache der App; 'system' bzw. leer = wie das Gerät. */
   language?: 'system' | 'de' | 'en' | 'fr' | 'it';
   /** Stunde, zu der ein neuer Tag beginnt (0 = Mitternacht). */

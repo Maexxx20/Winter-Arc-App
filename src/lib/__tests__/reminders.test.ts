@@ -54,4 +54,31 @@ describe('Erinnerungen', () => {
     const late = planReminders(arc, {}, settings, new Date(2026, 11, 30, 9), '2026-12-30');
     expect(late.every((x) => x.date <= new Date(2026, 11, 31, 23, 59))).toBe(true);
   });
+
+  it('eigene Erinnerung pro Regel, nur solange offen', () => {
+    const withReminder: Arc = {
+      ...arc,
+      rules: [
+        { ...arc.rules[0], reminder: 18 * 60 },
+        { id: 'w', title: 'Training', icon: '🏋️', category: 'body', frequency: { kind: 'weekly', times: 2 }, measure: { kind: 'check' }, activeFrom: '2026-10-01', reminder: 17 * 60 },
+      ],
+    };
+    const now = new Date(2026, 9, 5, 8); // Montag
+    let r = planReminders(withReminder, {}, settings, now, '2026-10-05').filter((x) => x.id.startsWith('rule-'));
+    expect(r.filter((x) => x.id.includes('2026-10-05')).map((x) => x.title)).toEqual(['🏋️ Training', '📖 Lesen']);
+    expect(r.find((x) => x.id === 'rule-r-2026-10-05')?.body).toBe('Zeit für «Lesen». Danach abhaken nicht vergessen.');
+    expect(r.find((x) => x.id === 'rule-w-2026-10-05')?.body).toBe('«Training»: diese Woche noch 2× offen.');
+    const log: ArcLog = { '2026-10-05': { values: { r: 1, w: 1 }, updatedAt: '' } };
+    r = planReminders(withReminder, log, settings, now, '2026-10-05').filter((x) => x.id.startsWith('rule-') && x.id.endsWith('2026-10-05'));
+    expect(r).toEqual([]);
+  });
+
+  it('höchstens 60 geplante Mitteilungen', () => {
+    const many: Arc = {
+      ...arc,
+      rules: Array.from({ length: 10 }, (_, i) => ({ ...arc.rules[0], id: `r${i}`, reminder: 6 * 60 + i * 30 })),
+    };
+    expect(planReminders(many, {}, settings, new Date(2026, 9, 5, 5), '2026-10-05').length).toBe(60);
+  });
+
 });

@@ -57,6 +57,8 @@ export default function RootLayout() {
           <Stack.Screen name="crew/mitglied" options={{ presentation: 'modal' }} />
           <Stack.Screen name="crew/challenge" options={{ presentation: 'modal' }} />
           <Stack.Screen name="crew/arc" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="fortschritt/index" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="arc-rueckblick" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
           <Stack.Screen name="regel/[id]" options={{ presentation: 'modal' }} />
           <Stack.Screen name="arcs" options={{ presentation: 'modal' }} />
           <Stack.Screen name="arc/[id]" />

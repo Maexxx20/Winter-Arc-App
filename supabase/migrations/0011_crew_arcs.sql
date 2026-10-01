@@ -1,9 +1,9 @@
--- Nordwand – Crew-Arc: alle in der Crew unterschreiben denselben Vertrag
+-- Nordwand – Crew-Arc: eine Vorlage (Zeitraum + Regeln) für die ganze Crew
 -- Nach 0010_push_nudge.sql im SQL Editor ausführen. Mehrfach ausführbar.
 --
--- Wer die Crew besitzt, legt Zeitraum und Regeln fest. Jedes Mitglied kann unterschreiben und
--- macht den Arc dann als eigenen Arc mit genau diesen Regeln. Im Tagesstatus steht zusätzlich,
--- welche Crew-Regeln erledigt sind – so vergleicht sich die Crew Regel für Regel.
+-- Ein Mitglied legt Zeitraum und Regeln fest. Wer mitmacht, übernimmt die Vorlage und
+-- unterschreibt seinen eigenen Vertrag – danach kann jede Person ihren Arc wie gewohnt ändern.
+-- Im Tagesstatus steht zusätzlich, welche Vorlagen-Regeln erledigt sind (Vergleich Regel für Regel).
 
 create table if not exists public.crew_arcs (
   id uuid primary key default gen_random_uuid(),
@@ -68,17 +68,17 @@ create policy "crew arcs read" on public.crew_arcs
 drop policy if exists "crew arcs create" on public.crew_arcs;
 create policy "crew arcs create" on public.crew_arcs
   for insert to authenticated
-  with check (public.is_crew_owner(crew_id) and created_by = (select auth.uid()));
+  with check (public.is_crew_member(crew_id) and created_by = (select auth.uid()));
 
 drop policy if exists "crew arcs change" on public.crew_arcs;
 create policy "crew arcs change" on public.crew_arcs
   for update to authenticated
-  using (public.is_crew_owner(crew_id) and not public.crew_arc_others_signed(id))
-  with check (public.is_crew_owner(crew_id));
+  using ((created_by = (select auth.uid()) or public.is_crew_owner(crew_id)) and not public.crew_arc_others_signed(id))
+  with check (public.is_crew_member(crew_id));
 
 drop policy if exists "crew arcs delete" on public.crew_arcs;
 create policy "crew arcs delete" on public.crew_arcs
-  for delete to authenticated using (public.is_crew_owner(crew_id));
+  for delete to authenticated using (created_by = (select auth.uid()) or public.is_crew_owner(crew_id));
 
 drop policy if exists "crew arc signatures read" on public.crew_arc_signatures;
 create policy "crew arc signatures read" on public.crew_arc_signatures

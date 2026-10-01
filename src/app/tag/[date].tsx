@@ -30,10 +30,12 @@ const STATUS_LABEL: Partial<Record<DayStatus, { label: string; color: ThemeColor
 
 export default function DayScreen() {
   const theme = useTheme();
-  const { date: raw } = useLocalSearchParams<{ date: string }>();
+  const { date: raw, arc: arcParam } = useLocalSearchParams<{ date: string; arc?: string }>();
   const today = useToday();
   const state = useAppState();
-  const arc = selectActiveArc(state);
+  // Optional ein früherer Arc (z. B. aus Vorher/Nachher); dann nur ansehen
+  const active = selectActiveArc(state);
+  const arc = arcParam ? (state.arcs.find((a) => a.id === arcParam) ?? active) : active;
   const log = selectLog(state, arc?.id);
   const date = typeof raw === 'string' && isValidISO(raw) ? raw : today;
 
@@ -45,7 +47,7 @@ export default function DayScreen() {
 
   const inArc = date >= arc.startDate && date <= arc.endDate;
   const age = diffDays(date, today);
-  const editable = inArc && age >= 0 && age <= EDIT_WINDOW_DAYS;
+  const editable = arc.id === active?.id && inArc && age >= 0 && age <= EDIT_WINDOW_DAYS;
   const rules = activeRules(arc, date);
   const badge = status ? STATUS_LABEL[status] : undefined;
   const dayNumber = diffDays(arc.startDate, date) + 1;

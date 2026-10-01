@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { ArcGauge } from '@/components/arc-gauge';
 import { ChevronIcon, FlameIcon, ShieldIcon } from '@/components/icons';
@@ -19,10 +19,12 @@ import { useToday } from '@/hooks/use-today';
 import { activeRules, arcPhase, computeStats, dayProgress, dueReviewWeek, ruleValue, weeklyCount } from '@/lib/arc';
 import { diffDays, formatLong, formatShort } from '@/lib/date';
 import { nextSeason } from '@/lib/seasons';
+import { t } from '@/i18n';
 import { syncHealthNow } from '@/services/health-sync';
 import { syncNow } from '@/services/sync';
+import { widgetsAvailable } from '@/services/widget';
 import { describeRule } from '@/lib/templates';
-import { selectActiveArc, selectLog, selectReviews, setRuleValue, useAppState } from '@/store/store';
+import { selectActiveArc, selectLog, selectReviews, setRuleValue, updateSettings, useAppState } from '@/store/store';
 
 export default function TodayScreen() {
   const theme = useTheme();
@@ -116,6 +118,7 @@ export default function TodayScreen() {
           <StatTile label="Bester Streak" value={`${stats.streak.best}`} sub="Tage am Stück" />
           <StatTile label="Schilde" value={`${stats.shieldedDays}`} sub="Tage gerettet" />
         </View>
+        <Button title={`✨ ${t('recap.open')}`} onPress={() => router.push({ pathname: '/arc-rueckblick', params: { id: arc.id } })} />
         <Card tone="accentSoft" bordered={false} style={styles.next}>
           <T variant="label" color="accent">Wie geht es weiter?</T>
           <T variant="heading">
@@ -124,10 +127,9 @@ export default function TodayScreen() {
           <T variant="caption">
             Nimm deine Regeln mit in den nächsten Arc – oder fang mit neuen an. Dein {arc.title} bleibt im Verlauf.
           </T>
-          <Button title="Regeln mitnehmen" onPress={() => router.push({ pathname: '/onboarding/create', params: { from: arc.id } })} />
+          <Button title="Regeln mitnehmen" variant="secondary" onPress={() => router.push({ pathname: '/onboarding/create', params: { from: arc.id } })} />
           <Button title="Neu beginnen" variant="secondary" onPress={() => router.push('/onboarding/create')} />
         </Card>
-        <Button title="Rückblick ansehen" variant="ghost" onPress={() => router.push('/verlauf')} />
       </Screen>
     );
   }
@@ -135,6 +137,8 @@ export default function TodayScreen() {
   // ---------- Laufender Arc ----------
   const streakDays = stats.streak.current;
   const reviewWeek = dueReviewWeek(arc, today, selectReviews(state, arc.id));
+  // Einmaliger Hinweis aufs Widget ab Tag 2 (nicht im Browser und nicht in Expo Go – dort gibt es keine Widgets)
+  const showWidgetHint = !state.settings.widgetHintSeen && stats.dayNumber >= 2 && widgetsAvailable();
 
   return (
     <Screen tabs refreshing={refreshing} onRefresh={refresh}>
@@ -167,6 +171,14 @@ export default function TodayScreen() {
       </View>
 
       <ReminderPrompt />
+
+      {showWidgetHint && (
+        <Card tone="surfaceMuted" bordered={false} style={styles.alert}>
+          <T variant="bodyStrong">{t('extras.widgetHint.title')}</T>
+          <T variant="caption">{Platform.OS === 'ios' ? t('extras.widgetHint.ios') : t('extras.widgetHint.android')}</T>
+          <Button title={t('extras.widgetHint.ok')} variant="ghost" small onPress={() => updateSettings({ widgetHintSeen: true })} />
+        </Card>
+      )}
 
       {reviewWeek && (
         <Pressable

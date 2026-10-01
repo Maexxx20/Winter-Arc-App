@@ -12,7 +12,7 @@ import { deletePhoto } from '@/services/photos';
 import { addDays, type ISODate, toISO, todayISO } from '@/lib/date';
 import { isSyncablePhoto, mergePhotoRows, type PhotoRow, withLegacyPhotoRecords } from '@/lib/photo-merge';
 import { type ChangeSet, mergeRemote } from '@/lib/sync-merge';
-import type { AppState, Arc, ArcCrewLink, Avatar, DayEntry, HealthLink, ReminderSettings, Rule, Settings, SyncMeta, WeekReview } from '@/lib/types';
+import type { AppState, Arc, ArcCrewLink, Avatar, DayEntry, HealthLink, ReminderSettings, Rule, Settings, SyncMeta, TimeOfDay, WeekReview } from '@/lib/types';
 
 const STORAGE_KEY = 'arc.state.v1';
 
@@ -347,6 +347,26 @@ export function updateArcMeta(arcId: string, patch: Partial<Pick<Arc, 'title' | 
 }
 
 /** Regel mit Health verknüpfen oder lösen. Kostet keine Vertragsänderung – die Regel bleibt dieselbe. */
+/** Persönliche Erinnerung einer Regel (keine Vertragsänderung). */
+export function setRuleReminder(arcId: string, ruleId: string, time: TimeOfDay | null) {
+  setState((s) => ({
+    ...s,
+    arcs: s.arcs.map((a) =>
+      a.id === arcId
+        ? {
+            ...a,
+            rules: a.rules.map((r) => {
+              if (r.id !== ruleId) return r;
+              const { reminder: _old, ...rest } = r;
+              return time === null ? rest : { ...rest, reminder: time };
+            }),
+            updatedAt: now(),
+          }
+        : a,
+    ),
+  }));
+}
+
 export function setRuleHealth(arcId: string, ruleId: string, link: HealthLink | null) {
   setState((s) => ({
     ...s,

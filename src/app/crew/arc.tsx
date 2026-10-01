@@ -59,7 +59,7 @@ export default function CrewArcScreen() {
   const myArc = selectActiveArc(state);
   const mine = !!me && signers.includes(me);
   const linkedHere = !!ca && isMyCrewArc(myArc, ca);
-  const isOwner = !!detail && !!me && detail.crew.created_by === me;
+  const canDelete = !!detail && !!me && (detail.crew.created_by === me || ca?.created_by === me);
   const period = ca ? joinPeriod(ca, today) : null;
   const started = !!ca && today >= ca.start_date;
   const comparison = useMemo(
@@ -236,7 +236,7 @@ export default function CrewArcScreen() {
           ) : null}
 
           {mine ? <Button title={t('crewx.arc.leave')} variant="ghost" small disabled={busy} onPress={withdraw} /> : null}
-          {isOwner ? <Button title={t('crewx.arc.delete')} variant="ghost" small disabled={busy} onPress={remove} /> : null}
+          {canDelete ? <Button title={t('crewx.arc.delete')} variant="ghost" small disabled={busy} onPress={remove} /> : null}
         </>
       )}
     </Screen>

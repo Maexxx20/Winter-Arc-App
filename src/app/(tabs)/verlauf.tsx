@@ -13,6 +13,7 @@ import { T } from '@/components/ui/text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
+import { t } from '@/i18n';
 import { arcWeeks, computeStats, weekSummary } from '@/lib/arc';
 import { addDays, formatShort } from '@/lib/date';
 import { describeRule } from '@/lib/templates';
@@ -67,6 +68,10 @@ export default function HistoryScreen() {
 
       {stats.started && (
         <Button title="Fortschritt teilen" variant="secondary" onPress={() => router.push('/teilen')} />
+      )}
+      <Button title={`📸 ${t('progress.open')}`} variant="secondary" onPress={() => router.push('/fortschritt')} />
+      {stats.started && stats.evaluatedDays >= 7 && (
+        <Button title={`✨ ${t('recap.openInterim')}`} variant="ghost" small onPress={() => router.push({ pathname: '/arc-rueckblick', params: { id: arc.id } })} />
       )}
       {state.arcs.length > 1 && (
         <Button title="Frühere Arcs" variant="ghost" small onPress={() => router.push('/arcs')} />

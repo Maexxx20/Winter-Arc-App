@@ -22,6 +22,7 @@ import { currentRules } from '@/lib/arc';
 import { confirm } from '@/lib/confirm';
 import { diffDays, formatNumeric, formatShort, toISO } from '@/lib/date';
 import { describeHealthLink } from '@/lib/health';
+import { formatTime } from '@/lib/reminders';
 import { describeRule, HARD_MAX_RULES } from '@/lib/templates';
 import type { Rule } from '@/lib/types';
 import {
@@ -30,6 +31,7 @@ import {
   resetAll,
   seedDemo,
   setRuleHealth,
+  setRuleReminder,
   selectActiveArc,
   updateReminders,
   updateSettings,
@@ -58,7 +60,7 @@ export default function ContractScreen() {
   const reminders = state.settings.reminders;
   const rules = currentRules(arc);
   // Crew-Arc: Regeln sind für alle gleich und bleiben fest.
-  const canAmend = !arc.crew && (beforeStart || arc.amendmentsLeft > 0);
+  const canAmend = beforeStart || arc.amendmentsLeft > 0;
   const total = diffDays(arc.startDate, arc.endDate) + 1;
 
   const amendNotice = beforeStart
@@ -107,7 +109,7 @@ export default function ContractScreen() {
 
       <SectionTitle
         action={
-          !beforeStart && !arc.crew ? (
+          !beforeStart ? (
             <T variant="caption" color={arc.amendmentsLeft > 0 ? 'textSecondary' : 'warning'}>
               {arc.amendmentsLeft} {arc.amendmentsLeft === 1 ? 'Änderung' : 'Änderungen'} übrig
             </T>
@@ -117,7 +119,7 @@ export default function ContractScreen() {
       </SectionTitle>
       {arc.crew ? (
         <T variant="caption" color="textSecondary">
-          {t('crewx.arc.locked', { crew: arc.crew.crewName ?? '' })}
+          {t('crewx.arc.fromTemplate', { crew: arc.crew.crewName ?? '' })}
         </T>
       ) : null}
       <View style={styles.list}>
@@ -134,6 +136,11 @@ export default function ContractScreen() {
               <T variant="caption" color={r.health ? 'accent' : 'textTertiary'}>
                 {r.health ? describeHealthLink(r.health) : 'Automatisch abhaken …'}
               </T>
+              {r.reminder !== undefined ? (
+                <T variant="caption" color="textSecondary">
+                  ⏰ {t('ruleReminder.inline', { time: formatTime(r.reminder) })}
+                </T>
+              ) : null}
             </View>
             {canAmend && rules.length > 1 && (
               <Pressable
@@ -150,13 +157,18 @@ export default function ContractScreen() {
       <HealthLinkSheet
         rule={linkRule}
         onClose={() => setLinkRule(null)}
-        onSave={(link) => {
-          if (linkRule) setRuleHealth(arc.id, linkRule.id, link);
+        onSave={async (link, reminder) => {
+          if (linkRule) {
+            setRuleHealth(arc.id, linkRule.id, link);
+            setRuleReminder(arc.id, linkRule.id, reminder);
+          }
           setLinkRule(null);
           if (link) syncHealthNow(true);
+          // Erinnerung gesetzt, aber Mitteilungen aus → einschalten
+          if (reminder !== null && !state.settings.reminders.enabled) await enableReminders();
         }}
       />
-      {arc.crew ? null : <T variant="caption" color="textTertiary">{amendNotice}</T>}
+      <T variant="caption" color="textTertiary">{amendNotice}</T>
       {canAmend && rules.length < HARD_MAX_RULES && (
         <Button
           title="Regel hinzufügen"

@@ -37,7 +37,7 @@ const ts = (s: string | undefined | null) => (s ? new Date(s).toISOString() : EP
 /** Datensätze, die seit `since` geändert wurden (alle, wenn null). */
 export function photoRowsToPush(log: PhotoLog, since: string | null): PhotoRow[] {
   return Object.entries(log)
-    .filter(([, r]) => since === null || ts(r.updatedAt) > ts(since))
+    .filter(([name, r]) => isSyncablePhoto(name) && (since === null || ts(r.updatedAt) > ts(since)))
     .map(([name, r]) => ({ name, arc_id: r.arcId, date: r.date, deleted: r.deleted, updated_at: ts(r.updatedAt) }));
 }
 
@@ -95,4 +95,22 @@ export function mergePhotoRows(state: AppState, rows: PhotoRow[]): { state: AppS
   }
 
   return changed ? { state: { ...state, photoLog: log, logs }, removed } : { state, removed };
+}
+
+export interface DiaryPhoto {
+  name: string;
+  arcId: string;
+  date: ISODate;
+}
+
+/** Alle Tagebuch-Fotos (optional nur eines Arcs), ältestes zuerst – für Vorher/Nachher und Zeitraffer. */
+export function diaryPhotos(state: Pick<AppState, 'logs'>, arcId?: string): DiaryPhoto[] {
+  const out: DiaryPhoto[] = [];
+  for (const [aid, log] of Object.entries(state.logs)) {
+    if (arcId && aid !== arcId) continue;
+    for (const [date, entry] of Object.entries(log)) {
+      for (const name of entry.photos ?? []) out.push({ name, arcId: aid, date });
+    }
+  }
+  return out.sort((a, b) => a.date.localeCompare(b.date) || a.name.localeCompare(b.name));
 }

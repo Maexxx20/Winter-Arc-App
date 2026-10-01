@@ -5,11 +5,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { suggestHealthLink } from '@/lib/health';
-import type { HealthLink, Rule } from '@/lib/types';
+import { t } from '@/i18n';
+import type { HealthLink, Rule, TimeOfDay } from '@/lib/types';
 
 import { HealthLinkPicker } from './health-link-picker';
 import { CloseIcon } from './icons';
 import { Button } from './ui/button';
+import { TimeRow } from './ui/time-row';
 import { T } from './ui/text';
 
 /** Verknüpfung einer bestehenden Regel ändern – ohne Vertragsänderung. */
@@ -20,14 +22,18 @@ export function HealthLinkSheet({
 }: {
   rule: Rule | null;
   onClose: () => void;
-  onSave: (link: HealthLink | null) => void;
+  onSave: (link: HealthLink | null, reminder: TimeOfDay | null) => void;
 }) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [link, setLink] = useState<HealthLink | undefined>(undefined);
+  const [reminder, setReminder] = useState<TimeOfDay | null>(null);
 
   useEffect(() => {
-    if (rule) setLink(rule.health ?? suggestHealthLink(rule) ?? undefined);
+    if (rule) {
+      setLink(rule.health ?? suggestHealthLink(rule) ?? undefined);
+      setReminder(rule.reminder ?? null);
+    }
   }, [rule]);
 
   return (
@@ -35,7 +41,7 @@ export function HealthLinkSheet({
       <View style={[styles.root, { backgroundColor: theme.background }]}>
         <View style={[styles.header, { paddingTop: Platform.OS === 'ios' ? Spacing.four : insets.top + Spacing.two }]}>
           <View style={styles.flex}>
-            <T variant="label">Automatisch abhaken</T>
+            <T variant="label">{t('ruleReminder.sheetLabel')}</T>
             <T variant="heading" numberOfLines={1}>{rule ? `${rule.icon} ${rule.title}` : ''}</T>
           </View>
           <Pressable onPress={onClose} hitSlop={10} accessibilityLabel="Schliessen" style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
@@ -43,13 +49,22 @@ export function HealthLinkSheet({
           </Pressable>
         </View>
         <ScrollView contentContainerStyle={styles.body}>
+          <T variant="label">{t('ruleReminder.section')}</T>
+          <TimeRow
+            label={t('ruleReminder.label')}
+            hint={t('ruleReminder.hint')}
+            value={reminder}
+            fallback={18 * 60}
+            onChange={setReminder}
+          />
+          <T variant="label">Automatisch abhaken</T>
           <HealthLinkPicker value={link} onChange={setLink} />
           <T variant="caption" color="textTertiary">
             Das ist keine Vertragsänderung – die Regel bleibt dieselbe, sie wird nur automatisch abgehakt.
           </T>
         </ScrollView>
         <View style={[styles.footer, { paddingBottom: insets.bottom + Spacing.four, borderTopColor: theme.border }]}>
-          <Button title="Speichern" onPress={() => onSave(link ?? null)} />
+          <Button title={t('common.save')} onPress={() => onSave(link ?? null, reminder)} />
         </View>
       </View>
     </Modal>

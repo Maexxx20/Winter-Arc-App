@@ -5,6 +5,7 @@ import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Heatmap, HeatmapLegend } from '@/components/heatmap';
 import { ChevronIcon } from '@/components/icons';
 import { StatTile } from '@/components/stat-tile';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { SectionTitle } from '@/components/ui/controls';
 import { Screen } from '@/components/ui/screen';
@@ -12,6 +13,7 @@ import { T } from '@/components/ui/text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
+import { t } from '@/i18n';
 import { computeStats } from '@/lib/arc';
 import { formatShort } from '@/lib/date';
 import { useAppState } from '@/store/store';
@@ -52,6 +54,8 @@ export default function ArcDetail() {
         <StatTile label="Bester Streak" value={`${stats.streak.best}`} sub="Tage am Stück" />
         <StatTile label="Schilde" value={`${stats.shieldedDays}`} sub="Tage gerettet" />
       </View>
+
+      <Button title={`✨ ${t('recap.open')}`} variant="secondary" onPress={() => router.push({ pathname: '/arc-rueckblick', params: { id: arc.id } })} />
 
       <Card style={styles.heat}>
         <Heatmap

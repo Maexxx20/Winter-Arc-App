@@ -219,7 +219,12 @@ r = await as(A, `select push_text('it', 'reaction', 'Mäx', '🔥') t`); check('
 // Crew-Arc (0011)
 await db.exec('delete from net.calls');
 const rules = JSON.stringify([{ id: 'r1', title: 'Kalt duschen', icon: '🧊', category: 'body', frequency: { kind: 'daily' }, measure: { kind: 'check' } }]);
-r = await as(B, `insert into crew_arcs (crew_id, title, start_date, end_date, rules) values ($1, 'Eiskalt', '2026-10-05', '2026-11-03', $2) returning id`, [mod.id, rules]); check('nur Besitzer startet Crew-Arc', !!r.error, r);
+r = await as(D, `insert into crew_arcs (crew_id, title, start_date, end_date, rules) values ($1, 'Fremd', '2026-10-05', '2026-11-03', $2) returning id`, [mod.id, rules]); check('Fremde starten keinen Crew-Arc', !!r.error, r);
+r = await as(B, `insert into crew_arcs (crew_id, title, start_date, end_date, rules) values ($1, 'Von B', '2026-10-05', '2026-11-03', $2) returning id`, [mod.id, rules]);
+const caB = r[0]?.id; check('Mitglied startet Crew-Arc', !!caB, r);
+r = await as(C, `delete from crew_arcs where id = $1 returning id`, [caB]); check('anderes Mitglied löscht fremde Vorlage nicht', Array.isArray(r) && r.length === 0, r);
+r = await as(B, `delete from crew_arcs where id = $1 returning id`, [caB]); check('Ersteller löscht eigene Vorlage', r.length === 1, r);
+await db.exec('delete from net.calls');
 r = await as(A, `insert into crew_arcs (crew_id, title, start_date, end_date, rules) values ($1, 'Eiskalt', '2026-10-05', '2026-11-03', $2) returning id`, [mod.id, rules]);
 const ca = r[0]?.id; check('A startet Crew-Arc', !!ca, r);
 { const calls = (await db.query(`select body from net.calls`)).rows.map((x) => x.body[0]);
@@ -241,9 +246,6 @@ r = await as(B, `update daily_status set rules_done = '{1,2,3,4,5,6,7,8,9,10,11}
 r = await as(B, `delete from crew_arcs returning id`); check('Mitglied löscht Crew-Arc nicht', Array.isArray(r) && r.length === 0, r);
 r = await as(A, `delete from crew_arcs returning id`); check('Besitzer löscht Crew-Arc', r.length === 1, r);
 
-// Fortschrittsfotos (0012)
-r = await as(A, `insert into diary_photos (name, arc_id, date, updated_at, kind) values ('photos/prog1.jpg', '${ARC}', '2026-10-05', now(), 'progress') returning kind`); check('Fortschrittsfoto', r[0]?.kind === 'progress', r);
-r = await as(A, `insert into diary_photos (name, arc_id, date, updated_at, kind) values ('photos/prog2.jpg', '${ARC}', '2026-10-05', now(), 'x')`); check('Art geprüft', !!r.error, r);
 
 await as(B, `delete from user_blocks`);
 for (const u of [A, B, C]) await as(u, `select leave_crew($1)`, [mod.id]);

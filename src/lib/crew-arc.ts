@@ -1,7 +1,7 @@
 /**
- * Crew-Arc (getestet): alle in der Crew unterschreiben denselben Vertrag.
- * Die Regeln haben in jedem persönlichen Arc dieselben IDs wie im Crew-Arc –
- * so lässt sich Regel für Regel vergleichen.
+ * Crew-Arc (getestet): eine Vorlage mit Zeitraum und Regeln für die Crew.
+ * Wer sie übernimmt, unterschreibt einen eigenen Vertrag und kann ihn danach ändern.
+ * Übernommene Regeln behalten die IDs der Vorlage – so lässt sich Regel für Regel vergleichen.
  */
 
 import type { StatusRow } from './crew';

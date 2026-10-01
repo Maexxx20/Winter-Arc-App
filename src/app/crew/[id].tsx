@@ -248,7 +248,7 @@ export default function CrewScreen() {
               today={today}
               onPress={() => router.push({ pathname: '/crew/arc', params: { crew: detail.crew.id, id: crewArc.id } })}
             />
-          ) : isOwner ? (
+          ) : me ? (
             <Card style={styles.arcStart}>
               <T variant="label" color="accent">{t('crewx.arc.label')}</T>
               <T variant="caption">{t('crewx.arc.startHint')}</T>

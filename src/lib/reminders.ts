@@ -8,11 +8,14 @@
  * Öffnen der App.
  */
 
-import { computeStreak, dayProgress, type ArcLog } from './arc';
+import { t } from '@/i18n';
+
+import { activeRules, computeStreak, dayProgress, isValueDone, ruleValue, weeklyCount, type ArcLog } from './arc';
 import { addDays, diffDays, type ISODate, parseISO, weekdayIndex } from './date';
 import type { Arc, ReminderSettings, TimeOfDay } from './types';
 
 export const PLAN_DAYS = 7;
+export const MAX_PLANNED = 60;
 
 export interface PlannedReminder {
   id: string;
@@ -108,12 +111,36 @@ export function planReminders(
       });
     }
 
+    // Eigene Erinnerungen pro Regel – heute nur, wenn die Regel noch offen ist
+    for (const rule of activeRules(arc, day)) {
+      if (rule.reminder === undefined) continue;
+      let body: string;
+      if (rule.frequency.kind === 'weekly') {
+        const left = rule.frequency.times - weeklyCount(arc, log, rule, day);
+        if (day === today && (left <= 0 || isValueDone(rule, ruleValue(log, day, rule.id)))) continue;
+        body = t('ruleReminder.bodyWeekly', { title: rule.title, count: Math.max(1, left) });
+      } else {
+        if (day === today && isValueDone(rule, ruleValue(log, day, rule.id))) continue;
+        body =
+          rule.measure.kind === 'amount'
+            ? t('ruleReminder.bodyAmount', { title: rule.title, target: rule.measure.target, unit: rule.measure.unit })
+            : t('ruleReminder.body', { title: rule.title });
+      }
+      out.push({
+        id: `rule-${rule.id}-${day}`,
+        date: at(day, rule.reminder),
+        title: t('ruleReminder.title', { icon: rule.icon, title: rule.title }),
+        body,
+        url: '/',
+      });
+    }
+
     // Wochenrückblick am Sonntag
     if (settings.weeklyReview && weekdayIndex(day) === 6 && dayNo >= 5) {
-      const t = Math.max(settings.evening ?? 19 * 60, 18 * 60) + 30;
+      const reviewAt = Math.max(settings.evening ?? 19 * 60, 18 * 60) + 30;
       out.push({
         id: `review-${day}`,
-        date: at(day, Math.min(t, 23 * 60)),
+        date: at(day, Math.min(reviewAt, 23 * 60)),
         title: 'Wochenrückblick',
         body: 'Zwei Minuten: Was lief gut, was nimmst du dir für nächste Woche vor?',
         url: '/rueckblick',
@@ -121,5 +148,9 @@ export function planReminders(
     }
   }
 
-  return out.filter((r) => r.date.getTime() > now.getTime() + 30_000).sort((a, b) => a.date.getTime() - b.date.getTime());
+  // iOS behält höchstens 64 geplante Mitteilungen – die nächsten 60 reichen.
+  return out
+    .filter((r) => r.date.getTime() > now.getTime() + 30_000)
+    .sort((a, b) => a.date.getTime() - b.date.getTime())
+    .slice(0, MAX_PLANNED);
 }
