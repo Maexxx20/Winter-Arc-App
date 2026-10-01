@@ -9,6 +9,7 @@ import { Screen } from '@/components/ui/screen';
 import { T } from '@/components/ui/text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n';
 import { normalizeCode } from '@/lib/crew';
 import { haptic } from '@/lib/haptics';
 import { joinCrew } from '@/services/crews';
@@ -45,23 +46,23 @@ export default function JoinCrewScreen() {
     <Screen topInset={Platform.OS !== 'ios'}>
       <View style={styles.header}>
         <View style={styles.flex}>
-          <T variant="label">Einladung</T>
-          <T variant="title">Crew beitreten</T>
+          <T variant="label">{t('crew.join.kicker')}</T>
+          <T variant="title">{t('crew.form.joinTitle')}</T>
         </View>
-        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel="Schliessen" style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
+        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel={t('common.close')} style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
           <CloseIcon color={theme.text} size={16} />
         </Pressable>
       </View>
 
       {!session ? (
         <>
-          <T color="textSecondary">Um einer Crew beizutreten, brauchst du ein Konto. Danach kommst du hierher zurück.</T>
-          <Button title="Anmelden" onPress={() => router.push('/konto')} />
+          <T color="textSecondary">{t('crew.join.needAccount')}</T>
+          <Button title={t('crew.join.signIn')} onPress={() => router.push('/konto')} />
         </>
       ) : (
         <>
           <TextField
-            label="Einladungscode"
+            label={t('crew.form.code')}
             value={code}
             onChangeText={(v) => setCode(normalizeCode(v))}
             autoCapitalize="characters"
@@ -69,8 +70,8 @@ export default function JoinCrewScreen() {
             placeholder="ABC123"
             style={styles.code}
           />
-          <TextField label="So sehen dich die anderen" value={name} onChangeText={setName} maxLength={40} placeholder="Dein Name" />
-          <Button title="Beitreten" onPress={join} loading={busy} disabled={code.length !== 6 || !name.trim()} />
+          <TextField label={t('crew.form.displayName')} value={name} onChangeText={setName} maxLength={40} placeholder={t('crew.form.namePlaceholder')} />
+          <Button title={t('crew.form.join')} onPress={join} loading={busy} disabled={code.length !== 6 || !name.trim()} />
         </>
       )}
 

@@ -43,16 +43,16 @@ export default function HistoryScreen() {
         <T variant="label">
           {formatShort(arc.startDate)} – {formatShort(arc.endDate, true)}
         </T>
-        <T variant="display">Verlauf</T>
+        <T variant="display">{t('history.title')}</T>
       </View>
 
       <View style={styles.tiles}>
-        <StatTile label="Gehalten" value={`${stats.doneDays}`} sub={`von ${stats.evaluatedDays} Tagen`} />
-        <StatTile label="Quote" value={stats.evaluatedDays ? pct(stats.completionRate) : '–'} sub="aller Tage" />
+        <StatTile label={t('history.stats.held')} value={`${stats.doneDays}`} sub={t('history.stats.ofDays', { count: stats.evaluatedDays })} />
+        <StatTile label={t('history.stats.rate')} value={stats.evaluatedDays ? pct(stats.completionRate) : '–'} sub={t('history.stats.allDays')} />
       </View>
       <View style={styles.tiles}>
-        <StatTile label="Bester Streak" value={`${stats.streak.best}`} sub={`aktuell ${stats.streak.current}`} />
-        <StatTile label="Schilde" value={`${stats.shieldedDays}`} sub="Tage gerettet" />
+        <StatTile label={t('history.stats.bestStreak')} value={`${stats.streak.best}`} sub={t('history.stats.current', { count: stats.streak.current })} />
+        <StatTile label={t('history.stats.shields')} value={`${stats.shieldedDays}`} sub={t('history.stats.saved')} />
       </View>
 
       <Card style={styles.heat}>
@@ -67,19 +67,19 @@ export default function HistoryScreen() {
       </Card>
 
       {stats.started && (
-        <Button title="Fortschritt teilen" variant="secondary" onPress={() => router.push('/teilen')} />
+        <Button title={t('history.share.title')} variant="secondary" onPress={() => router.push('/teilen')} />
       )}
       <Button title={`📸 ${t('progress.open')}`} variant="secondary" onPress={() => router.push('/fortschritt')} />
       {stats.started && stats.evaluatedDays >= 7 && (
         <Button title={`✨ ${t('recap.openInterim')}`} variant="ghost" small onPress={() => router.push({ pathname: '/arc-rueckblick', params: { id: arc.id } })} />
       )}
       {state.arcs.length > 1 && (
-        <Button title="Frühere Arcs" variant="ghost" small onPress={() => router.push('/arcs')} />
+        <Button title={t('history.stats.earlierArcs')} variant="ghost" small onPress={() => router.push('/arcs')} />
       )}
 
       {weeks.length > 0 && stats.started && (
         <>
-          <SectionTitle>Wochen</SectionTitle>
+          <SectionTitle>{t('history.stats.weeks')}</SectionTitle>
           <View style={styles.weeks}>
             {weeks.map((w) => {
               const r = reviews[w.week];
@@ -89,16 +89,16 @@ export default function HistoryScreen() {
                   onPress={() => router.push({ pathname: '/rueckblick', params: { week: w.week } })}
                   style={({ pressed }) => [styles.weekRow, { backgroundColor: theme.surface, borderColor: theme.border, opacity: pressed ? 0.8 : 1 }]}>
                   <View style={styles.flex}>
-                    <T variant="bodyStrong">Woche {w.index}</T>
+                    <T variant="bodyStrong">{t('history.stats.week', { index: w.index })}</T>
                     <T variant="caption">
-                      {formatShort(w.week)} – {formatShort(addDays(w.week, 6))} · {w.held}/{w.days.length} gehalten
+                      {formatShort(w.week)} – {formatShort(addDays(w.week, 6))} · {t('history.stats.weekHeld', { held: w.held, total: w.days.length })}
                     </T>
                   </View>
                   {r ? (
                     <T style={styles.emoji}>{RATING_EMOJI[r.rating]}</T>
                   ) : (
                     <T variant="caption" color="accent">
-                      {w.complete ? 'Rückblick' : 'läuft'}
+                      {w.complete ? t('history.stats.review') : t('history.stats.running')}
                     </T>
                   )}
                   <ChevronIcon color={theme.textTertiary} size={16} />
@@ -109,21 +109,21 @@ export default function HistoryScreen() {
         </>
       )}
 
-      <SectionTitle>Regeln</SectionTitle>
+      <SectionTitle>{t('history.stats.rules')}</SectionTitle>
       <Card style={styles.rules}>
         {stats.ruleStats.map(({ rule, consistency, hits, expected }) => (
           <Pressable
             key={rule.id}
             onPress={() => router.push({ pathname: '/regel/[id]', params: { id: rule.id } })}
             accessibilityRole="button"
-            accessibilityLabel={`Statistik für ${rule.title}`}
+            accessibilityLabel={t('history.stats.ruleA11y', { title: rule.title })}
             style={({ pressed }) => [styles.rule, { opacity: pressed ? 0.7 : 1 }]}>
             <View style={styles.ruleHead}>
               <T style={styles.emoji}>{rule.icon}</T>
               <View style={styles.flex}>
                 <T variant="bodyStrong" numberOfLines={1}>
                   {rule.title}
-                  {rule.removedOn ? <T variant="caption" color="textTertiary">  · entfernt</T> : null}
+                  {rule.removedOn ? <T variant="caption" color="textTertiary">  · {t('history.stats.removed')}</T> : null}
                 </T>
                 <T variant="caption">{describeRule(rule)}</T>
               </View>
@@ -134,14 +134,14 @@ export default function HistoryScreen() {
               <View style={[styles.barFill, { width: `${consistency * 100}%`, backgroundColor: theme.accent }]} />
             </View>
             <T variant="caption" color="textTertiary">
-              {hits} von {expected} {rule.frequency.kind === 'weekly' ? 'Einheiten' : 'Tagen'}
+              {t(rule.frequency.kind === 'weekly' ? 'history.stats.hitsUnits' : 'history.stats.hitsDays', { hits, expected })}
             </T>
           </Pressable>
         ))}
       </Card>
 
       <T variant="caption" color="textTertiary" center>
-        Tippe auf einen Tag, um ihn nachzutragen, oder auf eine Regel für ihre Statistik.
+        {t('history.footerHint')}
       </T>
     </Screen>
   );

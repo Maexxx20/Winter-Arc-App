@@ -33,7 +33,7 @@ export default function ArcDetail() {
   return (
     <Screen topInset={Platform.OS !== 'ios'}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel="Zurück" style={[styles.round, { backgroundColor: theme.surfaceMuted }]}>
+        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel={t('common.back')} style={[styles.round, { backgroundColor: theme.surfaceMuted }]}>
           <ChevronIcon dir="left" color={theme.text} />
         </Pressable>
         <View style={styles.flex}>
@@ -44,15 +44,15 @@ export default function ArcDetail() {
         </View>
       </View>
 
-      {arc.why ? <T color="textSecondary" style={styles.why}>Weil: «{arc.why}»</T> : null}
+      {arc.why ? <T color="textSecondary" style={styles.why}>{t('history.arcs.because', { why: arc.why })}</T> : null}
 
       <View style={styles.tiles}>
-        <StatTile label="Gehalten" value={`${stats.doneDays}`} sub={`von ${stats.evaluatedDays} Tagen`} />
-        <StatTile label="Quote" value={stats.evaluatedDays ? `${Math.round(stats.completionRate * 100)}%` : '–'} sub="aller Tage" />
+        <StatTile label={t('history.stats.held')} value={`${stats.doneDays}`} sub={t('history.stats.ofDays', { count: stats.evaluatedDays })} />
+        <StatTile label={t('history.stats.rate')} value={stats.evaluatedDays ? `${Math.round(stats.completionRate * 100)}%` : '–'} sub={t('history.stats.allDays')} />
       </View>
       <View style={styles.tiles}>
-        <StatTile label="Bester Streak" value={`${stats.streak.best}`} sub="Tage am Stück" />
-        <StatTile label="Schilde" value={`${stats.shieldedDays}`} sub="Tage gerettet" />
+        <StatTile label={t('history.stats.bestStreak')} value={`${stats.streak.best}`} sub={t('history.stats.inARow')} />
+        <StatTile label={t('history.stats.shields')} value={`${stats.shieldedDays}`} sub={t('history.stats.saved')} />
       </View>
 
       <Button title={`✨ ${t('recap.open')}`} variant="secondary" onPress={() => router.push({ pathname: '/arc-rueckblick', params: { id: arc.id } })} />
@@ -68,7 +68,7 @@ export default function ArcDetail() {
         <HeatmapLegend />
       </Card>
 
-      <SectionTitle>Regeln</SectionTitle>
+      <SectionTitle>{t('history.stats.rules')}</SectionTitle>
       <Card style={styles.rules}>
         {stats.ruleStats.map(({ rule, consistency, expected }) => (
           <Pressable

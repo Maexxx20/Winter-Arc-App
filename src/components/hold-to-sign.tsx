@@ -4,6 +4,7 @@ import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { haptic } from '@/lib/haptics';
+import { t } from '@/i18n';
 
 import { T } from './ui/text';
 
@@ -55,7 +56,7 @@ export function HoldToSign({ onSigned, disabled, duration = 1400 }: Props) {
       onPressOut={cancel}
       disabled={disabled}
       accessibilityRole="button"
-      accessibilityLabel="Gedrückt halten zum Unterschreiben"
+      accessibilityLabel={t('today.sign.a11y')}
       accessibilityActions={[{ name: 'activate' }]}
       onAccessibilityAction={() => {
         setDone(true);
@@ -65,7 +66,7 @@ export function HoldToSign({ onSigned, disabled, duration = 1400 }: Props) {
       <Animated.View style={[styles.fill, { width, backgroundColor: theme.accent }]} />
       <View style={styles.label}>
         <T variant="bodyStrong" center numberOfLines={1} style={{ color: theme.background }}>
-          {done ? 'Unterschrieben ✓' : holding ? 'Halten …' : 'Halten zum Unterschreiben'}
+          {done ? t('today.sign.done') : holding ? t('today.sign.holding') : t('today.sign.idle')}
         </T>
       </View>
     </Pressable>

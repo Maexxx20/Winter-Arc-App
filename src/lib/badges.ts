@@ -3,6 +3,8 @@
  * Dadurch sind sie auf jedem Gerät gleich und können nicht «verloren» gehen.
  */
 
+import { t } from '@/i18n';
+
 import { type ArcLog, computeStreak, HABIT_THRESHOLD_DAYS } from './arc';
 import { addDays, diffDays, type ISODate, minISO, rangeDays, toISO, weekStart } from './date';
 import type { Arc, WeekReview } from './types';
@@ -25,29 +27,47 @@ export type BadgeId =
 
 export interface BadgeDef {
   id: BadgeId;
-  title: string;
+  /** Texte kommen aus den Übersetzungen (Getter, damit ein Sprachwechsel sofort greift). */
+  readonly title: string;
   /** Kurz, für gesperrte Abzeichen im Raster. */
-  hint: string;
-  description: string;
+  readonly hint: string;
+  readonly description: string;
   icon: string;
+}
+
+function badge(id: BadgeId, icon: string): BadgeDef {
+  const vars = { count: HABIT_THRESHOLD_DAYS };
+  return {
+    id,
+    icon,
+    get title() {
+      return t(`history.badge.${id}.title`, vars);
+    },
+    get hint() {
+      return t(`history.badge.${id}.hint`, vars);
+    },
+    get description() {
+      return t(`history.badge.${id}.description`, vars);
+    },
+  };
 }
 
 /** Reihenfolge = Anzeige im Profil (grob nach Schwierigkeit). */
 export const BADGES: BadgeDef[] = [
-  { id: 'first_day', title: 'Einstieg', hint: '1 Tag', description: 'Den ersten Tag gehalten.', icon: '🥾' },
-  { id: 'streak_7', title: 'Eine Woche', hint: '7 Tage', description: '7 Tage am Stück gehalten.', icon: '🔥' },
-  { id: 'shield', title: 'Gerettet', hint: 'Schild', description: 'Der Schild hat deinen Streak gerettet.', icon: '🛡️' },
-  { id: 'perfect_week', title: 'Perfekte Woche', hint: 'Mo–So', description: 'Montag bis Sonntag alles gehalten – ohne Schild.', icon: '⭐' },
-  { id: 'streak_21', title: 'Drei Wochen', hint: '21 Tage', description: '21 Tage am Stück gehalten.', icon: '⛰️' },
-  { id: 'comeback', title: 'Comeback', hint: '7 nach Bruch', description: 'Nach einem Bruch wieder 7 Tage am Stück.', icon: '🔁' },
-  { id: 'journal_10', title: 'Tagebuch', hint: '10 Notizen', description: 'An 10 Tagen eine Notiz geschrieben.', icon: '📓' },
-  { id: 'review_4', title: 'Reflektiert', hint: '4 Rückblicke', description: '4 Wochenrückblicke ausgefüllt.', icon: '🪞' },
-  { id: 'halfway', title: 'Halbzeit', hint: 'Arc-Mitte', description: 'Die Hälfte des Arcs ist geschafft.', icon: '⏳' },
-  { id: 'streak_30', title: 'Ein Monat', hint: '30 Tage', description: '30 Tage am Stück gehalten.', icon: '🧗' },
-  { id: 'perfect_month', title: 'Perfekter Monat', hint: 'Ganzer Monat', description: 'Einen ganzen Kalendermonat gehalten – ohne Schild.', icon: '🌕' },
-  { id: 'streak_66', title: 'Gewohnheit', hint: '66 Tage', description: `${HABIT_THRESHOLD_DAYS} Tage am Stück – ab hier sitzt es.`, icon: '🧠' },
-  { id: 'summit', title: 'Gipfel', hint: '≥ 80 %', description: 'Den Arc mit mindestens 80 % Quote beendet.', icon: '🏔️' },
-  { id: 'north_face', title: 'Nordwand', hint: 'Ohne Bruch', description: 'Den ganzen Arc ohne einen einzigen Bruch.', icon: '🏆' },
+  badge('first_day', '🥾'),
+  badge('streak_7', '🔥'),
+  badge('shield', '🛡️'),
+  badge('perfect_week', '⭐'),
+  badge('streak_21', '⛰️'),
+  badge('comeback', '🔁'),
+  badge('journal_10', '📓'),
+  badge('review_4', '🪞'),
+  badge('halfway', '⏳'),
+  badge('streak_30', '🧗'),
+  badge('perfect_month', '🌕'),
+  badge('streak_66', '🧠'),
+  badge('summit', '🏔️'),
+  badge('north_face', '🏆'),
 ];
 
 export const BADGE_BY_ID = Object.fromEntries(BADGES.map((b) => [b.id, b])) as Record<BadgeId, BadgeDef>;

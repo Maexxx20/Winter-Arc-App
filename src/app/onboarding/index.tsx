@@ -10,7 +10,8 @@ import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
 import { formatShort } from '@/lib/date';
-import { seasonOptions } from '@/lib/seasons';
+import { seasonOptions, seasonPitch } from '@/lib/seasons';
+import { t } from '@/i18n';
 import { supabaseConfigured, useSession } from '@/services/supabase';
 import { selectActiveArc, useAppState } from '@/store/store';
 
@@ -26,18 +27,21 @@ export default function Welcome() {
   const principles = [
     {
       icon: <T style={styles.pIcon}>✍️</T>,
-      title: 'Wenige, klare Regeln',
-      text: '3–5 tägliche Regeln, die du auch an einem schlechten Tag schaffst.',
+      key: 'rules',
+      title: t('today.onboarding.p1Title'),
+      text: t('today.onboarding.p1Text'),
     },
     {
       icon: <ShieldIcon color={theme.shield} size={22} filled />,
-      title: 'Nie zweimal verpassen',
-      text: 'Einen verpassten Tag pro Woche fängt dein Schild auf. Erst zwei in Folge brechen den Streak.',
+      key: 'shield',
+      title: t('today.onboarding.p2Title'),
+      text: t('today.onboarding.p2Text'),
     },
     {
       icon: <T style={styles.pIcon}>🤝</T>,
-      title: 'Du gibst dir dein Wort',
-      text: 'Du unterschreibst deinen Vertrag. Danach darfst du ihn nur noch dreimal ändern.',
+      key: 'word',
+      title: t('today.onboarding.p3Title'),
+      text: t('today.onboarding.p3Text'),
     },
   ];
 
@@ -45,9 +49,9 @@ export default function Welcome() {
     <Screen
       footer={
         <View style={styles.footer}>
-          <Button title="Meinen Arc erstellen" onPress={() => router.push('/onboarding/create')} />
+          <Button title={t('today.onboarding.createArc')} onPress={() => router.push('/onboarding/create')} />
           {supabaseConfigured && !session && (
-            <Button title="Ich habe schon ein Konto" variant="ghost" small onPress={() => router.push('/konto')} />
+            <Button title={t('today.onboarding.haveAccount')} variant="ghost" small onPress={() => router.push('/konto')} />
           )}
         </View>
       }>
@@ -60,23 +64,23 @@ export default function Welcome() {
           today={1}
           dayNumber={season.totalDays}
           totalDays={season.totalDays}
-          label="Tage"
+          label={t('today.onboarding.gaugeLabel')}
           sub={`${formatShort(season.startDate)} – ${formatShort(season.endDate)}`}
           size={220}
         />
         <T variant="display" center>
-          Dein {season.season.title}.
+          {t('today.onboarding.yourSeason', { season: season.season.title })}
         </T>
         <T variant="body" color="textSecondary" center style={styles.lead}>
           {season.season.id === 'winter'
-            ? 'Während alle anderen in den Winterschlaf gehen, baust du Gewohnheiten auf – und startest als bessere Version ins neue Jahr.'
-            : `${season.season.pitch} Ein Arc: feste Zeit, deine Regeln, dein Wort.`}
+            ? t('today.onboarding.winterLead')
+            : t('today.onboarding.seasonLead', { pitch: seasonPitch(season.season) })}
         </T>
       </View>
 
       <View style={styles.list}>
         {principles.map((p) => (
-          <View key={p.title} style={[styles.item, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <View key={p.key} style={[styles.item, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <View style={[styles.iconWrap, { backgroundColor: theme.surfaceMuted }]}>{p.icon}</View>
             <View style={styles.itemText}>
               <T variant="bodyStrong">{p.title}</T>
@@ -87,7 +91,7 @@ export default function Welcome() {
       </View>
 
       <T variant="caption" color="textTertiary" center>
-        Neue Gewohnheiten brauchen im Schnitt rund 66 Tage, bis sie automatisch laufen. Ein Arc gibt dir genau diese Zeit.
+        {t('today.onboarding.habitNote')}
       </T>
     </Screen>
   );

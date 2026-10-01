@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n';
 import { BADGES, type BadgeDef, type BadgeId } from '@/lib/badges';
 import { formatShort, type ISODate } from '@/lib/date';
 
@@ -36,7 +37,7 @@ export function BadgeGrid({ earned }: { earned: Map<BadgeId, { count: number; fi
       {sorted.map((b) => {
         const e = earned.get(b.id);
         return (
-          <View key={b.id} style={styles.cell} accessible accessibilityLabel={`${b.title}: ${e ? 'verdient' : 'noch offen'}. ${b.description}`}>
+          <View key={b.id} style={styles.cell} accessible accessibilityLabel={t('history.badges.a11y', { title: b.title, state: e ? t('history.badges.earned') : t('history.badges.locked'), description: b.description })}>
             <View>
               <BadgeMedal badge={b} earned={!!e} />
               {e && e.count > 1 ? (

@@ -1,8 +1,10 @@
 /** Web-Vorschau: kein Push. */
+import { t } from '@/i18n';
+
 export type PushProblem = 'no-project' | 'simulator' | 'web' | 'denied' | 'signed-out' | 'failed';
 
 export function pushProblemText(_p: PushProblem): string {
-  return 'Push gibt es nur in der App.';
+  return t('system.push.web');
 }
 
 export async function registerPush(): Promise<PushProblem | null> {

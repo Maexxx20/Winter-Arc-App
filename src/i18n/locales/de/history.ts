@@ -1,2 +1,149 @@
-/** Texte: history */
-export default {};
+/** Texte: history (Verlauf, Tag, Wochenrückblick, Teilen, Regel-Statistik, Arcs, Abzeichen) */
+export default {
+  title: 'Verlauf',
+  footerHint: 'Tippe auf einen Tag, um ihn nachzutragen, oder auf eine Regel für ihre Statistik.',
+
+  stats: {
+    held: 'Gehalten',
+    rate: 'Quote',
+    allDays: 'aller Tage',
+    ofDays: { one: 'von {count} Tag', other: 'von {count} Tagen' },
+    bestStreak: 'Bester Streak',
+    current: 'aktuell {count}',
+    shields: 'Schilde',
+    saved: 'Tage gerettet',
+    inARow: 'Tage am Stück',
+    earlierArcs: 'Frühere Arcs',
+    weeks: 'Wochen',
+    week: 'Woche {index}',
+    weekHeld: '{held}/{total} gehalten',
+    review: 'Rückblick',
+    running: 'läuft',
+    rules: 'Regeln',
+    ruleA11y: 'Statistik für {title}',
+    removed: 'entfernt',
+    hitsDays: '{hits} von {expected} Tagen',
+    hitsUnits: '{hits} von {expected} Einheiten',
+  },
+
+  /** Tagesstatus (Heatmap, Tag-Ansicht) */
+  status: {
+    done: 'Gehalten',
+    partial: 'Teilweise',
+    missed: 'Verpasst',
+    shielded: 'Vom Schild gerettet',
+    open: 'Offen',
+    future: 'Kommt noch',
+    outside: 'Ausserhalb des Arcs',
+    neutral: 'Kein Pflichttag',
+    /** Legende der Heatmap */
+    shield: 'Schild',
+  },
+
+  day: {
+    number: 'Tag {n}',
+    outside: 'Ausserhalb des Arcs',
+    editWindow: 'Nachtragen geht bis {count} Tage zurück. Ältere Tage bleiben, wie sie sind – das hält deinen Arc ehrlich.',
+    note: 'Notiz',
+    notePlaceholder: 'Wie lief der Tag? Was hat geholfen, was nicht?',
+    photos: 'Fotos',
+  },
+
+  photo: {
+    add: 'Foto hinzufügen',
+    camera: 'Kamera',
+    library: 'Aus Galerie wählen',
+    delete: 'Foto löschen',
+    deleteTitle: 'Foto löschen?',
+    deleteBody: 'Das Foto wird aus deinem Tagebuch entfernt.',
+    view: 'Foto ansehen',
+    short: 'Foto',
+  },
+
+  review: {
+    update: 'Aktualisieren',
+    save: 'Rückblick speichern',
+    heldSummary: '{held} von {total} Tagen gehalten',
+    question: 'Wie war deine Woche?',
+    ratingA11y: 'Bewertung {n} von 5',
+    wins: 'Was lief gut?',
+    winsPlaceholder: 'Worauf bist du stolz?',
+    obstacles: 'Was hat dich gebremst?',
+    obstaclesPlaceholder: 'Wann und warum hast du verpasst?',
+    next: 'Fokus für nächste Woche',
+    nextPlaceholder: 'Eine konkrete Sache, z. B. «Sporttasche am Vorabend packen»',
+  },
+
+  share: {
+    title: 'Fortschritt teilen',
+    unavailableTitle: 'Teilen nicht möglich',
+    unavailableBody: 'Auf diesem Gerät ist Teilen nicht verfügbar.',
+    light: 'Hell',
+    dark: 'Dunkel',
+    privacy: 'Nur Zahlen und Farben – deine Regeln, Notizen und Fotos bleiben privat.',
+    streak: 'Streak',
+  },
+
+  rule: {
+    removedOn: 'entfernt am {date}',
+    noData: 'Noch keine Daten. Die Statistik füllt sich ab dem ersten Tag.',
+    series: 'Serie',
+    runDays: { one: 'Tag · Rekord {best}', other: 'Tage · Rekord {best}' },
+    runWeeks: { one: 'Woche · Rekord {best}', other: 'Wochen · Rekord {best}' },
+    lastDays: 'Letzte {count} Tage',
+    hit: 'erfüllt',
+    notHit: 'nicht erfüllt',
+    perWeek: 'Pro Woche',
+    perWeekDaily: 'Erfüllte Tage pro Arc-Woche.',
+    perWeekWeekly: 'Einheiten pro Arc-Woche im Verhältnis zum Ziel.',
+    tapHint: 'Antippen zeigt die Zahl.',
+    weekdays: 'Wochentage',
+    weakest: 'Am schwierigsten ist der {day} ({rate}). Plan dort bewusst Zeit ein.',
+    weakestPending: 'Ab zwei Wochen zeigt sich, welcher Wochentag dir am schwersten fällt.',
+    amount: 'Menge',
+    total: 'Total',
+    average: 'Schnitt',
+    perDay: 'pro Tag · Ziel {target}',
+    bestDay: 'Bester Tag: {value} {unit} am {date}',
+  },
+
+  arcs: {
+    title: 'Deine Arcs',
+    active: 'läuft',
+    finished: 'beendet',
+    abandoned: 'abgebrochen',
+    summary: {
+      one: '{count} Tag gehalten · {rate} % · Rekord {best}',
+      other: '{count} Tage gehalten · {rate} % · Rekord {best}',
+    },
+    startsOn: 'Startet am {date}',
+    because: 'Weil: «{why}»',
+  },
+
+  /** Abzeichen-Oberfläche */
+  badges: {
+    new: 'Neues Abzeichen',
+    cheer: 'Stark!',
+    earned: 'verdient',
+    locked: 'noch offen',
+    a11y: '{title}: {state}. {description}',
+  },
+
+  /** Die 14 Abzeichen (src/lib/badges.ts) */
+  badge: {
+    first_day: { title: 'Einstieg', hint: '1 Tag', description: 'Den ersten Tag gehalten.' },
+    streak_7: { title: 'Eine Woche', hint: '7 Tage', description: '7 Tage am Stück gehalten.' },
+    shield: { title: 'Gerettet', hint: 'Schild', description: 'Der Schild hat deinen Streak gerettet.' },
+    perfect_week: { title: 'Perfekte Woche', hint: 'Mo–So', description: 'Montag bis Sonntag alles gehalten – ohne Schild.' },
+    streak_21: { title: 'Drei Wochen', hint: '21 Tage', description: '21 Tage am Stück gehalten.' },
+    comeback: { title: 'Comeback', hint: '7 nach Bruch', description: 'Nach einem Bruch wieder 7 Tage am Stück.' },
+    journal_10: { title: 'Tagebuch', hint: '10 Notizen', description: 'An 10 Tagen eine Notiz geschrieben.' },
+    review_4: { title: 'Reflektiert', hint: '4 Rückblicke', description: '4 Wochenrückblicke ausgefüllt.' },
+    halfway: { title: 'Halbzeit', hint: 'Arc-Mitte', description: 'Die Hälfte des Arcs ist geschafft.' },
+    streak_30: { title: 'Ein Monat', hint: '30 Tage', description: '30 Tage am Stück gehalten.' },
+    perfect_month: { title: 'Perfekter Monat', hint: 'Ganzer Monat', description: 'Einen ganzen Kalendermonat gehalten – ohne Schild.' },
+    streak_66: { title: 'Gewohnheit', hint: '{count} Tage', description: '{count} Tage am Stück – ab hier sitzt es.' },
+    summit: { title: 'Gipfel', hint: '≥ 80 %', description: 'Den Arc mit mindestens 80 % Quote beendet.' },
+    north_face: { title: 'Nordwand', hint: 'Ohne Bruch', description: 'Den ganzen Arc ohne einen einzigen Bruch.' },
+  },
+};

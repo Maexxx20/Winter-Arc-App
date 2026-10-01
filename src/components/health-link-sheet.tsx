@@ -44,7 +44,7 @@ export function HealthLinkSheet({
             <T variant="label">{t('ruleReminder.sheetLabel')}</T>
             <T variant="heading" numberOfLines={1}>{rule ? `${rule.icon} ${rule.title}` : ''}</T>
           </View>
-          <Pressable onPress={onClose} hitSlop={10} accessibilityLabel="Schliessen" style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
+          <Pressable onPress={onClose} hitSlop={10} accessibilityLabel={t('common.close')} style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
             <CloseIcon color={theme.text} size={16} />
           </Pressable>
         </View>
@@ -57,10 +57,10 @@ export function HealthLinkSheet({
             fallback={18 * 60}
             onChange={setReminder}
           />
-          <T variant="label">Automatisch abhaken</T>
+          <T variant="label">{t('contract.sheet.auto')}</T>
           <HealthLinkPicker value={link} onChange={setLink} />
           <T variant="caption" color="textTertiary">
-            Das ist keine Vertragsänderung – die Regel bleibt dieselbe, sie wird nur automatisch abgehakt.
+            {t('contract.sheet.note')}
           </T>
         </ScrollView>
         <View style={[styles.footer, { paddingBottom: insets.bottom + Spacing.four, borderTopColor: theme.border }]}>

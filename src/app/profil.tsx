@@ -14,6 +14,7 @@ import { Screen } from '@/components/ui/screen';
 import { T } from '@/components/ui/text';
 import { openLink } from '@/constants/links';
 import { Radius, Spacing } from '@/constants/theme';
+import { t } from '@/i18n';
 import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
 import { computeStats } from '@/lib/arc';
@@ -34,12 +35,12 @@ function chooseAvatarAction(hasImage: boolean): Promise<AvatarAction> {
   if (Platform.OS === 'web') return Promise.resolve('library');
   return new Promise((resolve) => {
     const buttons: { text: string; style?: 'cancel' | 'destructive'; onPress: () => void }[] = [
-      { text: 'Foto aufnehmen', onPress: () => resolve('camera') },
-      { text: 'Aus Galerie wählen', onPress: () => resolve('library') },
+      { text: t('contract.profile.takePhoto'), onPress: () => resolve('camera') },
+      { text: t('contract.profile.fromLibrary'), onPress: () => resolve('library') },
     ];
-    if (hasImage) buttons.push({ text: 'Bild entfernen', style: 'destructive', onPress: () => resolve('remove') });
-    buttons.push({ text: 'Abbrechen', style: 'cancel', onPress: () => resolve(null) });
-    Alert.alert('Profilbild', undefined, buttons, { cancelable: true, onDismiss: () => resolve(null) });
+    if (hasImage) buttons.push({ text: t('contract.profile.removeImage'), style: 'destructive', onPress: () => resolve('remove') });
+    buttons.push({ text: t('common.cancel'), style: 'cancel', onPress: () => resolve(null) });
+    Alert.alert(t('contract.profile.avatar'), undefined, buttons, { cancelable: true, onDismiss: () => resolve(null) });
   });
 }
 
@@ -99,7 +100,7 @@ export default function ProfileScreen() {
         haptic.success();
       }
     } catch (e) {
-      await confirm('Bild nicht gespeichert', e instanceof Error ? e.message : String(e), 'OK');
+      await confirm(t('contract.profile.imageNotSaved'), e instanceof Error ? e.message : String(e), t('common.ok'));
     } finally {
       setBusy(false);
     }
@@ -115,19 +116,19 @@ export default function ProfileScreen() {
     if (value !== settings[field]) updateProfile({ [field]: value });
   };
 
-  const shownName = name.trim() || 'Dein Name';
+  const shownName = name.trim() || t('contract.profile.yourName');
 
   return (
     <Screen topInset={Platform.OS !== 'ios'}>
       <View style={styles.header}>
         <View style={styles.flex}>
           <T variant="label">Nordwand</T>
-          <T variant="title">Profil</T>
+          <T variant="title">{t('contract.profile.title')}</T>
         </View>
         <Pressable
           onPress={() => router.back()}
           hitSlop={10}
-          accessibilityLabel="Schliessen"
+          accessibilityLabel={t('common.close')}
           style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
           <CloseIcon color={theme.text} size={16} />
         </Pressable>
@@ -135,7 +136,7 @@ export default function ProfileScreen() {
 
       {/* Kopf: Bild, Name, Motto */}
       <View style={styles.hero}>
-        <Pressable onPress={changeImage} accessibilityRole="button" accessibilityLabel="Profilbild ändern" disabled={busy}>
+        <Pressable onPress={changeImage} accessibilityRole="button" accessibilityLabel={t('contract.profile.changeA11y')} disabled={busy}>
           <View>
             <MyAvatar size={112} />
             {busy && (
@@ -147,11 +148,11 @@ export default function ProfileScreen() {
         </Pressable>
         <View style={styles.imageActions}>
           <Pressable onPress={changeImage} hitSlop={8} disabled={busy}>
-            <T variant="caption" color="accent">{hasImage ? 'Bild ändern' : 'Bild hinzufügen'}</T>
+            <T variant="caption" color="accent">{hasImage ? t('contract.profile.changeImage') : t('contract.profile.addImage')}</T>
           </Pressable>
           {Platform.OS === 'web' && hasImage ? (
             <Pressable onPress={() => setAvatar(null)} hitSlop={8}>
-              <T variant="caption" color="danger">Entfernen</T>
+              <T variant="caption" color="danger">{t('common.remove')}</T>
             </Pressable>
           ) : null}
         </View>
@@ -168,67 +169,67 @@ export default function ProfileScreen() {
 
       <Card style={styles.form}>
         <TextField
-          label="Name"
+          label={t('contract.profile.name')}
           value={name}
           onChangeText={setName}
           onFocus={() => setEditing('name')}
           onBlur={() => commit('name', name.trim())}
-          placeholder="Wie sollen dich andere sehen?"
+          placeholder={t('contract.profile.namePlaceholder')}
           maxLength={40}
           textContentType="nickname"
           returnKeyType="done"
         />
         <TextField
-          label="Motto"
+          label={t('contract.profile.motto')}
           value={motto}
           onChangeText={setMotto}
           onFocus={() => setEditing('motto')}
           onBlur={() => commit('motto', motto.trim())}
-          placeholder="z. B. Kein Tag ohne Training."
+          placeholder={t('contract.profile.mottoPlaceholder')}
           maxLength={80}
           hint={`${motto.length}/80`}
           returnKeyType="done"
         />
         <TextField
-          label="Instagram"
+          label={t('contract.profile.instagram')}
           value={instagram ? `@${instagram}` : ''}
           onChangeText={(v) => setInstagram(cleanInstagram(v))}
           onFocus={() => setEditing('instagram')}
           onBlur={() => commit('instagram', instagram)}
-          placeholder="@deinname"
+          placeholder={t('contract.profile.instagramPlaceholder')}
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType={Platform.OS === 'ios' ? 'twitter' : 'default'}
           returnKeyType="done"
         />
         <T variant="caption" color="textTertiary">
-          Bild, Name, Motto und Instagram sehen nur Mitglieder deiner Crews.
+          {t('contract.profile.visibility')}
         </T>
       </Card>
 
-      <SectionTitle>Statistik</SectionTitle>
+      <SectionTitle>{t('contract.profile.stats')}</SectionTitle>
       <View style={styles.tiles}>
-        <StatTile label="Arcs" value={`${stats.arcs}`} sub="gestartet" />
-        <StatTile label="Gehalten" value={`${stats.held}`} sub={stats.held === 1 ? 'Tag' : 'Tage'} />
+        <StatTile label={t('contract.profile.arcs')} value={`${stats.arcs}`} sub={t('contract.profile.started')} />
+        <StatTile label={t('contract.profile.held')} value={`${stats.held}`} sub={t('contract.profile.heldDays', { count: stats.held })} />
       </View>
       <View style={styles.tiles}>
-        <StatTile label="Bester Streak" value={`${stats.best}`} sub="Tage am Stück" />
+        <StatTile label={t('contract.profile.bestStreak')} value={`${stats.best}`} sub={t('contract.profile.inARow')} />
         <StatTile
-          label="Quote"
+          label={t('contract.profile.rate')}
           value={stats.active?.evaluatedDays ? `${Math.round(stats.active.completionRate * 100)}%` : '–'}
-          sub="aktueller Arc"
+          sub={t('contract.profile.currentArc')}
         />
       </View>
 
-      <Button title={stats.arcs > 1 ? `Alle ${stats.arcs} Arcs ansehen` : 'Deine Arcs'} variant="secondary" small onPress={() => router.push('/arcs')} />
+      <Button title={stats.arcs > 1 ? t('contract.profile.allArcs', { count: stats.arcs }) : t('contract.profile.yourArcs')} variant="secondary" small onPress={() => router.push('/arcs')} />
 
       <SectionTitle
         action={
           <T variant="caption" color="textSecondary">
-            {badges.size} von {BADGES.length}
+            {t('contract.profile.badgesCount', { count: badges.size, total: BADGES.length })}
           </T>
         }>
-        Abzeichen
+        {t('contract.profile.badges')}
       </SectionTitle>
       <Card>
         <BadgeGrid earned={badges} />
@@ -236,7 +237,7 @@ export default function ProfileScreen() {
 
       {supabaseConfigured && (
         <>
-          <SectionTitle>Konto</SectionTitle>
+          <SectionTitle>{t('contract.profile.account')}</SectionTitle>
           {session ? (
             <>
               <Pressable
@@ -244,30 +245,30 @@ export default function ProfileScreen() {
                 style={({ pressed }) => [styles.row, { backgroundColor: theme.surface, borderColor: theme.border, opacity: pressed ? 0.8 : 1 }]}>
                 <View style={[styles.dot, { backgroundColor: sync.state === 'error' ? theme.danger : theme.accent }]} />
                 <View style={styles.flex}>
-                  <T variant="bodyStrong">Konto & Sync</T>
+                  <T variant="bodyStrong">{t('contract.account.title')}</T>
                   <T variant="caption" numberOfLines={1}>
-                    {sync.state === 'error' ? 'Abgleich fehlgeschlagen – antippen' : session.user.email}
+                    {sync.state === 'error' ? t('contract.profileRow.syncFailed') : session.user.email}
                   </T>
                 </View>
                 <ChevronIcon color={theme.textTertiary} size={16} />
               </Pressable>
               <BlockedList />
               <Button
-                title="Abmelden"
+                title={t('contract.account.signOut')}
                 variant="secondary"
                 onPress={async () => {
-                  if (!(await confirm('Abmelden?', 'Deine Daten bleiben auf diesem Gerät und im Konto gespeichert.', 'Abmelden'))) return;
+                  if (!(await confirm(t('contract.account.signOutTitle'), t('contract.account.signOutBody'), t('contract.account.signOut')))) return;
                   await logout();
                 }}
               />
             </>
           ) : (
             <Card tone="surfaceMuted" bordered={false} style={styles.form}>
-              <T variant="bodyStrong">Noch nicht angemeldet</T>
+              <T variant="bodyStrong">{t('contract.profile.notSignedIn')}</T>
               <T variant="caption">
-                Mit einem Konto ist dein Arc gesichert, und deine Crew sieht dein Profil. Kein Passwort – du bekommst einen Code per E-Mail.
+                {t('contract.profile.signInPitch')}
               </T>
-              <Button title="Anmelden" onPress={() => router.push('/konto')} />
+              <Button title={t('contract.account.signIn')} onPress={() => router.push('/konto')} />
             </Card>
           )}
         </>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
+import { t } from '@/i18n';
 import { useTheme } from '@/hooks/use-theme';
 import { confirm } from '@/lib/confirm';
 import { healthProviderName, type HealthSupport, healthSupport, requestHealthAccess } from '@/services/health-source';
@@ -16,11 +17,12 @@ import { PoweredByStrava, StravaConnectButton } from './strava-button';
 import { Card } from './ui/card';
 import { T } from './ui/text';
 
-const SUPPORT_TEXT: Record<Exclude<HealthSupport, 'available'>, string> = {
-  'expo-go': 'Geht erst in der richtigen App (Development-Build, TestFlight oder Store) – nicht in Expo Go.',
-  unsupported: 'Auf diesem Gerät nicht verfügbar.',
-  'needs-app': 'Installiere bzw. aktualisiere zuerst «Health Connect» aus dem Play Store.',
-};
+const supportText = (support: Exclude<HealthSupport, 'available'>): string =>
+  ({
+    'expo-go': t('contract.connections.expoGo'),
+    unsupported: t('contract.connections.unsupported'),
+    'needs-app': t('contract.connections.needsApp'),
+  })[support];
 
 /** Verbindungen zu Apple Health / Health Connect und Strava. */
 export function ConnectionsCard() {
@@ -42,19 +44,19 @@ export function ConnectionsCard() {
     const ok = await requestHealthAccess();
     setBusy(null);
     if (!ok) {
-      await confirm(`${healthProviderName} nicht verbunden`, 'Erlaube Nordwand in den Einstellungen deines Handys, Health-Daten zu lesen.', 'OK');
+      await confirm(t('contract.connections.notConnected', { provider: healthProviderName }), t('contract.connections.allowHealth'), t('common.ok'));
       return;
     }
     updateSettings({ healthEnabled: true });
     const n = await syncHealthNow(true);
-    if (n) await confirm('Verbunden', `${n} ${n === 1 ? 'Wert wurde' : 'Werte wurden'} gleich übernommen.`, 'OK');
+    if (n) await confirm(t('contract.connections.connected'), t('contract.connections.valuesTaken', { count: n }), t('common.ok'));
   };
 
   const toggleStrava = async () => {
     setBusy('strava');
     const err = stravaAthlete ? await disconnectStrava() : await connectStrava();
     setBusy(null);
-    if (err) await confirm('Strava', err, 'OK');
+    if (err) await confirm('Strava', err, t('common.ok'));
     else if (!stravaAthlete) syncHealthNow(true);
   };
 
@@ -64,16 +66,16 @@ export function ConnectionsCard() {
         <T variant="bodyStrong">{healthProviderName}</T>
         <T variant="caption">
           {support && support !== 'available'
-            ? SUPPORT_TEXT[support]
+            ? supportText(support)
             : healthEnabled
-              ? `Verbunden · liest Schritte, Training, Schlaf, Wasser und Achtsamkeit.`
-              : 'Schritte, Training, Schlaf, Wasser und Achtsamkeit lesen – nur lesen, nie schreiben.'}
+              ? t('contract.connections.healthOn')
+              : t('contract.connections.healthOff')}
         </T>
         {support === 'available' ? (
           healthEnabled ? (
-            <Button title="Nicht mehr verwenden" variant="ghost" small onPress={() => updateSettings({ healthEnabled: false })} />
+            <Button title={t('contract.connections.stopUsing')} variant="ghost" small onPress={() => updateSettings({ healthEnabled: false })} />
           ) : (
-            <Button title={`Mit ${healthProviderName} verbinden`} variant="secondary" small loading={busy === 'health'} onPress={connectHealth} />
+            <Button title={t('contract.connections.connectWith', { provider: healthProviderName })} variant="secondary" small loading={busy === 'health'} onPress={connectHealth} />
           )
         ) : null}
       </View>
@@ -84,15 +86,15 @@ export function ConnectionsCard() {
         <T variant="bodyStrong">Strava</T>
         <T variant="caption">
           {stravaAthlete
-            ? `Verbunden als ${stravaAthlete} · Aktivitäten zählen als Training.`
+            ? t('contract.connections.stravaAs', { name: stravaAthlete })
             : !supabaseConfigured || !session
-              ? 'Für Strava brauchst du ein Konto (Profil → Anmelden).'
-              : (stravaAvailableHere() ?? 'Aktivitäten aus Strava zählen als Training.')}
+              ? t('contract.connections.stravaNeedsAccount')
+              : (stravaAvailableHere() ?? t('contract.connections.stravaPitch'))}
         </T>
         {supabaseConfigured && session && stravaAthlete ? (
           <>
             <PoweredByStrava />
-            <Button title="Strava trennen" variant="ghost" small loading={busy === 'strava'} onPress={toggleStrava} />
+            <Button title={t('contract.connections.stravaDisconnect')} variant="ghost" small loading={busy === 'strava'} onPress={toggleStrava} />
           </>
         ) : supabaseConfigured && session && !stravaAvailableHere() ? (
           <StravaConnectButton loading={busy === 'strava'} onPress={toggleStrava} />
@@ -100,8 +102,8 @@ export function ConnectionsCard() {
       </View>
 
       <T variant="caption" color="textTertiary">
-        Garmin, Polar, Suunto, Coros, Oura oder Whoop: In deren App die Synchronisierung mit {healthProviderName} einschalten – dann
-        kommen die Werte automatisch hier an. {linked ? `${linked} ${linked === 1 ? 'Regel ist' : 'Regeln sind'} verknüpft.` : 'Tippe oben auf eine Regel, um sie zu verknüpfen.'}
+        {t('contract.connections.devices', { provider: healthProviderName })}{' '}
+        {linked ? t('contract.connections.linked', { count: linked }) : t('contract.connections.linkHint')}
       </T>
     </Card>
   );

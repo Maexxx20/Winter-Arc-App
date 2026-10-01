@@ -16,6 +16,17 @@ und Sync zwischen Geräten dazu.
    - [`supabase/migrations/0006_photos.sql`](../supabase/migrations/0006_photos.sql) – Tagebuch-Fotos im Sync (privater Bucket `photos`)
    - [`supabase/migrations/0007_push.sql`](../supabase/migrations/0007_push.sql) – Push bei Reaktionen und Beitritten (schaltet die Erweiterung `pg_net` ein)
    - [`supabase/migrations/0008_strava.sql`](../supabase/migrations/0008_strava.sql) – Strava-Verbindung (Zugangsschlüssel nur für den Server lesbar)
+   - [`supabase/migrations/0009_moderation.sql`](../supabase/migrations/0009_moderation.sql) – Crews moderieren: Personen blockieren
+     (wirkt in beide Richtungen: kein Profil, kein Tagesstatus, keine Reaktionen und Mitteilungen voneinander),
+     Mitglieder entfernen (Sperrliste `crew_bans`, nur für den Besitzer), Einladungscode erneuern
+   - [`supabase/migrations/0010_push_nudge.sql`](../supabase/migrations/0010_push_nudge.sql) – Mitteilungen in der Sprache
+     des Geräts (Spalte `push_tokens.lang`: `de`/`en`/`fr`/`it`) und «Anstupsen» (pro Person, Empfänger und Tag einmal)
+   - [`supabase/migrations/0011_crew_arcs.sql`](../supabase/migrations/0011_crew_arcs.sql) – Crew-Arc als Vorlage
+     (`crew_arcs`, `crew_arc_signatures`), im Tagesstatus zusätzlich `crew_arc_id` und `rules_done`, Mitteilung beim Start
+
+   Eine `0012` gibt es (noch) nicht. Die Reihenfolge ist wichtig: 0010 baut auf den Funktionen aus 0009 auf,
+   0011 auf `send_push_i18n` aus 0010. Die App läuft auch mit älterem Schema weiter (sie fällt dann auf die
+   alten Funktionen zurück bzw. meldet «der Server braucht zuerst ein Update»).
 
    Alle Dateien lassen sich gefahrlos mehrmals ausführen. Getestet werden sie mit `npm run test:db`
    (eingebettetes Postgres, prüft alle Zugriffsregeln).
@@ -34,6 +45,59 @@ Standardmässig schickt Supabase einen Link. Die App braucht einen 6-stelligen C
    ```
 
 3. Gleich vorgehen beim Template **Confirm signup** (wird beim allerersten Login verschickt).
+
+## 2a. Login-Mail in der Sprache der App
+
+Die Mail-Templates von Supabase sind Go-Templates – im **Betreff und im Inhalt**. Mit
+`{{ .Data }}` stehen die Metadaten des Kontos (`auth.users.raw_user_meta_data`) zur Verfügung. Wenn die
+App die Sprache dort als `lang` ablegt, kann ein einziges Template alle vier Sprachen abdecken.
+
+> **So macht es die App:** Beim Code anfordern schickt sie die Sprache mit
+> (`signInWithOtp(…, { data: { lang } })`, gilt für neue Konten). Nach dem Anmelden und bei jedem
+> Sprachwechsel trägt sie die Sprache zusätzlich mit `updateUser({ data: { lang } })` ein – so stimmt sie
+> auch bei bestehenden Konten ab der nächsten Code-Mail. Ohne Wert fällt das Template auf Deutsch zurück.
+
+Das Template liest `lang` vorsichtig aus (fehlt der Wert oder sind gar keine Metadaten da, gibt es
+keinen Fehler, sondern Deutsch).
+
+**Betreff** (Magic Link und Confirm signup):
+
+```
+{{ $l := "" }}{{ with .Data }}{{ with .lang }}{{ $l = . }}{{ end }}{{ end }}{{ if eq $l "en" }}Your Nordwand code: {{ .Token }}{{ else if eq $l "fr" }}Ton code Nordwand : {{ .Token }}{{ else if eq $l "it" }}Il tuo codice Nordwand: {{ .Token }}{{ else }}Dein Nordwand-Code: {{ .Token }}{{ end }}
+```
+
+Falls Supabase im Betreff keine Bedingungen annimmt (Fehler beim Speichern oder die Mail kommt mit
+leerem Betreff), stattdessen einen neutralen Betreff nehmen: `Nordwand – Code: {{ .Token }}`.
+
+**Inhalt** (Magic Link und Confirm signup):
+
+```html
+{{ $l := "" }}{{ with .Data }}{{ with .lang }}{{ $l = . }}{{ end }}{{ end }}
+{{ if eq $l "en" }}
+<h2>Your Nordwand code</h2>
+<p style="font-size:28px;letter-spacing:6px"><strong>{{ .Token }}</strong></p>
+<p>Enter this code in the app. It is valid for one hour.</p>
+<p style="color:#566372">If you didn't request this code, you can ignore this email.</p>
+{{ else if eq $l "fr" }}
+<h2>Ton code pour Nordwand</h2>
+<p style="font-size:28px;letter-spacing:6px"><strong>{{ .Token }}</strong></p>
+<p>Saisis ce code dans l’app. Il est valable une heure.</p>
+<p style="color:#566372">Si tu n’as pas demandé ce code, tu peux ignorer cet e-mail.</p>
+{{ else if eq $l "it" }}
+<h2>Il tuo codice per Nordwand</h2>
+<p style="font-size:28px;letter-spacing:6px"><strong>{{ .Token }}</strong></p>
+<p>Inserisci questo codice nell’app. È valido per un’ora.</p>
+<p style="color:#566372">Se non hai richiesto questo codice, puoi ignorare questa e-mail.</p>
+{{ else }}
+<h2>Dein Code für Nordwand</h2>
+<p style="font-size:28px;letter-spacing:6px"><strong>{{ .Token }}</strong></p>
+<p>Gib diesen Code in der App ein. Er ist eine Stunde gültig.</p>
+<p style="color:#566372">Wenn du keinen Code angefordert hast, kannst du diese Mail ignorieren.</p>
+{{ end }}
+```
+
+Testen: In der App die Sprache umstellen, abmelden, Code anfordern. Kommt die Mail weiter auf Deutsch,
+in Supabase unter **Authentication → Users → (Konto) → Raw user meta data** nachsehen, ob `lang` gesetzt ist.
 
 ## 2b. Eigener Mailversand (Pflicht, sobald andere mittesten)
 
@@ -72,6 +136,12 @@ Domain in Brevo verifizieren und als Absender z. B. `code@deinedomain.ch` nehmen
    `app.json` ein – ohne sie kann die App kein Push-Token holen.
 3. In der App: Vertrag → Erinnerungen → «Crew-Mitteilungen» einschalten. In Expo Go geht das nur auf
    dem iPhone; auf Android braucht es einen Development-Build.
+4. Mit `0010_push_nudge.sql` speichert die App beim Registrieren die Sprache des Geräts
+   (`claim_push_token(token, platform, lang)`); die Datenbank wählt den Text pro Gerät in dieser Sprache
+   (`push_text`, `send_push_i18n`). Tokens von vor 0010 stehen auf `de`, bis die App sie neu registriert (beim Start mit eingeschalteten Crew-Mitteilungen und bei jedem Sprachwechsel).
+   Arten von Mitteilungen: `reaction`, `join`, `nudge` (Anstupsen), `crew_arc` (neuer Crew-Arc) – je
+   Absender, Empfänger, Crew und Tag höchstens eine (`push_log`, wird nach 7 Tagen aufgeräumt).
+   Zwischen blockierten Personen wird nichts verschickt.
 
 ## 2d. Strava (optional)
 
@@ -125,7 +195,36 @@ Danach `npx expo start --clear`. Im Tab **Vertrag** erscheint jetzt «Konto & Sy
 | Abzeichen | ✓ – werden berechnet und für die Crew im Profil veröffentlicht |
 | Werte aus Apple Health / Health Connect | nur lokal gelesen; gesichert wird nur das Ergebnis der Regel (Häkchen bzw. Menge) |
 | Strava | Zugangsschlüssel und Aktivitäten der letzten 14 Tage in `strava_connections` – nur die Edge Function liest sie |
-| Einstellungen, Erinnerungen, Widget | nur lokal (pro Gerät) |
-| Crew-Tagesstatus | Status, Anzahl erledigter Regeln, Streak, Quote – sichtbar nur für Crew-Mitglieder |
+| Einstellungen, Erinnerungen, Widget | nur lokal (pro Gerät); die Uhrzeit einer Erinnerung pro Regel ist Teil der Regel und wird mit ihr gesichert |
+| Crew-Tagesstatus | Status, Anzahl erledigter Regeln, Streak, Quote – sichtbar nur für Crew-Mitglieder (ohne Blockierte); bei einem übernommenen Crew-Arc zusätzlich `crew_arc_id` und `rules_done` (IDs der heute erledigten Regeln) |
+| Crew-Arcs | Vorlage (Titel, Warum, Zeitraum, Regeln) in `crew_arcs`, Unterschriften in `crew_arc_signatures` – lesbar für alle Mitglieder der Crew |
+| Blockierte Personen | `user_blocks` (mit Name zum Zeitpunkt des Blockierens) – nur für dich |
+| Entfernte Crew-Mitglieder | `crew_bans` – nur über Funktionen für den Besitzer der Crew |
+| Sprache für Mitteilungen | `push_tokens.lang` pro Gerät |
+| Arc-Rückblick, Vorher/Nachher, Datenexport | nur lokal – nichts davon geht an den Server |
 
 Konflikte: Die zuletzt geänderte Version gewinnt (pro Tag bzw. pro Arc).
+
+## EAS Update (Updates ohne neuen Store-Build)
+
+Die App ist für [EAS Update](https://docs.expo.dev/eas-update/introduction/) eingerichtet: In `app.json`
+steht `updates.url` (`https://u.expo.dev/<Projekt-ID>`) und `runtimeVersion` mit der Policy
+`fingerprint`; in `eas.json` haben die Build-Profile die Kanäle `development`, `preview` und
+`production`. Die App sucht beim Start nach einem Update und lädt es (Standard von `expo-updates`).
+
+Reine JavaScript-Änderungen (Texte, Logik, Screens) verteilst du so:
+
+```bash
+npx eas-cli@latest update --channel production --environment production --message "Kurze Beschreibung"
+```
+
+- `--environment` ist ab SDK 55 Pflicht und lädt die Umgebungsvariablen aus EAS (dieselbe Umgebung wie
+  das Build-Profil). Die Supabase-Schlüssel (`EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`)
+  müssen deshalb auch in der EAS-Umgebung `production` hinterlegt sein, nicht nur in `.env.local`.
+- Zum Testen zuerst `--channel preview --environment preview` (erreicht nur Preview-Builds).
+- **Fingerprint:** Ein Update erreicht nur Builds mit genau demselben nativen Stand. Sobald eine
+  Bibliothek mit nativem Code dazukommt oder sich `app.json` bei Plugins/Berechtigungen ändert, braucht es
+  einen neuen Build (`npx eas-cli@latest build --profile production`) – das Update landet sonst bei
+  niemandem.
+- Für die Datenschutzerklärung: Bei der Update-Abfrage gehen nur technische Angaben an Expo (Plattform,
+  Laufzeitversion, Kanal, ID des laufenden Updates und eine zufällige Installations-ID), siehe Abschnitt 6.

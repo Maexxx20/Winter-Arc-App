@@ -3,6 +3,8 @@ import { createClient, type Session, type SupabaseClient } from '@supabase/supab
 import { useEffect, useState } from 'react';
 import { AppState as RNAppState, Platform } from 'react-native';
 
+import { getLang, onLangChange, t } from '@/i18n';
+
 /**
  * Supabase-Zugang. URL und anon-Key kommen aus `.env.local`
  * (EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_ANON_KEY).
@@ -36,15 +38,33 @@ if (supabase && Platform.OS !== 'web') {
 let currentSession: Session | null = null;
 const sessionListeners = new Set<(s: Session | null) => void>();
 
+/**
+ * Sprache im Konto vermerken (user_metadata.lang), damit die Mail mit dem Anmeldecode
+ * in der richtigen Sprache kommt (Vorlage in docs/SUPABASE.md, 2a).
+ * Nicht direkt im Auth-Callback aufrufen – Supabase empfiehlt, dort nichts abzuwarten.
+ */
+function syncAuthLanguage() {
+  const s = currentSession;
+  if (!supabase || !s) return;
+  const lang = getLang();
+  if ((s.user.user_metadata as { lang?: string } | undefined)?.lang === lang) return;
+  setTimeout(() => {
+    supabase?.auth.updateUser({ data: { lang } }).catch(() => undefined);
+  }, 0);
+}
+
 if (supabase) {
   supabase.auth.getSession().then(({ data }) => {
     currentSession = data.session;
     sessionListeners.forEach((l) => l(currentSession));
+    syncAuthLanguage();
   });
-  supabase.auth.onAuthStateChange((_event, session) => {
+  supabase.auth.onAuthStateChange((event, session) => {
     currentSession = session;
     sessionListeners.forEach((l) => l(session));
+    if (event === 'SIGNED_IN') syncAuthLanguage();
   });
+  onLangChange(syncAuthLanguage);
 }
 
 export function getSession(): Session | null {
@@ -68,13 +88,17 @@ export function useSession(): Session | null {
 // ---------- Anmeldung mit E-Mail-Code ----------
 
 export async function sendLoginCode(email: string): Promise<string | null> {
-  if (!supabase) return 'Sync ist noch nicht eingerichtet.';
-  const { error } = await supabase.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { shouldCreateUser: true } });
+  if (!supabase) return t('system.auth.notConfigured');
+  const { error } = await supabase.auth.signInWithOtp({
+    email: email.trim().toLowerCase(),
+    // Sprache für die Code-Mail (bei neuen Konten; bestehende bekommen sie nach der Anmeldung)
+    options: { shouldCreateUser: true, data: { lang: getLang() } },
+  });
   return error ? translateAuthError(error.message) : null;
 }
 
 export async function verifyLoginCode(email: string, token: string): Promise<string | null> {
-  if (!supabase) return 'Sync ist noch nicht eingerichtet.';
+  if (!supabase) return t('system.auth.notConfigured');
   const { error } = await supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token: token.trim(), type: 'email' });
   return error ? translateAuthError(error.message) : null;
 }
@@ -90,7 +114,7 @@ export function isReviewEmail(email: string): boolean {
 }
 
 export async function signInWithPassword(email: string, password: string): Promise<string | null> {
-  if (!supabase) return 'Sync ist noch nicht eingerichtet.';
+  if (!supabase) return t('system.auth.notConfigured');
   const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
   return error ? translateAuthError(error.message) : null;
 }
@@ -102,11 +126,11 @@ export async function signOut() {
 function translateAuthError(msg: string): string {
   const m = msg.toLowerCase();
   if (m.includes('timed out') || m.includes('timeout') || m.includes('error sending') || m.includes('smtp'))
-    return 'Die Mail konnte nicht verschickt werden. Prüfe in Supabase die SMTP-Einstellungen (Host, Port 587, App-Passwort).';
-  if (m.includes('credentials')) return 'E-Mail oder Passwort ist falsch.';
-  if (m.includes('expired') || m.includes('invalid')) return 'Der Code ist falsch oder abgelaufen.';
-  if (m.includes('rate') || m.includes('seconds')) return 'Zu viele Versuche. Warte kurz und versuch es nochmal.';
-  if (m.includes('email')) return 'Diese E-Mail-Adresse ist ungültig.';
-  if (m.includes('network') || m.includes('fetch')) return 'Keine Verbindung. Bist du online?';
+    return t('system.auth.mailFailed');
+  if (m.includes('credentials')) return t('system.auth.wrongPassword');
+  if (m.includes('expired') || m.includes('invalid')) return t('system.auth.wrongCode');
+  if (m.includes('rate') || m.includes('seconds')) return t('system.auth.tooMany');
+  if (m.includes('email')) return t('system.auth.invalidEmail');
+  if (m.includes('network') || m.includes('fetch')) return t('common.offline');
   return msg;
 }

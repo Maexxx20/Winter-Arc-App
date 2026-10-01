@@ -3,6 +3,8 @@
  * wie die Rangliste sortiert wird.
  */
 
+import { t } from '@/i18n';
+
 import { computeStats, type ArcLog } from './arc';
 import { addDays, diffDays, type ISODate } from './date';
 import type { Arc, DayStatus } from './types';
@@ -154,11 +156,11 @@ export function normalizeCode(input: string): string {
 }
 
 export function inviteMessage(crew: Pick<Crew, 'name' | 'invite_code'>): string {
-  return (
-    `Mach mit bei meiner Crew «${crew.name}» auf Nordwand – wir ziehen den Winter Arc zusammen durch. 🏔️\n\n` +
-    `Code: ${crew.invite_code}\n` +
-    `nordwand://crew/beitreten?code=${crew.invite_code}`
-  );
+  return t('crew.invite.message', {
+    name: crew.name,
+    code: crew.invite_code,
+    link: `nordwand://crew/beitreten?code=${crew.invite_code}`,
+  });
 }
 
 // ---------- Wochen-Challenges ----------
@@ -189,8 +191,8 @@ export interface ChallengeProgress {
 
 export function challengeTitle(c: Pick<Challenge, 'kind' | 'target'>): string {
   return c.kind === 'crew_total'
-    ? `Zusammen ${c.target} Tage halten`
-    : `Alle halten mind. ${c.target} von 7 Tagen`;
+    ? t('crew.challenge.titleTotal', { count: c.target })
+    : t('crew.challenge.titleEveryone', { count: c.target });
 }
 
 export function defaultChallengeTarget(kind: ChallengeKind, memberCount: number): number {

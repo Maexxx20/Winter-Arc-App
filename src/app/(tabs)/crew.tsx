@@ -10,6 +10,7 @@ import { Screen } from '@/components/ui/screen';
 import { T } from '@/components/ui/text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n';
 import { normalizeCode } from '@/lib/crew';
 import { haptic } from '@/lib/haptics';
 import { createCrew, type CrewWithCount, joinCrew, listCrews } from '@/services/crews';
@@ -70,8 +71,8 @@ export default function CrewTab() {
 
   const head = (
     <View style={styles.head}>
-      <T variant="label">Zusammen durchziehen</T>
-      <T variant="display">Crew</T>
+      <T variant="label">{t('crew.tab.kicker')}</T>
+      <T variant="display">{t('crew.title')}</T>
     </View>
   );
 
@@ -83,14 +84,13 @@ export default function CrewTab() {
         <Card style={styles.hero}>
           <T style={styles.heroEmoji}>🏔️</T>
           <T variant="heading" center>
-            Niemand besteigt die Nordwand allein.
+            {t('crew.tab.heroTitle')}
           </T>
           <T variant="caption" center>
-            Mach deinen Arc mit Freunden, Team oder Klasse. Ihr seht, wer seinen Tag gehalten hat, feuert euch mit Reaktionen an
-            und vergleicht eure Quote. Jede Person hat ihre eigenen Regeln – geteilt werden nur Zahlen.
+            {t('crew.tab.heroText')}
           </T>
         </Card>
-        <Button title="Anmelden, um loszulegen" onPress={() => router.push('/konto')} />
+        <Button title={t('crew.tab.signIn')} onPress={() => router.push('/konto')} />
       </Screen>
     );
   }
@@ -104,12 +104,12 @@ export default function CrewTab() {
 
       {Platform.OS !== 'web' && settings.crewPush === null && !!crews?.length ? (
         <Card tone="accentSoft" bordered={false} style={styles.form}>
-          <T variant="bodyStrong">Mitbekommen, wenn deine Crew dich anfeuert?</T>
-          <T variant="caption">Eine Mitteilung, wenn jemand auf deinen Tag reagiert oder der Crew beitritt. Höchstens eine pro Person und Tag.</T>
+          <T variant="bodyStrong">{t('crew.tab.pushTitle')}</T>
+          <T variant="caption">{t('crew.tab.pushText')}</T>
           <View style={styles.actions}>
-            <Button title="Nein danke" variant="secondary" small style={styles.flex} onPress={() => updateSettings({ crewPush: false })} />
+            <Button title={t('crew.tab.pushNo')} variant="secondary" small style={styles.flex} onPress={() => updateSettings({ crewPush: false })} />
             <Button
-              title="Einschalten"
+              title={t('crew.tab.pushYes')}
               small
               style={styles.flex}
               onPress={async () => {
@@ -134,7 +134,7 @@ export default function CrewTab() {
               <View style={styles.flex}>
                 <T variant="bodyStrong">{c.name}</T>
                 <T variant="caption">
-                  {c.member_count} {c.member_count === 1 ? 'Person' : 'Personen'} · Code {c.invite_code}
+                  {t('crew.tab.crewMeta', { people: t('crew.people', { count: c.member_count }), code: c.invite_code })}
                 </T>
               </View>
               <ChevronIcon color={theme.textTertiary} />
@@ -144,24 +144,24 @@ export default function CrewTab() {
       ) : crews ? (
         <Card tone="surfaceMuted" bordered={false}>
           <T variant="caption" center>
-            Du bist noch in keiner Crew. Erstelle eine und lade andere ein – oder tritt mit einem Code bei.
+            {t('crew.tab.empty')}
           </T>
         </Card>
       ) : null}
 
       {mode === 'none' ? (
         <View style={styles.actions}>
-          <Button title="Crew erstellen" style={styles.flex} onPress={() => setMode('create')} />
-          <Button title="Beitreten" variant="secondary" style={styles.flex} onPress={() => setMode('join')} />
+          <Button title={t('crew.tab.create')} style={styles.flex} onPress={() => setMode('create')} />
+          <Button title={t('crew.form.join')} variant="secondary" style={styles.flex} onPress={() => setMode('join')} />
         </View>
       ) : (
         <Card style={styles.form}>
-          <SectionTitle>{mode === 'create' ? 'Neue Crew' : 'Crew beitreten'}</SectionTitle>
+          <SectionTitle>{mode === 'create' ? t('crew.tab.newCrew') : t('crew.form.joinTitle')}</SectionTitle>
           {mode === 'create' ? (
-            <TextField label="Name der Crew" value={crewName} onChangeText={setCrewName} maxLength={40} placeholder="z. B. Argovia U17" autoFocus />
+            <TextField label={t('crew.tab.crewName')} value={crewName} onChangeText={setCrewName} maxLength={40} placeholder={t('crew.tab.crewNamePlaceholder')} autoFocus />
           ) : (
             <TextField
-              label="Einladungscode"
+              label={t('crew.form.code')}
               value={code}
               onChangeText={(v) => setCode(normalizeCode(v))}
               placeholder="ABC123"
@@ -172,15 +172,15 @@ export default function CrewTab() {
             />
           )}
           <TextField
-            label="So sehen dich die anderen"
+            label={t('crew.form.displayName')}
             value={myName}
             onChangeText={setMyName}
             maxLength={40}
-            placeholder="Dein Name"
+            placeholder={t('crew.form.namePlaceholder')}
           />
           <View style={styles.actions}>
-            <Button title="Abbrechen" variant="secondary" style={styles.flex} onPress={() => setMode('none')} />
-            <Button title={mode === 'create' ? 'Erstellen' : 'Beitreten'} style={styles.flex} disabled={!canSubmit} loading={busy} onPress={submit} />
+            <Button title={t('common.cancel')} variant="secondary" style={styles.flex} onPress={() => setMode('none')} />
+            <Button title={mode === 'create' ? t('crew.tab.createButton') : t('crew.form.join')} style={styles.flex} disabled={!canSubmit} loading={busy} onPress={submit} />
           </View>
         </Card>
       )}
@@ -192,7 +192,7 @@ export default function CrewTab() {
       ) : null}
 
       <T variant="caption" color="textTertiary" center>
-        Deine Crew sieht dein Profil, ob du deinen Tag gehalten hast, deinen Streak, deine Quote und deine Abzeichen – keine Regeln, Notizen oder Fotos.
+        {t('crew.tab.privacy')}
       </T>
     </Screen>
   );

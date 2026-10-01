@@ -1,6 +1,149 @@
 import type de from '../de/history';
 import type { DictOf } from '../../types';
 
-const history: DictOf<typeof de> = {};
+const history: DictOf<typeof de> = {
+  title: 'Historique',
+  footerHint: 'Touche un jour pour le compléter, ou une règle pour voir ses stats.',
+
+  stats: {
+    held: 'Tenus',
+    rate: 'Réussite',
+    allDays: 'de tous les jours',
+    ofDays: { one: 'sur {count} jour', other: 'sur {count} jours' },
+    bestStreak: 'Meilleure série',
+    current: 'en cours : {count}',
+    shields: 'Boucliers',
+    saved: 'jours sauvés',
+    inARow: 'jours d’affilée',
+    earlierArcs: 'Arcs précédents',
+    weeks: 'Semaines',
+    week: 'Semaine {index}',
+    weekHeld: '{held}/{total} tenus',
+    review: 'Bilan',
+    running: 'en cours',
+    rules: 'Règles',
+    ruleA11y: 'Statistiques de {title}',
+    removed: 'retirée',
+    hitsDays: '{hits} sur {expected} jours',
+    hitsUnits: '{hits} sur {expected} séances',
+  },
+
+  status: {
+    done: 'Tenue',
+    partial: 'Partielle',
+    missed: 'Manquée',
+    shielded: 'Sauvée par le bouclier',
+    open: 'En cours',
+    future: 'À venir',
+    outside: 'Hors de l’arc',
+    neutral: 'Aucune règle du jour',
+    shield: 'Bouclier',
+  },
+
+  day: {
+    number: 'Jour {n}',
+    outside: 'Hors de l’arc',
+    editWindow: 'Tu peux compléter jusqu’à {count} jours en arrière. Les jours plus anciens restent tels quels – ça garde ton arc honnête.',
+    note: 'Note',
+    notePlaceholder: 'Comment s’est passée la journée ? Qu’est-ce qui a aidé, ou pas ?',
+    photos: 'Photos',
+  },
+
+  photo: {
+    add: 'Ajouter une photo',
+    camera: 'Appareil photo',
+    library: 'Choisir dans la galerie',
+    delete: 'Supprimer la photo',
+    deleteTitle: 'Supprimer la photo ?',
+    deleteBody: 'La photo sera retirée de ton journal.',
+    view: 'Voir la photo',
+    short: 'Photo',
+  },
+
+  review: {
+    update: 'Mettre à jour',
+    save: 'Enregistrer le bilan',
+    heldSummary: '{held} jours tenus sur {total}',
+    question: 'Comment s’est passée ta semaine ?',
+    ratingA11y: 'Note {n} sur 5',
+    wins: 'Qu’est-ce qui a bien marché ?',
+    winsPlaceholder: 'De quoi es-tu fier·ère ?',
+    obstacles: 'Qu’est-ce qui a coincé ?',
+    obstaclesPlaceholder: 'Quand et pourquoi as-tu manqué un jour ?',
+    next: 'Objectif pour la semaine prochaine',
+    nextPlaceholder: 'Une chose concrète, p. ex. « Préparer mon sac de sport la veille »',
+  },
+
+  share: {
+    title: 'Partager mes progrès',
+    unavailableTitle: 'Partage impossible',
+    unavailableBody: 'Le partage n’est pas disponible sur cet appareil.',
+    light: 'Clair',
+    dark: 'Sombre',
+    privacy: 'Seulement des chiffres et des couleurs – tes règles, notes et photos restent privées.',
+    streak: 'Série',
+  },
+
+  rule: {
+    removedOn: 'retirée le {date}',
+    noData: 'Pas encore de données. Les stats se remplissent dès le premier jour.',
+    series: 'Série',
+    runDays: { one: 'jour · record {best}', other: 'jours · record {best}' },
+    runWeeks: { one: 'semaine · record {best}', other: 'semaines · record {best}' },
+    lastDays: '{count} derniers jours',
+    hit: 'réussi',
+    notHit: 'pas réussi',
+    perWeek: 'Par semaine',
+    perWeekDaily: 'Jours réussis par semaine d’arc.',
+    perWeekWeekly: 'Séances par semaine d’arc par rapport à l’objectif.',
+    tapHint: 'Touche une barre pour voir le chiffre.',
+    weekdays: 'Jours de la semaine',
+    weakest: 'Le {day} est le jour le plus dur ({rate}). Prévois du temps exprès ce jour-là.',
+    weakestPending: 'Au bout de deux semaines, tu verras quel jour te coûte le plus.',
+    amount: 'Quantité',
+    total: 'Total',
+    average: 'Moyenne',
+    perDay: 'par jour · objectif {target}',
+    bestDay: 'Meilleur jour : {value} {unit} le {date}',
+  },
+
+  arcs: {
+    title: 'Tes arcs',
+    active: 'en cours',
+    finished: 'terminé',
+    abandoned: 'abandonné',
+    summary: {
+      one: '{count} jour tenu · {rate} % · record {best}',
+      other: '{count} jours tenus · {rate} % · record {best}',
+    },
+    startsOn: 'Commence le {date}',
+    because: 'Parce que : « {why} »',
+  },
+
+  badges: {
+    new: 'Nouveau badge',
+    cheer: 'Bravo !',
+    earned: 'obtenu',
+    locked: 'pas encore obtenu',
+    a11y: '{title} : {state}. {description}',
+  },
+
+  badge: {
+    first_day: { title: 'Premier pas', hint: '1 jour', description: 'Premier jour tenu.' },
+    streak_7: { title: 'Une semaine', hint: '7 jours', description: '7 jours tenus d’affilée.' },
+    shield: { title: 'Sauvé', hint: 'Bouclier', description: 'Le bouclier a sauvé ta série.' },
+    perfect_week: { title: 'Semaine parfaite', hint: 'lu–di', description: 'Tout tenu du lundi au dimanche – sans bouclier.' },
+    streak_21: { title: 'Trois semaines', hint: '21 jours', description: '21 jours tenus d’affilée.' },
+    comeback: { title: 'Retour en force', hint: '7 après rupture', description: 'De nouveau 7 jours d’affilée après une rupture.' },
+    journal_10: { title: 'Journal', hint: '10 notes', description: 'Une note écrite sur 10 jours.' },
+    review_4: { title: 'Introspection', hint: '4 bilans', description: '4 bilans de la semaine remplis.' },
+    halfway: { title: 'Mi-parcours', hint: 'Mi-arc', description: 'La moitié de l’arc est faite.' },
+    streak_30: { title: 'Un mois', hint: '30 jours', description: '30 jours tenus d’affilée.' },
+    perfect_month: { title: 'Mois parfait', hint: 'Mois entier', description: 'Un mois civil entier tenu – sans bouclier.' },
+    streak_66: { title: 'Habitude', hint: '{count} jours', description: '{count} jours d’affilée – maintenant, c’est ancré.' },
+    summit: { title: 'Sommet', hint: '≥ 80 %', description: 'Arc terminé avec au moins 80 % de réussite.' },
+    north_face: { title: 'Nordwand', hint: 'Sans rupture', description: 'L’arc entier sans la moindre rupture.' },
+  },
+};
 
 export default history;

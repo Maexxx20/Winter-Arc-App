@@ -8,11 +8,12 @@ import { T } from '@/components/ui/text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
+import { t } from '@/i18n';
 import { computeStats } from '@/lib/arc';
 import { formatShort } from '@/lib/date';
 import { useAppState } from '@/store/store';
 
-const STATUS: Record<string, string> = { active: 'läuft', finished: 'beendet', abandoned: 'abgebrochen' };
+const statusLabel = (s: 'active' | 'finished' | 'abandoned') => t(`history.arcs.${s}`);
 
 /** Alle Arcs, neuester zuerst. */
 export default function ArcsScreen() {
@@ -32,9 +33,9 @@ export default function ArcsScreen() {
       <View style={styles.header}>
         <View style={styles.flex}>
           <T variant="label">Nordwand</T>
-          <T variant="title">Deine Arcs</T>
+          <T variant="title">{t('history.arcs.title')}</T>
         </View>
-        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel="Schliessen" style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
+        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel={t('common.close')} style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
           <CloseIcon color={theme.text} size={16} />
         </Pressable>
       </View>
@@ -52,14 +53,14 @@ export default function ArcsScreen() {
             <View style={styles.flex}>
               <T variant="bodyStrong" numberOfLines={1}>{arc.title}</T>
               <T variant="caption">
-                {formatShort(arc.startDate)} – {formatShort(arc.endDate, true)} · {active ? 'läuft' : STATUS[arc.status]}
+                {formatShort(arc.startDate)} – {formatShort(arc.endDate, true)} · {active ? statusLabel('active') : statusLabel(arc.status)}
               </T>
               {stats.started ? (
                 <T variant="caption" color="textTertiary">
-                  {stats.doneDays} Tage gehalten · {Math.round(stats.completionRate * 100)} % · Rekord {stats.streak.best}
+                  {t('history.arcs.summary', { count: stats.doneDays, rate: Math.round(stats.completionRate * 100), best: stats.streak.best })}
                 </T>
               ) : (
-                <T variant="caption" color="textTertiary">Startet am {formatShort(arc.startDate)}</T>
+                <T variant="caption" color="textTertiary">{t('history.arcs.startsOn', { date: formatShort(arc.startDate) })}</T>
               )}
             </View>
             <ChevronIcon color={theme.textTertiary} size={16} />

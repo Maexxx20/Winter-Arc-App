@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { AppState as RNAppState } from 'react-native';
 
 import { addDays, parseISO, todayISO } from '@/lib/date';
-import { type TKey, t } from '@/i18n';
+import { onLangChange, type TKey, t } from '@/i18n';
 import { widgetDataWithLabels, widgetTapsToApply } from '@/lib/widget-data';
 import { getState, isHydrated, selectActiveArc, setRuleValue, subscribe } from '@/store/store';
 
@@ -100,6 +100,7 @@ export function useWidgetSync() {
       push();
     })();
     const unsub = subscribe(later);
+    const offLang = onLangChange(later);
     const appSub = RNAppState.addEventListener('change', (st) => {
       if (st === 'active' && ready) refresh();
     });
@@ -110,6 +111,7 @@ export function useWidgetSync() {
       alive = false;
       if (timer) clearTimeout(timer);
       unsub();
+      offLang();
       appSub.remove();
       tapSub?.remove();
     };

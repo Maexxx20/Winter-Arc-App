@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import { isSyncablePhoto, type PhotoRow, photoRowsToPush } from '@/lib/photo-merge';
 import { applyRemotePhotos, getState, markPhotoUploaded, setSyncMeta } from '@/store/store';
 
@@ -82,7 +83,7 @@ export async function syncPhotos(userId: string): Promise<void> {
       .upsert(ready.slice(i, i + 200), { onConflict: 'user_id,name' })
       .select('name, deleted');
     if (error && missingTable(error.message)) return; // Migration 0006 fehlt: Fotos bleiben vorerst lokal
-    if (error) throw new Error(`Fotos: ${error.message}`);
+    if (error) throw new Error(t('system.sync.photos', { error: error.message }));
     // Datei erst löschen, wenn der Server die Löschmarke angenommen hat (sonst gewinnt eine neuere Version).
     const gone = (saved ?? []).filter((r) => r.deleted).map((r) => remotePhotoPath(userId, r.name));
     if (gone.length) {
@@ -102,7 +103,7 @@ export async function syncPhotos(userId: string): Promise<void> {
     if (since) q = q.gt('server_updated_at', since);
     const { data, error } = await q;
     if (error && missingTable(error.message)) return;
-    if (error) throw new Error(`Fotos: ${error.message}`);
+    if (error) throw new Error(t('system.sync.photos', { error: error.message }));
     pulled.push(...((data ?? []) as PhotoRow[]));
     if (!data || data.length < 1000) break;
   }
@@ -126,11 +127,11 @@ export async function removeAllPhotos(userId: string): Promise<void> {
     if (error) {
       // Bucket gibt es noch nicht (Migration 0006 fehlt) → nichts zu löschen.
       if (/not found/i.test(error.message)) return;
-      throw new Error(`Fotos konnten nicht gelöscht werden: ${error.message}`);
+      throw new Error(t('system.sync.photosDelete', { error: error.message }));
     }
     if (!data?.length) return;
     const { error: rmError } = await supabase.storage.from(PHOTO_BUCKET).remove(data.map((f) => `${userId}/${f.name}`));
-    if (rmError) throw new Error(`Fotos konnten nicht gelöscht werden: ${rmError.message}`);
+    if (rmError) throw new Error(t('system.sync.photosDelete', { error: rmError.message }));
   }
 }
 

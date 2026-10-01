@@ -7,6 +7,7 @@ import { HEALTH_METRIC_BY_ID } from '@/lib/health';
 import { haptic } from '@/lib/haptics';
 import { describeRule, formatNumber } from '@/lib/templates';
 import type { Rule } from '@/lib/types';
+import { t } from '@/i18n';
 
 import { CheckIcon, MinusIcon, PlusIcon } from './icons';
 import { T } from './ui/text';
@@ -56,7 +57,7 @@ export function RuleRow({ rule, value, onChange, weekCount, readOnly }: Props) {
   let subtitle = describeRule(rule);
   const auto = rule.health ? ` · ${HEALTH_METRIC_BY_ID[rule.health.metric].icon} auto` : '';
   if (rule.frequency.kind === 'weekly' && weekCount !== undefined) {
-    subtitle = `${weekCount}/${rule.frequency.times} diese Woche`;
+    subtitle = t('today.row.thisWeek', { done: weekCount, times: rule.frequency.times });
   }
 
   return (
@@ -97,10 +98,10 @@ export function RuleRow({ rule, value, onChange, weekCount, readOnly }: Props) {
 
       {isAmount && !readOnly ? (
         <View style={styles.stepper}>
-          <StepButton onPress={() => bump(-1)} disabled={value <= 0} label="Weniger">
+          <StepButton onPress={() => bump(-1)} disabled={value <= 0} label={t('today.row.less')}>
             <MinusIcon color={theme.text} size={16} />
           </StepButton>
-          <StepButton onPress={() => bump(1)} label="Mehr" filled={done}>
+          <StepButton onPress={() => bump(1)} label={t('today.row.more')} filled={done}>
             {done ? <CheckIcon color={theme.onAccent} size={16} /> : <PlusIcon color={theme.text} size={16} />}
           </StepButton>
         </View>

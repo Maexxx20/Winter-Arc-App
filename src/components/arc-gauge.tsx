@@ -3,6 +3,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 
 import type { Palette } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n';
 
 import { T } from './ui/text';
 
@@ -36,9 +37,10 @@ type Props = {
   palette?: Palette;
 };
 
-export function ArcGauge({ progress, today, dayNumber, totalDays, label = 'Tag', sub, size = 260, palette }: Props) {
+export function ArcGauge({ progress, today, dayNumber, totalDays, label, sub, size = 260, palette }: Props) {
   const systemTheme = useTheme();
   const theme = palette ?? systemTheme;
+  const title = label ?? t('today.gauge.day');
   const c = size / 2;
   const outerW = 14;
   const innerW = 6;
@@ -46,12 +48,12 @@ export function ArcGauge({ progress, today, dayNumber, totalDays, label = 'Tag',
   const rInner = rOuter - outerW - 8;
 
   const p = Math.min(1, Math.max(0, progress));
-  const t = Math.min(1, Math.max(0, today));
+  const td = Math.min(1, Math.max(0, today));
   const end = START + SWEEP;
   const dot = polar(c, c, rOuter, START + SWEEP * p);
 
   return (
-    <View style={{ width: size, height: size * 0.86 }} accessibilityLabel={`${label} ${dayNumber} von ${totalDays}`}>
+    <View style={{ width: size, height: size * 0.86 }} accessibilityLabel={t('today.gauge.a11y', { label: title, day: dayNumber, total: totalDays })}>
       <Svg width={size} height={size}>
         <Path d={arcPath(c, c, rOuter, START, end)} stroke={theme.surfaceMuted} strokeWidth={outerW} strokeLinecap="round" fill="none" />
         {p > 0.001 && (
@@ -60,10 +62,10 @@ export function ArcGauge({ progress, today, dayNumber, totalDays, label = 'Tag',
         {p > 0.001 && p < 1 && <Circle cx={dot.x} cy={dot.y} r={outerW / 2 + 3} fill={theme.surface} stroke={theme.accent} strokeWidth={3} />}
 
         <Path d={arcPath(c, c, rInner, START, end)} stroke={theme.surfaceMuted} strokeWidth={innerW} strokeLinecap="round" fill="none" />
-        {t > 0.001 && (
+        {td > 0.001 && (
           <Path
-            d={arcPath(c, c, rInner, START, START + SWEEP * Math.min(t, 0.9999))}
-            stroke={t >= 1 ? theme.accent : theme.partial}
+            d={arcPath(c, c, rInner, START, START + SWEEP * Math.min(td, 0.9999))}
+            stroke={td >= 1 ? theme.accent : theme.partial}
             strokeWidth={innerW}
             strokeLinecap="round"
             fill="none"
@@ -71,10 +73,10 @@ export function ArcGauge({ progress, today, dayNumber, totalDays, label = 'Tag',
         )}
       </Svg>
       <View style={[StyleSheet.absoluteFill, styles.center, { height: size }]}>
-        <T variant="label" style={{ color: theme.textSecondary }}>{label}</T>
+        <T variant="label" style={{ color: theme.textSecondary }}>{title}</T>
         <T variant="hero" style={{ color: theme.text }}>{dayNumber}</T>
         <T variant="caption" style={{ color: theme.textTertiary }}>
-          {sub ?? `von ${totalDays}`}
+          {sub ?? t('today.gauge.of', { total: totalDays })}
         </T>
       </View>
     </View>

@@ -1,6 +1,149 @@
 import type de from '../de/history';
 import type { DictOf } from '../../types';
 
-const history: DictOf<typeof de> = {};
+const history: DictOf<typeof de> = {
+  title: 'History',
+  footerHint: 'Tap a day to fill it in, or a rule to see its stats.',
+
+  stats: {
+    held: 'Held',
+    rate: 'Rate',
+    allDays: 'of all days',
+    ofDays: { one: 'of {count} day', other: 'of {count} days' },
+    bestStreak: 'Best streak',
+    current: 'current {count}',
+    shields: 'Shields',
+    saved: 'days saved',
+    inARow: 'days in a row',
+    earlierArcs: 'Past arcs',
+    weeks: 'Weeks',
+    week: 'Week {index}',
+    weekHeld: '{held}/{total} held',
+    review: 'Review',
+    running: 'ongoing',
+    rules: 'Rules',
+    ruleA11y: 'Stats for {title}',
+    removed: 'removed',
+    hitsDays: '{hits} of {expected} days',
+    hitsUnits: '{hits} of {expected} sessions',
+  },
+
+  status: {
+    done: 'Held',
+    partial: 'Partial',
+    missed: 'Missed',
+    shielded: 'Saved by your shield',
+    open: 'Open',
+    future: 'Still to come',
+    outside: 'Outside the arc',
+    neutral: 'No daily rules',
+    shield: 'Shield',
+  },
+
+  day: {
+    number: 'Day {n}',
+    outside: 'Outside the arc',
+    editWindow: 'You can fill in days up to {count} days back. Older days stay as they are – that keeps your arc honest.',
+    note: 'Note',
+    notePlaceholder: 'How did the day go? What helped, what didn’t?',
+    photos: 'Photos',
+  },
+
+  photo: {
+    add: 'Add photo',
+    camera: 'Camera',
+    library: 'Choose from library',
+    delete: 'Delete photo',
+    deleteTitle: 'Delete photo?',
+    deleteBody: 'The photo will be removed from your journal.',
+    view: 'View photo',
+    short: 'Photo',
+  },
+
+  review: {
+    update: 'Update',
+    save: 'Save review',
+    heldSummary: '{held} of {total} days held',
+    question: 'How was your week?',
+    ratingA11y: 'Rating {n} of 5',
+    wins: 'What went well?',
+    winsPlaceholder: 'What are you proud of?',
+    obstacles: 'What held you back?',
+    obstaclesPlaceholder: 'When and why did you miss?',
+    next: 'Focus for next week',
+    nextPlaceholder: 'One concrete thing, e.g. “Pack your gym bag the night before”',
+  },
+
+  share: {
+    title: 'Share progress',
+    unavailableTitle: 'Can’t share',
+    unavailableBody: 'Sharing isn’t available on this device.',
+    light: 'Light',
+    dark: 'Dark',
+    privacy: 'Only numbers and colours – your rules, notes and photos stay private.',
+    streak: 'Streak',
+  },
+
+  rule: {
+    removedOn: 'removed on {date}',
+    noData: 'No data yet. The stats fill up from day one.',
+    series: 'Streak',
+    runDays: { one: 'day · best {best}', other: 'days · best {best}' },
+    runWeeks: { one: 'week · best {best}', other: 'weeks · best {best}' },
+    lastDays: 'Last {count} days',
+    hit: 'done',
+    notHit: 'not done',
+    perWeek: 'Per week',
+    perWeekDaily: 'Days done per arc week.',
+    perWeekWeekly: 'Sessions per arc week compared with your target.',
+    tapHint: 'Tap a bar to see the number.',
+    weekdays: 'Weekdays',
+    weakest: '{day} is your hardest day ({rate}). Make a point of planning time for it.',
+    weakestPending: 'After two weeks you’ll see which weekday is hardest for you.',
+    amount: 'Amount',
+    total: 'Total',
+    average: 'Average',
+    perDay: 'per day · target {target}',
+    bestDay: 'Best day: {value} {unit} on {date}',
+  },
+
+  arcs: {
+    title: 'Your arcs',
+    active: 'ongoing',
+    finished: 'finished',
+    abandoned: 'abandoned',
+    summary: {
+      one: '{count} day held · {rate}% · best {best}',
+      other: '{count} days held · {rate}% · best {best}',
+    },
+    startsOn: 'Starts on {date}',
+    because: 'Because: “{why}”',
+  },
+
+  badges: {
+    new: 'New badge',
+    cheer: 'Nice one!',
+    earned: 'earned',
+    locked: 'not yet earned',
+    a11y: '{title}: {state}. {description}',
+  },
+
+  badge: {
+    first_day: { title: 'First step', hint: '1 day', description: 'Held your first day.' },
+    streak_7: { title: 'One week', hint: '7 days', description: 'Held 7 days in a row.' },
+    shield: { title: 'Saved', hint: 'Shield', description: 'Your shield saved your streak.' },
+    perfect_week: { title: 'Perfect week', hint: 'Mon–Sun', description: 'Held everything from Monday to Sunday – without a shield.' },
+    streak_21: { title: 'Three weeks', hint: '21 days', description: 'Held 21 days in a row.' },
+    comeback: { title: 'Comeback', hint: '7 after a break', description: '7 days in a row again after a break.' },
+    journal_10: { title: 'Journal', hint: '10 notes', description: 'Wrote a note on 10 days.' },
+    review_4: { title: 'Reflective', hint: '4 reviews', description: 'Filled in 4 weekly reviews.' },
+    halfway: { title: 'Halfway', hint: 'Mid-arc', description: 'You’re halfway through the arc.' },
+    streak_30: { title: 'One month', hint: '30 days', description: 'Held 30 days in a row.' },
+    perfect_month: { title: 'Perfect month', hint: 'Full month', description: 'Held a whole calendar month – without a shield.' },
+    streak_66: { title: 'Habit', hint: '{count} days', description: '{count} days in a row – now it sticks.' },
+    summit: { title: 'Summit', hint: '≥ 80%', description: 'Finished the arc with at least 80%.' },
+    north_face: { title: 'Nordwand', hint: 'No break', description: 'The whole arc without a single break.' },
+  },
+};
 
 export default history;

@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Colors, Fonts, type Palette } from '@/constants/theme';
+import { t } from '@/i18n';
 import type { ArcStats } from '@/lib/arc';
 import { addDays, diffDays, formatShort, weekStart } from '@/lib/date';
 import type { Arc, DayStatus } from '@/lib/types';
@@ -62,11 +63,11 @@ export const ShareCard = forwardRef<View, Props>(function ShareCard({ arc, stats
       </View>
 
       <View style={[styles.stats, { backgroundColor: c.surface, borderColor: c.border }]}>
-        {stat('Streak', `${stats.streak.current}`)}
+        {stat(t('history.share.streak'), `${stats.streak.current}`)}
         <View style={[styles.sep, { backgroundColor: c.border }]} />
-        {stat('Gehalten', `${stats.doneDays}`)}
+        {stat(t('history.stats.held'), `${stats.doneDays}`)}
         <View style={[styles.sep, { backgroundColor: c.border }]} />
-        {stat('Quote', stats.evaluatedDays ? `${Math.round(stats.completionRate * 100)}%` : '–')}
+        {stat(t('history.stats.rate'), stats.evaluatedDays ? `${Math.round(stats.completionRate * 100)}%` : '–')}
       </View>
 
       <View style={styles.grid}>
@@ -87,7 +88,7 @@ export const ShareCard = forwardRef<View, Props>(function ShareCard({ arc, stats
       </View>
 
       <Text style={txt(11, c.textTertiary, '400', { textAlign: 'center' })}>
-        {formatShort(arc.startDate)} – {formatShort(arc.endDate, true)} · Winter Arc
+        {formatShort(arc.startDate)} – {formatShort(arc.endDate, true)}
       </Text>
     </View>
   );

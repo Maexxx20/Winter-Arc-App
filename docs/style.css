@@ -20,3 +20,5 @@ a { color: var(--accent); }
 .icon { border-radius: 22px; display: block; }
 .features li { margin: 6px 0; }
 .todo { color: var(--todo); font-weight: 600; }
+.lang { font-size: 14px; color: var(--muted); margin: 0 0 20px; }
+.lang a { text-decoration: none; }

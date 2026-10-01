@@ -8,6 +8,8 @@
  * (oder ein zweiter in derselben Woche) beenden den Streak.
  */
 
+import { t } from '@/i18n';
+
 import {
   addDays,
   diffDays,
@@ -255,13 +257,17 @@ export function weeklyCount(arc: Arc, log: ArcLog, rule: Rule, date: ISODate): n
 
 /** Phase des Arcs – Oktober aufbauen, November festigen, Dezember durchhalten. */
 export function arcPhase(stats: ArcStats): { title: string; hint: string } {
-  if (!stats.started) return { title: 'Bereit machen', hint: 'Dein Arc startet bald. Regeln prüfen, Umgebung vorbereiten.' };
-  if (stats.finished) return { title: 'Geschafft', hint: 'Dein Arc ist vorbei. Schau zurück, was du aufgebaut hast.' };
+  const phase = (key: 'prepare' | 'finished' | 'start' | 'build' | 'consolidate' | 'push') => ({
+    title: t(`today.phases.${key}.title`),
+    hint: t(`today.phases.${key}.hint`),
+  });
+  if (!stats.started) return phase('prepare');
+  if (stats.finished) return phase('finished');
   const third = stats.totalDays / 3;
-  if (stats.dayNumber <= 7) return { title: 'Einstieg', hint: 'Die erste Woche ist die schwerste. Klein anfangen, jeden Tag erscheinen.' };
-  if (stats.dayNumber <= third) return { title: 'Aufbauen', hint: 'Routine festigen: gleiche Zeit, gleicher Ort, gleicher Auslöser.' };
-  if (stats.dayNumber <= third * 2) return { title: 'Festigen', hint: 'Die Motivation vom Start ist weg – jetzt trägt die Gewohnheit.' };
-  return { title: 'Durchziehen', hint: 'Feiertage kommen. Plane voraus, statt zu verhandeln.' };
+  if (stats.dayNumber <= 7) return phase('start');
+  if (stats.dayNumber <= third) return phase('build');
+  if (stats.dayNumber <= third * 2) return phase('consolidate');
+  return phase('push');
 }
 
 export function uid(): string {

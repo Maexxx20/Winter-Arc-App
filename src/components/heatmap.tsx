@@ -2,7 +2,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { addDays, diffDays, type ISODate, monthName, parseISO, weekdayShortNames, weekStart } from '@/lib/date';
+import { t, tl } from '@/i18n';
+import { addDays, diffDays, formatShort, type ISODate, parseISO, weekdayShortNames, weekStart } from '@/lib/date';
 import type { DayStatus } from '@/lib/types';
 
 import { T } from './ui/text';
@@ -57,13 +58,15 @@ export function Heatmap({ startDate, endDate, today, statuses, onPressDay }: Pro
       {Array.from({ length: weeks }, (_, w) => {
         const days = Array.from({ length: 7 }, (_, i) => addDays(first, w * 7 + i));
         const firstOfMonth = days.find((d) => d.endsWith('-01') && d >= startDate && d <= endDate);
-        const label = w === 0 ? monthName(startDate) : firstOfMonth ? monthName(firstOfMonth) : '';
+        const labelDate = w === 0 ? startDate : firstOfMonth;
+        // Kurzer Monatsname ohne Abkürzungspunkt («janv.» → «janv»)
+        const label = labelDate ? (tl('date.monthsShort')[parseISO(labelDate).getMonth()] ?? '').replace(/\.$/, '') : '';
         return (
           <View key={w} style={styles.row}>
             <View style={styles.monthCol}>
               {label ? (
                 <T variant="caption" color="textSecondary" numberOfLines={1} style={styles.month}>
-                  {label.slice(0, 3)}
+                  {label}
                 </T>
               ) : null}
             </View>
@@ -77,7 +80,7 @@ export function Heatmap({ startDate, endDate, today, statuses, onPressDay }: Pro
                   <Pressable
                     disabled={!tappable}
                     onPress={() => onPressDay?.(d)}
-                    accessibilityLabel={inArc ? `${d}: ${s}` : undefined}
+                    accessibilityLabel={inArc ? (s ? `${formatShort(d)}: ${t(`history.status.${s}`)}` : formatShort(d)) : undefined}
                     style={({ pressed }) => [
                       styles.cell,
                       {
@@ -103,10 +106,10 @@ export function Heatmap({ startDate, endDate, today, statuses, onPressDay }: Pro
 export function HeatmapLegend() {
   const theme = useTheme();
   const items: [string, string][] = [
-    [theme.accent, 'Gehalten'],
-    [theme.partial, 'Teilweise'],
-    [theme.shield, 'Schild'],
-    [theme.missed, 'Verpasst'],
+    [theme.accent, t('history.status.done')],
+    [theme.partial, t('history.status.partial')],
+    [theme.shield, t('history.status.shield')],
+    [theme.missed, t('history.status.missed')],
   ];
   return (
     <View style={styles.legend}>

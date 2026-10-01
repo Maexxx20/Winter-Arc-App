@@ -8,7 +8,7 @@
  * Öffnen der App.
  */
 
-import { t } from '@/i18n';
+import { t, tl } from '@/i18n';
 
 import { activeRules, computeStreak, dayProgress, isValueDone, ruleValue, weeklyCount, type ArcLog } from './arc';
 import { addDays, diffDays, type ISODate, parseISO, weekdayIndex } from './date';
@@ -25,27 +25,23 @@ export interface PlannedReminder {
   url: string;
 }
 
-export function formatTime(t: TimeOfDay): string {
-  const h = Math.floor(t / 60);
-  const m = t % 60;
+export function formatTime(time: TimeOfDay): string {
+  const h = Math.floor(time / 60);
+  const m = time % 60;
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
-function at(day: ISODate, t: TimeOfDay): Date {
+function at(day: ISODate, time: TimeOfDay): Date {
   const d = parseISO(day);
-  d.setHours(Math.floor(t / 60), t % 60, 0, 0);
+  d.setHours(Math.floor(time / 60), time % 60, 0, 0);
   return d;
 }
 
-const MORNING_LINES = [
-  'Ein Tag nach dem anderen. Heute zählt.',
-  'Kein Verhandeln. Einfach anfangen.',
-  'Die Wand wird nicht kleiner. Du wirst stärker.',
-  'Disziplin ist, was du tust, wenn keiner zuschaut.',
-  'Kleine Schritte, jeden Tag.',
-  'Zeig dir heute, wer du sein willst.',
-  'Motivation kommt und geht. Deine Regeln bleiben.',
-];
+/** Spruch für den Morgen (wechselt täglich). */
+function morningLine(dayNo: number): string {
+  const lines = tl('system.reminders.morningLines');
+  return lines[dayNo % lines.length] ?? '';
+}
 
 export function planReminders(
   arc: Arc,
@@ -65,8 +61,8 @@ export function planReminders(
     out.push({
       id: `start-eve-${arc.startDate}`,
       date: at(eve, settings.evening),
-      title: 'Morgen geht’s los',
-      body: `Dein ${arc.title} startet morgen. Leg dir heute Abend alles bereit.`,
+      title: t('system.reminders.startEveTitle'),
+      body: t('system.reminders.startEveBody', { title: arc.title }),
       url: '/',
     });
   }
@@ -82,10 +78,8 @@ export function planReminders(
       out.push({
         id: `morning-${day}`,
         date: at(day, settings.morning),
-        title: first ? 'Tag 1. Los geht’s.' : `Tag ${dayNo} von ${total}`,
-        body: first
-          ? `Heute beginnt dein ${arc.title}. Du hast unterschrieben – jetzt zählt jeder Tag.`
-          : MORNING_LINES[dayNo % MORNING_LINES.length],
+        title: first ? t('system.reminders.firstDayTitle') : t('system.reminders.dayTitle', { day: dayNo, total }),
+        body: first ? t('system.reminders.firstDayBody', { title: arc.title }) : morningLine(dayNo),
         url: '/',
       });
     }
@@ -96,16 +90,14 @@ export function planReminders(
         const p = dayProgress(arc, log, day);
         if (p.total > 0 && p.done === p.total) continue; // schon gehalten → keine Abend-Erinnerung
         const open = p.total - p.done;
-        body = streak.onThinIce
-          ? `Gestern verpasst – heute nicht auch noch. Noch ${open} ${open === 1 ? 'Regel' : 'Regeln'} offen.`
-          : `Noch ${open} ${open === 1 ? 'Regel' : 'Regeln'} offen. Du schaffst das.`;
+        body = t(streak.onThinIce ? 'system.reminders.eveningThinIce' : 'system.reminders.eveningOpen', { count: open });
       } else {
-        body = 'Schon alles abgehakt? Noch ist Zeit.';
+        body = t('system.reminders.eveningLater');
       }
       out.push({
         id: `evening-${day}`,
         date: at(day, settings.evening),
-        title: left === 0 ? 'Letzter Tag deines Arcs' : 'Check-in',
+        title: left === 0 ? t('system.reminders.lastDayTitle') : t('system.reminders.checkInTitle'),
         body,
         url: '/',
       });
@@ -141,8 +133,8 @@ export function planReminders(
       out.push({
         id: `review-${day}`,
         date: at(day, Math.min(reviewAt, 23 * 60)),
-        title: 'Wochenrückblick',
-        body: 'Zwei Minuten: Was lief gut, was nimmst du dir für nächste Woche vor?',
+        title: t('system.reminders.reviewTitle'),
+        body: t('system.reminders.reviewBody'),
         url: '/rueckblick',
       });
     }

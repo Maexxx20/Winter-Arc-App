@@ -12,6 +12,7 @@ import { T } from '@/components/ui/text';
 import { Radius, Spacing, type ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
+import { t } from '@/i18n';
 import { activeRules, computeStreak, ruleValue, weeklyCount } from '@/lib/arc';
 import { diffDays, formatLong, isValidISO } from '@/lib/date';
 import type { DayStatus } from '@/lib/types';
@@ -20,12 +21,13 @@ import { addPhoto, removePhoto, selectActiveArc, selectLog, setNote, setRuleValu
 /** Wie viele Tage zurück darf nachgetragen werden? (heute + 2) */
 export const EDIT_WINDOW_DAYS = 2;
 
-const STATUS_LABEL: Partial<Record<DayStatus, { label: string; color: ThemeColor }>> = {
-  done: { label: 'Gehalten', color: 'accent' },
-  partial: { label: 'Teilweise', color: 'textSecondary' },
-  missed: { label: 'Verpasst', color: 'textSecondary' },
-  shielded: { label: 'Vom Schild gerettet', color: 'shield' },
-  open: { label: 'Offen', color: 'accent' },
+/** Farbe des Status-Badges; der Text kommt aus history.status.* */
+const STATUS_COLOR: Partial<Record<DayStatus, ThemeColor>> = {
+  done: 'accent',
+  partial: 'textSecondary',
+  missed: 'textSecondary',
+  shielded: 'shield',
+  open: 'accent',
 };
 
 export default function DayScreen() {
@@ -49,7 +51,8 @@ export default function DayScreen() {
   const age = diffDays(date, today);
   const editable = arc.id === active?.id && inArc && age >= 0 && age <= EDIT_WINDOW_DAYS;
   const rules = activeRules(arc, date);
-  const badge = status ? STATUS_LABEL[status] : undefined;
+  const badgeColor = status ? STATUS_COLOR[status] : undefined;
+  const badge = status && badgeColor ? { label: t(`history.status.${status}`), color: badgeColor } : undefined;
   const dayNumber = diffDays(arc.startDate, date) + 1;
 
   const saveNote = () => setNote(arc.id, date, note);
@@ -58,8 +61,8 @@ export default function DayScreen() {
     <Screen topInset={Platform.OS !== 'ios'}>
       <View style={styles.header}>
         <View style={styles.flex}>
-          <T variant="label">{inArc ? `Tag ${dayNumber}` : 'Ausserhalb des Arcs'}</T>
-          <T variant="title">{date === today ? 'Heute' : formatLong(date)}</T>
+          <T variant="label">{inArc ? t('history.day.number', { n: dayNumber }) : t('history.day.outside')}</T>
+          <T variant="title">{date === today ? t('date.today') : formatLong(date)}</T>
         </View>
         <Pressable
           onPress={() => {
@@ -67,7 +70,7 @@ export default function DayScreen() {
             router.back();
           }}
           hitSlop={10}
-          accessibilityLabel="Schliessen"
+          accessibilityLabel={t('common.close')}
           style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
           <CloseIcon color={theme.text} size={16} />
         </Pressable>
@@ -84,7 +87,7 @@ export default function DayScreen() {
       {!editable && inArc && age > 0 && (
         <Card tone="surfaceMuted" bordered={false}>
           <T variant="caption">
-            Nachtragen geht bis {EDIT_WINDOW_DAYS} Tage zurück. Ältere Tage bleiben, wie sie sind – das hält deinen Arc ehrlich.
+            {t('history.day.editWindow', { count: EDIT_WINDOW_DAYS })}
           </T>
         </Card>
       )}
@@ -105,17 +108,17 @@ export default function DayScreen() {
       )}
 
       <TextField
-        label="Notiz"
+        label={t('history.day.note')}
         value={note}
         onChangeText={setNoteText}
         onBlur={saveNote}
         multiline
         maxLength={1000}
-        placeholder="Wie lief der Tag? Was hat geholfen, was nicht?"
+        placeholder={t('history.day.notePlaceholder')}
       />
 
       <View style={styles.photos}>
-        <T variant="label">Fotos</T>
+        <T variant="label">{t('history.day.photos')}</T>
         <PhotoStrip
           photos={log[date]?.photos ?? []}
           onAdd={(name) => addPhoto(arc.id, date, name)}

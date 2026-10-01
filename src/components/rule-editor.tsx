@@ -5,8 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { suggestHealthLink } from '@/lib/health';
-import { CATEGORY_LABELS, ICON_CHOICES, type RuleTemplate } from '@/lib/templates';
-import type { RuleCategory } from '@/lib/types';
+import { categoryLabel, defaultUnit, ICON_CHOICES, RULE_CATEGORIES, type RuleTemplate } from '@/lib/templates';
+import { t } from '@/i18n';
 
 import { HealthLinkPicker } from './health-link-picker';
 import { CloseIcon } from './icons';
@@ -39,7 +39,7 @@ export function RuleEditor({ visible, initial, onClose, onSave }: Props) {
     if (visible) {
       const d = initial ?? EMPTY;
       setDraft(d);
-      setTargetText(d.measure.kind === 'amount' ? String(d.measure.target).replace('.', ',') : '');
+      setTargetText(d.measure.kind === 'amount' ? String(d.measure.target).replace('.', t('today.rule.decimal')) : '');
     }
   }, [visible, initial]);
 
@@ -60,16 +60,16 @@ export function RuleEditor({ visible, initial, onClose, onSave }: Props) {
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[styles.root, { backgroundColor: theme.background }]}>
         <View style={[styles.header, { paddingTop: Platform.OS === 'ios' ? Spacing.four : insets.top + Spacing.two }]}>
-          <T variant="heading">{initial ? 'Regel anpassen' : 'Eigene Regel'}</T>
-          <Pressable onPress={onClose} hitSlop={10} accessibilityLabel="Schliessen" style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
+          <T variant="heading">{initial ? t('today.editor.editTitle') : t('today.editor.newTitle')}</T>
+          <Pressable onPress={onClose} hitSlop={10} accessibilityLabel={t('common.close')} style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
             <CloseIcon color={theme.text} size={16} />
           </Pressable>
         </View>
 
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           <TextField
-            label="Regel"
-            placeholder="z. B. 30 Min. Spanisch"
+            label={t('today.editor.rule')}
+            placeholder={t('today.editor.rulePlaceholder')}
             value={draft.title}
             onChangeText={(title) => setDraft((d) => ({ ...d, title }))}
             onBlur={() => setDraft((d) => (d.health || initial ? d : { ...d, health: suggestHealthLink(d) ?? undefined }))}
@@ -78,7 +78,7 @@ export function RuleEditor({ visible, initial, onClose, onSave }: Props) {
           />
 
           <View style={styles.group}>
-            <T variant="label">Symbol</T>
+            <T variant="label">{t('today.editor.icon')}</T>
             <View style={styles.icons}>
               {ICON_CHOICES.map((icon) => (
                 <Pressable
@@ -95,30 +95,30 @@ export function RuleEditor({ visible, initial, onClose, onSave }: Props) {
           </View>
 
           <View style={styles.group}>
-            <T variant="label">Bereich</T>
+            <T variant="label">{t('today.editor.category')}</T>
             <View style={styles.chips}>
-              {(Object.keys(CATEGORY_LABELS) as RuleCategory[]).map((c) => (
-                <Chip key={c} label={CATEGORY_LABELS[c]} selected={draft.category === c} onPress={() => setDraft((d) => ({ ...d, category: c }))} />
+              {RULE_CATEGORIES.map((c) => (
+                <Chip key={c} label={categoryLabel(c)} selected={draft.category === c} onPress={() => setDraft((d) => ({ ...d, category: c }))} />
               ))}
             </View>
           </View>
 
           <View style={styles.group}>
-            <T variant="label">Wie oft?</T>
+            <T variant="label">{t('today.editor.howOften')}</T>
             <Segmented
               value={draft.frequency.kind}
               onChange={(k) =>
                 setDraft((d) => ({ ...d, frequency: k === 'daily' ? { kind: 'daily' } : { kind: 'weekly', times: 3 } }))
               }
               options={[
-                { value: 'daily', label: 'Täglich' },
-                { value: 'weekly', label: 'Pro Woche' },
+                { value: 'daily', label: t('today.editor.daily') },
+                { value: 'weekly', label: t('today.editor.weekly') },
               ]}
             />
             {draft.frequency.kind === 'weekly' && (
               <View style={styles.inline}>
                 <T variant="body" color="textSecondary">
-                  Ziel pro Woche
+                  {t('today.editor.weeklyGoal')}
                 </T>
                 <Stepper
                   value={draft.frequency.times}
@@ -132,31 +132,31 @@ export function RuleEditor({ visible, initial, onClose, onSave }: Props) {
           </View>
 
           <View style={styles.group}>
-            <T variant="label">Wie messen?</T>
+            <T variant="label">{t('today.editor.howMeasure')}</T>
             <Segmented
               value={draft.measure.kind}
               onChange={(k) => {
                 if (k === 'amount') {
                   setTargetText('10');
-                  setDraft((d) => ({ ...d, measure: { kind: 'amount', target: 10, unit: 'Min' } }));
+                  setDraft((d) => ({ ...d, measure: { kind: 'amount', target: 10, unit: defaultUnit() } }));
                 } else setDraft((d) => ({ ...d, measure: { kind: 'check' } }));
               }}
               options={[
-                { value: 'check', label: 'Abhaken' },
-                { value: 'amount', label: 'Menge' },
+                { value: 'check', label: t('today.editor.check') },
+                { value: 'amount', label: t('today.editor.amount') },
               ]}
             />
             {draft.measure.kind === 'amount' && (
               <View style={styles.amountRow}>
                 <View style={styles.flex}>
-                  <TextField label="Ziel" keyboardType="decimal-pad" value={targetText} onChangeText={setTargetText} placeholder="10" />
+                  <TextField label={t('today.editor.target')} keyboardType="decimal-pad" value={targetText} onChangeText={setTargetText} placeholder="10" />
                 </View>
                 <View style={styles.flex}>
                   <TextField
-                    label="Einheit"
+                    label={t('today.editor.unit')}
                     value={draft.measure.unit}
                     maxLength={12}
-                    placeholder="Min, Seiten …"
+                    placeholder={t('today.editor.unitPlaceholder')}
                     onChangeText={(unit) =>
                       setDraft((d) => (d.measure.kind === 'amount' ? { ...d, measure: { ...d.measure, unit } } : d))
                     }
@@ -167,17 +167,17 @@ export function RuleEditor({ visible, initial, onClose, onSave }: Props) {
           </View>
 
           <View style={styles.group}>
-            <T variant="label">Automatisch abhaken</T>
+            <T variant="label">{t('today.editor.autoCheck')}</T>
             <HealthLinkPicker value={draft.health} onChange={(health) => setDraft((d) => ({ ...d, health }))} />
           </View>
 
           <T variant="caption" color="textTertiary">
-            Tipp: Formuliere Regeln so, dass du sie auch an einem schlechten Tag schaffst. Lieber 10 Seiten jeden Tag als 50 ab und zu.
+            {t('today.editor.tip')}
           </T>
         </ScrollView>
 
         <View style={[styles.footer, { paddingBottom: insets.bottom + Spacing.four, borderTopColor: theme.border }]}>
-          <Button title={initial ? 'Übernehmen' : 'Regel hinzufügen'} onPress={save} disabled={!valid} />
+          <Button title={initial ? t('today.editor.apply') : t('today.editor.add')} onPress={save} disabled={!valid} />
         </View>
       </KeyboardAvoidingView>
     </Modal>

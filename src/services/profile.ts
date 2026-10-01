@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import { allBadges } from '@/lib/badges';
 import type { ProfileBadge } from '@/lib/crew';
 import { todayISO } from '@/lib/date';
@@ -58,7 +59,7 @@ async function publishBadges(userId: string, server: ProfileBadge[] | null) {
   if (JSON.stringify(next) === JSON.stringify(server ?? [])) return;
   // updated_at bleibt gleich: Abzeichen sind berechnet und gewinnen nie gegen Profiländerungen.
   const { error } = await supabase!.from('profiles').update({ badges: next }).eq('id', userId);
-  if (error) throw new Error(`Abzeichen: ${error.message}`);
+  if (error) throw new Error(t('contract.profile.badgesError', { error: error.message }));
 }
 
 async function syncProfileFields(userId: string, row: RemoteProfile | null) {
@@ -86,7 +87,7 @@ async function pushProfile(userId: string, serverAvatar: string | null) {
     const path = `${userId}/${Date.now()}.jpg`;
     const body = await avatarBytes(local);
     const { error } = await sb.storage.from(BUCKET).upload(path, body, { contentType: 'image/jpeg', upsert: false });
-    if (error) throw new Error(`Profilbild: ${error.message}`);
+    if (error) throw new Error(t('contract.profile.avatarError', { error: error.message }));
     if (!setAvatarRemote(local, path)) {
       // Während des Uploads wurde ein anderes Bild gewählt oder das Bild entfernt.
       await sb.storage.from(BUCKET).remove([path]);
@@ -130,12 +131,12 @@ export async function removeAvatars(userId: string, keep: string | null = null):
   const { data, error } = await supabase.storage.from(BUCKET).list(userId, { limit: 100 });
   if (error) {
     if (/not found/i.test(error.message)) return;
-    throw new Error(`Profilbild konnte nicht gelöscht werden: ${error.message}`);
+    throw new Error(t('contract.profile.avatarDeleteFailed', { error: error.message }));
   }
   const stale = (data ?? []).map((f) => `${userId}/${f.name}`).filter((p) => p !== keep);
   if (!stale.length) return;
   const { error: rmError } = await supabase.storage.from(BUCKET).remove(stale);
-  if (rmError) throw new Error(`Profilbild konnte nicht gelöscht werden: ${rmError.message}`);
+  if (rmError) throw new Error(t('contract.profile.avatarDeleteFailed', { error: rmError.message }));
 }
 
 // ---------- Profile anderer (Crew) ----------

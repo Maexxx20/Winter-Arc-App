@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Switch, View } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
+import { t } from '@/i18n';
 import { useTheme } from '@/hooks/use-theme';
 import { haptic } from '@/lib/haptics';
 import { formatTime } from '@/lib/reminders';
@@ -51,13 +52,13 @@ export function TimeRow({
       </View>
       {on && (
         <View style={styles.stepper}>
-          <Pressable disabled={disabled} onPress={() => bump(-1)} hitSlop={6} accessibilityLabel="Früher" style={[styles.btn, { backgroundColor: theme.surfaceMuted }]}>
+          <Pressable disabled={disabled} onPress={() => bump(-1)} hitSlop={6} accessibilityLabel={t('contract.time.earlier')} style={[styles.btn, { backgroundColor: theme.surfaceMuted }]}>
             <MinusIcon color={theme.text} size={16} />
           </Pressable>
           <T variant="number" style={styles.time}>
             {formatTime(value!)}
           </T>
-          <Pressable disabled={disabled} onPress={() => bump(1)} hitSlop={6} accessibilityLabel="Später" style={[styles.btn, { backgroundColor: theme.surfaceMuted }]}>
+          <Pressable disabled={disabled} onPress={() => bump(1)} hitSlop={6} accessibilityLabel={t('contract.time.later')} style={[styles.btn, { backgroundColor: theme.surfaceMuted }]}>
             <PlusIcon color={theme.text} size={16} />
           </Pressable>
         </View>

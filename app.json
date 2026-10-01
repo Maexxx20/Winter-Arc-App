@@ -61,7 +61,7 @@
         "expo-image-picker",
         {
           "photosPermission": "Nordwand braucht Zugriff auf deine Fotos, damit du Bilder zu deinem Tagebuch hinzufügen kannst.",
-          "cameraPermission": "Nordwand braucht Zugriff auf die Kamera, damit du Fotos für dein Tagebuch aufnehmen kannst.",
+          "cameraPermission": "Nordwand braucht Zugriff auf die Kamera, damit du Fotos für dein Tagebuch und deine Fortschrittsfotos aufnehmen kannst.",
           "microphonePermission": false
         }
       ],

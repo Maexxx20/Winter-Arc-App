@@ -83,6 +83,23 @@ describe('Zeiträume ohne Überlappung', () => {
   });
 });
 
+describe('Vorschläge in anderen Sprachen', () => {
+  it('erkennt EN/FR/IT', () => {
+    expect(suggestHealthLink(rule('10,000 steps'))).toEqual({ metric: 'steps', threshold: 10000 });
+    expect(suggestHealthLink(rule('10 000 pas'))).toEqual({ metric: 'steps', threshold: 10000 });
+    expect(suggestHealthLink(rule('Dormire 8 ore', { kind: 'amount', target: 8, unit: 'ore' }))).toEqual({ metric: 'sleep', threshold: 8 });
+    expect(suggestHealthLink(rule('Boire de l’eau', { kind: 'amount', target: 2, unit: 'litres' }))).toEqual({ metric: 'water', threshold: 2 });
+    expect(suggestHealthLink(rule('Allenamento'))).toEqual({ metric: 'workout', threshold: 30 });
+    expect(suggestHealthLink(rule('Méditer'))).toEqual({ metric: 'mindful', threshold: 10 });
+    expect(suggestHealthLink(rule('Read'))).toBeNull();
+    expect(suggestHealthLink(rule('Ne pas fumer'))).toBeNull();
+  });
+  it('Einheiten umrechnen', () => {
+    expect(healthValueForRule(rule('Water', { kind: 'amount', target: 2, unit: 'litres' }), { metric: 'water', threshold: 2 }, { water: 1.5 })).toBe(1.5);
+    expect(healthValueForRule(rule('Passi', { kind: 'amount', target: 8000, unit: 'passi' }), { metric: 'steps', threshold: 8000 }, { steps: 5000 })).toBe(5000);
+  });
+});
+
 describe('Wasser-Vorschlag', () => {
   it('Gläser sind keine Liter', () => {
     expect(suggestHealthLink(rule('Wasser trinken', { kind: 'amount', target: 8, unit: 'Gläser' }))).toEqual({ metric: 'water', threshold: 2 });

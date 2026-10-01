@@ -3,6 +3,8 @@
  * Die Werte kommen aus Apple Health, Health Connect oder Strava; hier wird nur gerechnet.
  */
 
+import { formatNumber, t } from '@/i18n';
+
 import { isValueDone } from './arc';
 import type { ISODate } from './date';
 import type { HealthLink, HealthMetric, Rule } from './types';
@@ -20,12 +22,33 @@ export interface HealthMetricDef {
   hint: string;
 }
 
+/** Texte (label, unit, hint) werden erst beim Lesen übersetzt – Sprache kann zur Laufzeit wechseln. */
+function metric(id: HealthMetric, icon: string, defaultThreshold: number, step: number, min: number, max: number): HealthMetricDef {
+  return {
+    id,
+    icon,
+    defaultThreshold,
+    step,
+    min,
+    max,
+    get label() {
+      return t(`contract.health.${id}.label`);
+    },
+    get unit() {
+      return t(`contract.health.${id}.unit`);
+    },
+    get hint() {
+      return t(`contract.health.${id}.hint`);
+    },
+  };
+}
+
 export const HEALTH_METRICS: HealthMetricDef[] = [
-  { id: 'steps', label: 'Schritte', icon: '🚶', unit: 'Schritte', defaultThreshold: 10000, step: 1000, min: 1000, max: 40000, hint: 'Schritte des Tages' },
-  { id: 'workout', label: 'Training', icon: '🏋️', unit: 'Min', defaultThreshold: 30, step: 5, min: 5, max: 240, hint: 'Workouts des Tages zusammen (Uhr, Strava, Fitness-Apps)' },
-  { id: 'sleep', label: 'Schlaf', icon: '🛌', unit: 'Std', defaultThreshold: 7, step: 0.5, min: 4, max: 11, hint: 'Schlaf der Nacht, die an diesem Morgen endet' },
-  { id: 'water', label: 'Wasser', icon: '💧', unit: 'Liter', defaultThreshold: 2, step: 0.25, min: 0.5, max: 6, hint: 'Getrunkenes Wasser, das in Health erfasst ist' },
-  { id: 'mindful', label: 'Achtsamkeit', icon: '🧘', unit: 'Min', defaultThreshold: 10, step: 5, min: 5, max: 120, hint: 'Meditations- und Achtsamkeitsminuten' },
+  metric('steps', '🚶', 10000, 1000, 1000, 40000),
+  metric('workout', '🏋️', 30, 5, 5, 240),
+  metric('sleep', '🛌', 7, 0.5, 4, 11),
+  metric('water', '💧', 2, 0.25, 0.5, 6),
+  metric('mindful', '🧘', 10, 5, 5, 120),
 ];
 
 export const HEALTH_METRIC_BY_ID = Object.fromEntries(HEALTH_METRICS.map((m) => [m.id, m])) as Record<HealthMetric, HealthMetricDef>;
@@ -35,26 +58,38 @@ export type HealthDay = Partial<Record<HealthMetric, number>>;
 
 const has = (text: string, ...words: string[]) => words.some((w) => text.includes(w));
 
-/** Vorschlag, welche Messung zu einer Regel passt (oder null). */
+// Einheiten in allen vier Sprachen (Regeln können in jeder Sprache angelegt sein)
+const isSteps = (u: string) => has(u, 'schritt', 'step', 'passi') || u === 'pas';
+const isHours = (u: string) => u === 'h' || has(u, 'std', 'stunde', 'hour', 'heure', 'ora', 'ore');
+const isMinutes = (u: string) => u.startsWith('min');
+const isLiters = (u: string) => u === 'l' || has(u, 'liter', 'litre', 'litri', 'litro');
+const isGlasses = (u: string) => has(u, 'glas', 'gläs', 'glass', 'verre', 'bicchier');
+
+/** Vorschlag, welche Messung zu einer Regel passt (oder null). Erkennt Deutsch, Englisch, Französisch, Italienisch. */
 export function suggestHealthLink(rule: Pick<Rule, 'title' | 'measure'>): HealthLink | null {
-  const t = rule.title.toLowerCase();
-  const unit = rule.measure.kind === 'amount' ? rule.measure.unit.toLowerCase() : '';
+  const title = rule.title.toLowerCase();
+  const unit = rule.measure.kind === 'amount' ? rule.measure.unit.toLowerCase().trim() : '';
   const target = rule.measure.kind === 'amount' ? rule.measure.target : null;
-  if (has(t, 'schritt', 'steps') || has(unit, 'schritt')) {
-    const n = t.match(/(\d[\d' .]*\d|\d+)/)?.[0]?.replace(/[' .]/g, '');
+  // «pas» nur nach einer Zahl («10 000 pas»), sonst wäre «Ne pas fumer» eine Schritt-Regel
+  if (has(title, 'schritt', 'steps', 'passi') || /\d\s*pas\b/.test(title) || (unit && isSteps(unit))) {
+    const n = title.match(/(\d[\d'’ .,]*\d|\d+)/)?.[0]?.replace(/['’ .,]/g, '');
     return { metric: 'steps', threshold: target ?? (n ? Number(n) : 10000) };
   }
-  if (has(t, 'schlaf', 'sleep') && !has(t, 'vor ', 'uhr')) return { metric: 'sleep', threshold: target && has(unit, 'std', 'h') ? target : 7 };
-  if (has(t, 'wasser', 'trinken')) {
-    const u = unit.trim();
-    if (target && u === 'ml') return { metric: 'water', threshold: target / 1000 };
-    if (target && (u === 'l' || u.startsWith('liter'))) return { metric: 'water', threshold: target };
-    if (target && (u.startsWith('glas') || u.startsWith('gläs'))) return { metric: 'water', threshold: Math.round(target * 0.25 * 4) / 4 };
+  if (has(title, 'schlaf', 'sleep', 'sommeil', 'dormir', 'sonno', 'dormire') && !has(title, 'vor ', 'uhr', 'before', 'avant', 'prima'))
+    return { metric: 'sleep', threshold: target && isHours(unit) ? target : 7 };
+  if (has(title, 'wasser', 'trinken', 'water', 'drink', 'eau', 'boire', 'acqua', 'bere')) {
+    if (target && unit === 'ml') return { metric: 'water', threshold: target / 1000 };
+    if (target && isLiters(unit)) return { metric: 'water', threshold: target };
+    if (target && isGlasses(unit)) return { metric: 'water', threshold: Math.round(target * 0.25 * 4) / 4 };
     return { metric: 'water', threshold: 2 };
   }
-  if (has(t, 'medit', 'achtsam', 'atem')) return { metric: 'mindful', threshold: target && has(unit, 'min') ? target : 10 };
-  if (has(t, 'training', 'gym', 'sport', 'workout', 'laufen', 'joggen', 'velo', 'rad', 'schwimm', 'eishockey', 'fitness')) {
-    return { metric: 'workout', threshold: target && has(unit, 'min') ? target : 30 };
+  if (has(title, 'medit', 'médit', 'achtsam', 'atem', 'mindful', 'breath', 'respir', 'pleine conscience', 'consapevol'))
+    return { metric: 'mindful', threshold: target && isMinutes(unit) ? target : 10 };
+  if (
+    has(title, 'training', 'gym', 'sport', 'workout', 'laufen', 'joggen', 'velo', 'vélo', 'rad', 'schwimm', 'eishockey', 'hockey', 'fitness',
+      'run', 'swim', 'cycl', 'bike', 'entraîn', 'entrain', 'course', 'natation', 'allenament', 'corsa', 'nuoto', 'bici', 'palestra')
+  ) {
+    return { metric: 'workout', threshold: target && isMinutes(unit) ? target : 30 };
   }
   return null;
 }
@@ -64,20 +99,20 @@ function toRuleUnit(metric: HealthMetric, value: number, unit: string): number |
   const u = unit.toLowerCase().trim();
   switch (metric) {
     case 'steps':
-      return u.startsWith('schritt') || u === 'steps' ? value : null;
+      return isSteps(u) ? value : null;
     case 'workout':
     case 'mindful':
-      if (u.startsWith('min')) return value;
-      if (u.startsWith('std') || u === 'h' || u.startsWith('stunde')) return value / 60;
+      if (isMinutes(u)) return value;
+      if (isHours(u)) return value / 60;
       return null;
     case 'sleep':
-      if (u.startsWith('std') || u === 'h' || u.startsWith('stunde')) return value;
-      if (u.startsWith('min')) return value * 60;
+      if (isHours(u)) return value;
+      if (isMinutes(u)) return value * 60;
       return null;
     case 'water':
       if (u === 'ml') return value * 1000;
-      if (u === 'l' || u.startsWith('liter')) return value;
-      if (u.startsWith('glas') || u.startsWith('gläser')) return value / 0.25;
+      if (isLiters(u)) return value;
+      if (isGlasses(u)) return value / 0.25;
       return null;
   }
 }
@@ -186,13 +221,13 @@ export function combineWorkoutMinutes(...sources: (number | undefined)[]): numbe
 
 export function formatThreshold(metric: HealthMetric, value: number): string {
   const def = HEALTH_METRIC_BY_ID[metric];
-  const n = metric === 'steps' ? value.toLocaleString('de-CH') : String(value).replace('.', ',');
+  const n = metric === 'steps' ? formatNumber(value) : String(value).replace('.', t('contract.health.decimal'));
   return `${n} ${def.unit}`;
 }
 
 export function describeHealthLink(link: HealthLink): string {
   const def = HEALTH_METRIC_BY_ID[link.metric];
-  return `${def.icon} ab ${formatThreshold(link.metric, link.threshold)}`;
+  return t('contract.health.describe', { icon: def.icon, value: formatThreshold(link.metric, link.threshold) });
 }
 
 /** Summe der Intervalle ohne Überlappung (z. B. Schlaf von Uhr und Handy), in Minuten. */

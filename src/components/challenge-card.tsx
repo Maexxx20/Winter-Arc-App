@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n';
 import { type Challenge, type ChallengeProgress, challengeTitle } from '@/lib/crew';
 
 import { Card } from './ui/card';
@@ -21,30 +22,31 @@ export function ChallengeCard({
 }) {
   const theme = useTheme();
   const ratio = progress.goal ? Math.min(1, progress.value / progress.goal) : 0;
-  const unit = challenge.kind === 'crew_total' ? 'Tage' : 'Personen';
+  const progressText = t(challenge.kind === 'crew_total' ? 'crew.challenge.progressDays' : 'crew.challenge.progressPeople', {
+    value: progress.value,
+    count: progress.goal,
+  });
   const status = progress.done
-    ? 'Geschafft! Stark, Crew.'
+    ? t('crew.challenge.done')
     : progress.daysLeft === 0
-      ? 'Knapp verpasst – nächste Woche.'
+      ? t('crew.challenge.missed')
       : progress.daysLeft === 1
-        ? 'Heute ist der letzte Tag.'
-        : `Noch ${progress.daysLeft} Tage`;
+        ? t('crew.challenge.lastDay')
+        : t('crew.challenge.daysLeft', { count: progress.daysLeft });
 
   return (
     <Pressable onPress={onPress} disabled={!onPress} accessibilityRole={onPress ? 'button' : undefined}>
       {({ pressed }) => (
         <Card tone={progress.done ? 'accentSoft' : 'surface'} style={[styles.card, { opacity: pressed ? 0.85 : 1 }]}>
           <View style={styles.row}>
-            <T variant="label" color="accent" style={styles.flex}>Wochen-Challenge</T>
+            <T variant="label" color="accent" style={styles.flex}>{t('crew.challenge.label')}</T>
             <T variant="caption" color={progress.done ? 'accent' : 'textSecondary'}>{status}</T>
           </View>
           <T variant="heading">{progress.done ? '🎉 ' : ''}{challengeTitle(challenge)}</T>
           <View style={[styles.bar, { backgroundColor: theme.surfaceMuted }]}>
             <View style={[styles.fill, { width: `${ratio * 100}%`, backgroundColor: theme.accent }]} />
           </View>
-          <T variant="caption">
-            {progress.value} von {progress.goal} {unit}
-          </T>
+          <T variant="caption">{progressText}</T>
           {progress.perMember.length > 1 ? (
             <T variant="caption" color="textTertiary" numberOfLines={2}>
               {progress.perMember.map((p) => `${names[p.userId] ?? '?'} ${p.days}`).join(' · ')}

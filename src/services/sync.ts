@@ -1,6 +1,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { AppState as RNAppState } from 'react-native';
 
+import { t } from '@/i18n';
 import { type ArcRow, collectChanges, type ChangeSet, type EntryRow, type ReviewRow } from '@/lib/sync-merge';
 import { applyRemote, getState, isHydrated, resetProfileSync, setSyncMeta, subscribe } from '@/store/store';
 
@@ -125,14 +126,14 @@ async function doSync() {
       await publishStatus();
     } catch (e) {
       console.warn('Crew-Status fehlgeschlagen', e);
-      problems.push(`Crew: ${e instanceof Error ? e.message : String(e)}`);
+      problems.push(t('system.sync.crew', { error: e instanceof Error ? e.message : String(e) }));
     }
 
     try {
       await syncProfile(userId);
     } catch (e) {
       console.warn('Profil-Abgleich fehlgeschlagen', e);
-      problems.push(`Profil: ${e instanceof Error ? e.message : String(e)}`);
+      problems.push(t('system.sync.profile', { error: e instanceof Error ? e.message : String(e) }));
     }
     try {
       await syncPhotos(userId);

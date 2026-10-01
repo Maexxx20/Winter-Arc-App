@@ -2,6 +2,7 @@ import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 
+import { t } from '@/i18n';
 import { addDays, type ISODate, parseISO } from '@/lib/date';
 import { getState, updateSettings } from '@/store/store';
 
@@ -24,17 +25,28 @@ export class StravaError extends Error {
   }
 }
 
-const MESSAGES: Record<string, string> = {
-  not_configured: 'Strava ist auf dem Server noch nicht eingerichtet (Schlüssel fehlen).',
-  not_deployed: 'Strava ist auf dem Server noch nicht eingerichtet.',
-  not_connected: 'Strava ist nicht mehr verbunden. Bitte verbinde es neu.',
-  not_authenticated: 'Bitte melde dich zuerst an.',
-  bad_state: 'Die Anmeldung bei Strava ist abgelaufen. Bitte versuch es nochmals.',
-  bad_code: 'Strava hat die Anmeldung nicht bestätigt. Bitte versuch es nochmals.',
-};
+/** Text zum Fehlercode der Edge Function (erst beim Auftreten übersetzt). */
+function message(code: string): string | undefined {
+  switch (code) {
+    case 'not_configured':
+      return t('contract.strava.notConfigured');
+    case 'not_deployed':
+      return t('contract.strava.notDeployed');
+    case 'not_connected':
+      return t('contract.strava.notConnected');
+    case 'not_authenticated':
+      return t('common.signInFirst');
+    case 'bad_state':
+      return t('contract.strava.badState');
+    case 'bad_code':
+      return t('contract.strava.badCode');
+    default:
+      return undefined;
+  }
+}
 
 async function call<T>(action: string, extra: Record<string, unknown> = {}): Promise<T> {
-  if (!supabase || !getSession()) throw new StravaError(MESSAGES.not_authenticated, 'not_authenticated');
+  if (!supabase || !getSession()) throw new StravaError(t('common.signInFirst'), 'not_authenticated');
   const { data, error } = await supabase.functions.invoke('strava', { body: { action, ...extra } });
   if (error) {
     const res = (error as { context?: Response }).context;
@@ -48,15 +60,15 @@ async function call<T>(action: string, extra: Record<string, unknown> = {}): Pro
     }
     // 404 ohne eigenen Fehlercode: Funktion ist nicht deployt
     if (!code && res?.status === 404) code = 'not_deployed';
-    throw new StravaError(MESSAGES[code] ?? `Strava gerade nicht erreichbar (${code || res?.status || error.message}).`, code || 'unknown');
+    throw new StravaError(message(code) ?? t('contract.strava.unreachable', { detail: String(code || res?.status || error.message) }), code || 'unknown');
   }
   return data as T;
 }
 
 export function stravaAvailableHere(): string | null {
-  if (Platform.OS === 'web') return 'Strava gibt es nur in der App.';
+  if (Platform.OS === 'web') return t('contract.strava.webOnly');
   if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
-    return 'In Expo Go kann Strava nicht zur App zurückspringen. Das geht ab dem Development-Build.';
+    return t('contract.strava.expoGo');
   }
   return null;
 }
@@ -76,12 +88,12 @@ export async function connectStrava(): Promise<string | null> {
     const res = await WebBrowser.openAuthSessionAsync(url, REDIRECT);
     if (res.type !== 'success') return null; // abgebrochen
     const params = new URL(res.url).searchParams;
-    if (params.get('error')) return 'Strava hat den Zugriff nicht erlaubt.';
+    if (params.get('error')) return t('contract.strava.denied');
     const code = params.get('code');
-    if (!code) return 'Strava hat keinen Code geschickt.';
-    if (params.get('state') !== state) return 'Die Anmeldung bei Strava passt nicht zusammen. Bitte versuch es nochmals.';
+    if (!code) return t('contract.strava.noCode');
+    if (params.get('state') !== state) return t('contract.strava.mismatch');
     if (!(params.get('scope') ?? '').includes('activity:read')) {
-      return 'Bitte erlaube Nordwand, deine Aktivitäten zu sehen.';
+      return t('contract.strava.needActivity');
     }
     const r = await call<{ athleteName: string }>('connect', { code, state });
     updateSettings({ stravaAthlete: r.athleteName || 'Strava' });

@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { AppState as RNAppState, Platform } from 'react-native';
 
+import { onLangChange, t } from '@/i18n';
 import { todayISO } from '@/lib/date';
 import { planReminders } from '@/lib/reminders';
 import { getState, isHydrated, selectActiveArc, selectLog, subscribe, updateReminders } from '@/store/store';
@@ -21,7 +22,7 @@ const CHANNEL = 'reminders';
 async function ensureChannel() {
   if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync(CHANNEL, {
-    name: 'Erinnerungen',
+    name: t('system.reminders.channel'),
     importance: Notifications.AndroidImportance.DEFAULT,
   });
 }
@@ -90,10 +91,13 @@ export function useReminderSync() {
     };
     schedule();
     const unsub = subscribe(schedule);
+    // Sprache gewechselt → Erinnerungen in der neuen Sprache neu planen
+    const offLang = onLangChange(schedule);
     const appSub = RNAppState.addEventListener('change', (st) => st === 'active' && schedule());
     return () => {
       if (timer) clearTimeout(timer);
       unsub();
+      offLang();
       appSub.remove();
     };
   }, []);

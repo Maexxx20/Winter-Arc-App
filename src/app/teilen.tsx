@@ -13,6 +13,7 @@ import { T } from '@/components/ui/text';
 import { Spacing } from '@/constants/theme';
 import { useIsDark, useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
+import { t } from '@/i18n';
 import { computeStats } from '@/lib/arc';
 import { confirm } from '@/lib/confirm';
 import { haptic } from '@/lib/haptics';
@@ -45,11 +46,11 @@ export default function ShareScreen() {
       }
       const uri = await captureRef(cardRef, { format: 'png', quality: 1, result: 'tmpfile', width: 1080, height: SHARE_H * scale });
       if (!(await Sharing.isAvailableAsync())) {
-        await confirm('Teilen nicht möglich', 'Auf diesem Gerät ist Teilen nicht verfügbar.', 'OK');
+        await confirm(t('history.share.unavailableTitle'), t('history.share.unavailableBody'), t('common.ok'));
         return;
       }
       haptic.success();
-      await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png', dialogTitle: 'Fortschritt teilen' });
+      await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png', dialogTitle: t('history.share.title') });
     } catch (e) {
       console.warn('Teilen fehlgeschlagen', e);
     } finally {
@@ -58,13 +59,13 @@ export default function ShareScreen() {
   };
 
   return (
-    <Screen topInset={Platform.OS !== 'ios'} footer={<Button title="Teilen" onPress={share} loading={busy} />}>
+    <Screen topInset={Platform.OS !== 'ios'} footer={<Button title={t('common.share')} onPress={share} loading={busy} />}>
       <View style={styles.header}>
         <View style={styles.flex}>
-          <T variant="label">Tag {Math.min(stats.dayNumber, stats.totalDays)}</T>
-          <T variant="title">Fortschritt teilen</T>
+          <T variant="label">{t('history.day.number', { n: Math.min(stats.dayNumber, stats.totalDays) })}</T>
+          <T variant="title">{t('history.share.title')}</T>
         </View>
-        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel="Schliessen" style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
+        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel={t('common.close')} style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
           <CloseIcon color={theme.text} size={16} />
         </Pressable>
       </View>
@@ -73,8 +74,8 @@ export default function ShareScreen() {
         value={style}
         onChange={setStyle}
         options={[
-          { value: 'light', label: 'Hell' },
-          { value: 'dark', label: 'Dunkel' },
+          { value: 'light', label: t('history.share.light') },
+          { value: 'dark', label: t('history.share.dark') },
         ]}
       />
 
@@ -83,7 +84,7 @@ export default function ShareScreen() {
       </View>
 
       <T variant="caption" color="textTertiary" center>
-        Nur Zahlen und Farben – deine Regeln, Notizen und Fotos bleiben privat.
+        {t('history.share.privacy')}
       </T>
     </Screen>
   );

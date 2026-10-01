@@ -14,23 +14,23 @@ import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
 import { addDays, diffDays, formatShort, type ISODate } from '@/lib/date';
-import { customArcTitle, seasonOptions } from '@/lib/seasons';
+import { customArcTitle, seasonOptions, seasonPitch } from '@/lib/seasons';
 import {
-  CATEGORY_LABELS,
+  categoryLabel,
   describeRule,
   HARD_MAX_RULES,
   RECOMMENDED_MAX_RULES,
-  RULE_TEMPLATES,
+  ruleTemplates,
   type RuleTemplate,
 } from '@/lib/templates';
 import type { Arc, RuleCategory } from '@/lib/types';
-import { t } from '@/i18n';
+import { t, useLang } from '@/i18n';
 import { uid } from '@/lib/arc';
 import { toCrewArcRules } from '@/lib/crew-arc';
 import { cachedCrew, publishCrewArc, signCrewArc } from '@/services/crews';
 import { createArc, getState, useAppState } from '@/store/store';
 
-const STEPS = ['Zeitraum', 'Regeln', 'Warum', 'Vertrag'] as const;
+const STEPS = ['period', 'rules', 'why', 'contract'] as const;
 
 type Plan = { kind: 'season'; title: string | null } | { kind: 'custom' };
 type StartChoice = 'today' | 'tomorrow';
@@ -47,6 +47,7 @@ export default function CreateArc() {
   const theme = useTheme();
   const today = useToday();
   const state = useAppState();
+  const lang = useLang();
   // Aus einem früheren Arc: Regeln und «Warum» übernehmen.
   // `crew`: Besitzer legt einen Crew-Arc für diese Crew an.
   const { from, crew: crewId } = useLocalSearchParams<{ from?: string; crew?: string }>();
@@ -78,15 +79,17 @@ export default function CreateArc() {
   const dailyCount = rules.filter((r) => r.frequency.kind === 'daily').length;
   const canContinue = [true, dailyCount > 0, true, name.trim().length > 1][step];
 
+  // Vorlagen in der aktuellen Sprache; einmal übernommen, sind Titel und Einheit Daten des Nutzers.
   const grouped = useMemo(() => {
     const m = new Map<RuleCategory, RuleTemplate[]>();
-    for (const t of RULE_TEMPLATES) m.set(t.category, [...(m.get(t.category) ?? []), t]);
+    for (const tpl of ruleTemplates()) m.set(tpl.category, [...(m.get(tpl.category) ?? []), tpl]);
     return [...m.entries()];
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
 
-  const isSelected = (t: RuleTemplate) => rules.some((r) => r.title === t.title);
-  const toggleTemplate = (t: RuleTemplate) =>
-    setRules((rs) => (isSelected(t) ? rs.filter((r) => r.title !== t.title) : rs.length >= HARD_MAX_RULES ? rs : [...rs, t]));
+  const isSelected = (tpl: RuleTemplate) => rules.some((r) => r.title === tpl.title);
+  const toggleTemplate = (tpl: RuleTemplate) =>
+    setRules((rs) => (isSelected(tpl) ? rs.filter((r) => r.title !== tpl.title) : rs.length >= HARD_MAX_RULES ? rs : [...rs, tpl]));
 
   const back = () => (step === 0 ? router.back() : setStep(step - 1));
   const next = () => setStep(Math.min(STEPS.length - 1, step + 1));
@@ -100,7 +103,7 @@ export default function CreateArc() {
     // Crew-Arc: zuerst für die Crew veröffentlichen und unterschreiben, dann lokal anlegen.
     try {
       const crewRules = toCrewArcRules(rules, uid);
-      const ca = await publishCrewArc({ crew_id: crewId, title: title.trim() || 'Crew Arc', why: why.trim(), start_date: startDate, end_date: endDate, rules: crewRules });
+      const ca = await publishCrewArc({ crew_id: crewId, title: title.trim() || t('today.create.crewArcFallback'), why: why.trim(), start_date: startDate, end_date: endDate, rules: crewRules });
       await signCrewArc(ca.id);
       createArc({
         title: ca.title,
@@ -121,7 +124,7 @@ export default function CreateArc() {
 
   const header = (
     <View style={styles.header}>
-      <Pressable onPress={back} hitSlop={12} accessibilityLabel="Zurück" style={[styles.round, { backgroundColor: theme.surfaceMuted }]}>
+      <Pressable onPress={back} hitSlop={12} accessibilityLabel={t('common.back')} style={[styles.round, { backgroundColor: theme.surfaceMuted }]}>
         {step === 0 ? <CloseIcon color={theme.text} size={16} /> : <ChevronIcon dir="left" color={theme.text} size={18} />}
       </Pressable>
       <View style={styles.dots}>
@@ -133,9 +136,16 @@ export default function CreateArc() {
     </View>
   );
 
+  // Vertragstext: {name} wird fett eingesetzt, darum in zwei Teile trennen.
+  const [contractPre, contractPost = ''] = t('today.create.contractText', {
+    start: formatShort(startDate),
+    end: formatShort(endDate, true),
+    days: t('common.days', { count: totalDays }),
+  }).split('{name}');
+
   const footer =
     step < 3 ? (
-      <Button title="Weiter" onPress={next} disabled={!canContinue} />
+      <Button title={t('common.next')} onPress={next} disabled={!canContinue} />
     ) : (
       <HoldToSign key={signKey} onSigned={sign} disabled={!canContinue} />
     );
@@ -159,11 +169,9 @@ export default function CreateArc() {
       {step === 0 && (
         <>
           <View style={styles.titleBlock}>
-            <T variant="label" color="accent">Schritt 1 · Zeitraum</T>
-            <T variant="title">{source ? 'Wie geht es weiter?' : 'Welcher Arc?'}</T>
-            <T color="textSecondary">
-              Das Jahr hat vier Arcs – so kann deine Crew gemeinsam starten. Oder du legst deinen eigenen Zeitraum fest.
-            </T>
+            <T variant="label" color="accent">{t('today.create.step1')}</T>
+            <T variant="title">{source ? t('today.screen.whatsNext') : t('today.create.whichArc')}</T>
+            <T color="textSecondary">{t('today.create.periodIntro')}</T>
           </View>
 
           <View style={styles.options}>
@@ -184,10 +192,10 @@ export default function CreateArc() {
                     <T variant="bodyStrong">{o.title}</T>
                     <T variant="caption">
                       {o.running
-                        ? `Läuft · heute einsteigen, noch ${o.daysLeft} Tage`
-                        : `${formatShort(o.startDate)} – ${formatShort(o.endDate, true)} · ${o.totalDays} Tage`}
+                        ? t('today.create.running', { count: o.daysLeft })
+                        : `${formatShort(o.startDate)} – ${formatShort(o.endDate, true)} · ${t('common.days', { count: o.totalDays })}`}
                     </T>
-                    <T variant="caption" color="textTertiary">{o.season.pitch}</T>
+                    <T variant="caption" color="textTertiary">{seasonPitch(o.season)}</T>
                   </View>
                 </Pressable>
               );
@@ -208,39 +216,39 @@ export default function CreateArc() {
               ]}>
               <T style={styles.optionIcon}>🧭</T>
               <View style={styles.flex}>
-                <T variant="bodyStrong">Eigener Arc</T>
-                <T variant="caption">Start und Dauer frei wählen – z. B. 66 Tage für eine neue Gewohnheit.</T>
+                <T variant="bodyStrong">{t('today.create.customArc')}</T>
+                <T variant="caption">{t('today.create.customHint')}</T>
               </View>
             </Pressable>
           </View>
 
           {plan.kind === 'custom' && (
             <>
-              <SectionTitle>Start</SectionTitle>
+              <SectionTitle>{t('today.create.start')}</SectionTitle>
               <View style={styles.chips}>
-                <Chip label="Heute" selected={startChoice === 'today'} onPress={() => setStartChoice('today')} />
-                <Chip label="Morgen" selected={startChoice === 'tomorrow'} onPress={() => setStartChoice('tomorrow')} />
+                <Chip label={t('date.today')} selected={startChoice === 'today'} onPress={() => setStartChoice('today')} />
+                <Chip label={t('date.tomorrow')} selected={startChoice === 'tomorrow'} onPress={() => setStartChoice('tomorrow')} />
               </View>
-              <SectionTitle>Dauer</SectionTitle>
+              <SectionTitle>{t('today.create.duration')}</SectionTitle>
               <View style={styles.chips}>
                 {LENGTHS.map((l) => (
-                  <Chip key={l} label={`${l} Tage`} selected={length === l} onPress={() => setLength(l)} />
+                  <Chip key={l} label={t('common.days', { count: l })} selected={length === l} onPress={() => setLength(l)} />
                 ))}
               </View>
-              <Stepper value={length} onChange={setLength} min={7} max={365} format={(v) => `${v} Tage`} />
+              <Stepper value={length} onChange={setLength} min={7} max={365} format={(v) => t('common.days', { count: v })} />
             </>
           )}
 
           <Card tone="accentSoft" bordered={false} style={styles.summary}>
-            <T variant="label" color="accent">Dein Arc</T>
+            <T variant="label" color="accent">{t('today.create.yourArc')}</T>
             <T variant="title">
               {formatShort(startDate)} – {formatShort(endDate, true)}
             </T>
-            <T color="textSecondary">{totalDays} Tage</T>
+            <T color="textSecondary">{t('common.days', { count: totalDays })}</T>
           </Card>
           {source ? (
             <T variant="caption" color="textTertiary">
-              Deine Regeln und dein «Warum» aus «{source.title}» sind schon übernommen – du kannst sie im nächsten Schritt anpassen.
+              {t('today.create.carriedOver', { title: source.title })}
             </T>
           ) : null}
         </>
@@ -249,27 +257,25 @@ export default function CreateArc() {
       {step === 1 && (
         <>
           <View style={styles.titleBlock}>
-            <T variant="label" color="accent">Schritt 2 · Regeln</T>
-            <T variant="title">Deine Regeln</T>
-            <T color="textSecondary">
-              Wähle 3–{RECOMMENDED_MAX_RULES} Regeln. Weniger ist mehr: Wer alles auf einmal will, gibt meist in der ersten Woche auf.
-            </T>
+            <T variant="label" color="accent">{t('today.create.step2')}</T>
+            <T variant="title">{t('today.screen.yourRules')}</T>
+            <T color="textSecondary">{t('today.create.rulesIntro', { max: RECOMMENDED_MAX_RULES })}</T>
           </View>
 
           <SectionTitle
             action={
               <T variant="caption" color={rules.length > RECOMMENDED_MAX_RULES ? 'warning' : 'textSecondary'}>
                 {rules.length}/{RECOMMENDED_MAX_RULES}
-                {rules.length > RECOMMENDED_MAX_RULES ? ' · ambitioniert' : ''}
+                {rules.length > RECOMMENDED_MAX_RULES ? ` · ${t('today.create.ambitious')}` : ''}
               </T>
             }>
-            Ausgewählt
+            {t('today.create.selected')}
           </SectionTitle>
 
           {rules.length === 0 ? (
             <Card tone="surfaceMuted" bordered={false}>
               <T variant="caption" center>
-                Noch keine Regel. Tippe unten auf eine Vorlage oder erstelle deine eigene.
+                {t('today.create.noRule')}
               </T>
             </Card>
           ) : (
@@ -286,7 +292,7 @@ export default function CreateArc() {
                   </View>
                   <Pressable
                     hitSlop={10}
-                    accessibilityLabel={`${r.title} entfernen`}
+                    accessibilityLabel={t('today.create.removeRule', { title: r.title })}
                     onPress={() => setRules((rs) => rs.filter((_, j) => j !== i))}
                     style={[styles.round, styles.smallRound, { backgroundColor: theme.surfaceMuted }]}>
                     <CloseIcon color={theme.textSecondary} size={14} />
@@ -297,12 +303,12 @@ export default function CreateArc() {
           )}
           {rules.length > 0 && dailyCount === 0 && (
             <T variant="caption" color="warning">
-              Mindestens eine Regel muss täglich sein – sie bestimmt deinen Streak.
+              {t('today.create.needDaily')}
             </T>
           )}
 
           <Button
-            title="Eigene Regel"
+            title={t('today.editor.newTitle')}
             variant="secondary"
             icon={<PlusIcon color={theme.text} size={16} />}
             disabled={rules.length >= HARD_MAX_RULES}
@@ -311,16 +317,16 @@ export default function CreateArc() {
 
           {grouped.map(([cat, templates]) => (
             <View key={cat} style={styles.group}>
-              <SectionTitle>{CATEGORY_LABELS[cat]}</SectionTitle>
+              <SectionTitle>{categoryLabel(cat)}</SectionTitle>
               <View style={styles.chips}>
-                {templates.map((t) => (
+                {templates.map((tpl) => (
                   <Chip
-                    key={t.title}
-                    icon={t.icon}
-                    label={t.title}
-                    selected={isSelected(t)}
-                    disabled={!isSelected(t) && rules.length >= HARD_MAX_RULES}
-                    onPress={() => toggleTemplate(t)}
+                    key={tpl.title}
+                    icon={tpl.icon}
+                    label={tpl.title}
+                    selected={isSelected(tpl)}
+                    disabled={!isSelected(tpl) && rules.length >= HARD_MAX_RULES}
+                    onPress={() => toggleTemplate(tpl)}
                   />
                 ))}
               </View>
@@ -342,20 +348,18 @@ export default function CreateArc() {
       {step === 2 && (
         <>
           <View style={styles.titleBlock}>
-            <T variant="label" color="accent">Schritt 3 · Warum</T>
-            <T variant="title">Wofür machst du das?</T>
-            <T color="textSecondary">
-              An Tag 23, wenn es dunkel und kalt ist, zählt nicht Motivation, sondern dein Grund. Schreib ihn auf.
-            </T>
+            <T variant="label" color="accent">{t('today.create.step3')}</T>
+            <T variant="title">{t('today.create.whyTitle')}</T>
+            <T color="textSecondary">{t('today.create.whyIntro')}</T>
           </View>
-          <TextField label="Name deines Arcs" value={title} onChangeText={setCustomTitle} maxLength={40} />
+          <TextField label={t('today.create.arcName')} value={title} onChangeText={setCustomTitle} maxLength={40} />
           <TextField
-            label="Mein Warum"
+            label={t('today.create.myWhy')}
             value={why}
             onChangeText={setWhy}
             multiline
             maxLength={400}
-            placeholder="Am 1. Januar will ich … Ich mache das, weil …"
+            placeholder={t('today.create.whyPlaceholder')}
           />
         </>
       )}
@@ -363,18 +367,25 @@ export default function CreateArc() {
       {step === 3 && (
         <>
           <View style={styles.titleBlock}>
-            <T variant="label" color="accent">Schritt 4 · Vertrag</T>
-            <T variant="title">Unterschreib ihn.</T>
+            <T variant="label" color="accent">{t('today.create.step4')}</T>
+            <T variant="title">{t('today.create.signIt')}</T>
           </View>
 
-          <TextField label="Dein Name" value={name} onChangeText={setName} maxLength={40} placeholder="Vor- oder Spitzname" />
+          <TextField
+            label={t('today.create.yourName')}
+            value={name}
+            onChangeText={setName}
+            maxLength={40}
+            placeholder={t('today.create.namePlaceholder')}
+          />
 
           <Card style={styles.contract}>
-            <T variant="label" center>Vertrag mit mir selbst</T>
+            <T variant="label" center>{t('today.create.contractWithMe')}</T>
             <T variant="heading" center style={styles.contractTitle}>{title || 'Winter Arc'}</T>
             <T color="textSecondary">
-              Ich, <T variant="bodyStrong">{name.trim() || '______'}</T>, verpflichte mich, vom {formatShort(startDate)} bis{' '}
-              {formatShort(endDate, true)} ({totalDays} Tage) folgende Regeln einzuhalten:
+              {contractPre}
+              <T variant="bodyStrong">{name.trim() || '______'}</T>
+              {contractPost}
             </T>
             <View style={styles.contractRules}>
               {rules.map((r, i) => (
@@ -387,14 +398,14 @@ export default function CreateArc() {
             </View>
             {why.trim() ? (
               <T color="textSecondary" style={styles.why}>
-                Weil: «{why.trim()}»
+                {t('today.create.because', { why: why.trim() })}
               </T>
             ) : null}
             <View style={[styles.divider, { backgroundColor: theme.border }]} />
             <T variant="caption">
               {crewId
                 ? t('crewx.arc.signHint')
-                : 'Ein verpasster Tag ist kein Scheitern. Ich verpasse nie zwei Tage hintereinander. Ich darf diesen Vertrag höchstens dreimal ändern.'}
+                : t('today.create.pledge')}
             </T>
           </Card>
         </>

@@ -193,7 +193,7 @@ export default function CrewScreen() {
 
   const leave = async () => {
     if (!detail) return;
-    if (!(await confirm('Crew verlassen?', `Du verlässt «${detail.crew.name}». Mit dem Code kannst du jederzeit wieder beitreten.`, 'Verlassen', true))) return;
+    if (!(await confirm(t('crew.detail.leaveTitle'), t('crew.detail.leaveText', { crew: detail.crew.name }), t('crew.detail.leaveConfirm'), true))) return;
     try {
       await leaveCrew(detail.crew.id);
       router.back();
@@ -208,11 +208,11 @@ export default function CrewScreen() {
   return (
     <Screen refreshing={loading && !!detail} onRefresh={load}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel="Zurück" style={[styles.round, { backgroundColor: theme.surfaceMuted }]}>
+        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel={t('common.back')} style={[styles.round, { backgroundColor: theme.surfaceMuted }]}>
           <ChevronIcon dir="left" color={theme.text} />
         </Pressable>
         <View style={styles.flex}>
-          <T variant="label">Crew</T>
+          <T variant="label">{t('crew.title')}</T>
           <T variant="title" numberOfLines={1}>
             {detail?.crew.name ?? ' '}
           </T>
@@ -230,9 +230,9 @@ export default function CrewScreen() {
       {detail && (
         <>
           <Card style={styles.summary}>
-            <T variant="label" color="accent">Heute</T>
+            <T variant="label" color="accent">{t('date.today')}</T>
             <T variant="title">
-              {heldCount} von {activeCount} haben gehalten
+              {t('crew.detail.heldOf', { held: heldCount, active: activeCount })}
             </T>
             <View style={[styles.bar, { backgroundColor: theme.surfaceMuted }]}>
               <View style={[styles.barFill, { backgroundColor: theme.accent, width: `${activeCount ? (heldCount / activeCount) * 100 : 0}%` }]} />
@@ -264,10 +264,10 @@ export default function CrewScreen() {
           {challenge && progress ? (
             <ChallengeCard challenge={challenge} progress={progress} names={names} onPress={canEditChallenge ? openChallenge : undefined} />
           ) : (
-            <Button title="Wochen-Challenge starten" variant="secondary" onPress={openChallenge} />
+            <Button title={t('crew.detail.startChallenge')} variant="secondary" onPress={openChallenge} />
           )}
 
-          <SectionTitle>Rangliste</SectionTitle>
+          <SectionTitle>{t('crew.detail.ranking')}</SectionTitle>
           <View style={styles.list}>
             {ranked.map((m) => (
               <MemberRow
@@ -295,15 +295,15 @@ export default function CrewScreen() {
             </T>
           ) : null}
 
-          <SectionTitle>Was läuft</SectionTitle>
+          <SectionTitle>{t('crew.detail.feedTitle')}</SectionTitle>
           <CrewFeed items={feed.slice(0, 15)} people={people} me={me} today={today} />
 
           <Card tone="accentSoft" bordered={false} style={styles.invite}>
             <View style={styles.flex}>
-              <T variant="label" color="accent">Einladungscode</T>
+              <T variant="label" color="accent">{t('crew.form.code')}</T>
               <T style={[styles.code, { color: theme.text }]}>{detail.crew.invite_code}</T>
             </View>
-            <Button title="Einladen" small onPress={invite} />
+            <Button title={t('crew.detail.invite')} small onPress={invite} />
           </Card>
 
           {isOwner ? (
@@ -341,7 +341,7 @@ export default function CrewScreen() {
             </>
           ) : null}
 
-          <Button title="Crew verlassen" variant="ghost" small onPress={leave} />
+          <Button title={t('crew.detail.leave')} variant="ghost" small onPress={leave} />
         </>
       )}
     </Screen>
@@ -394,10 +394,10 @@ function MemberRow({
     mine: reactions.some((r) => r.emoji === e && r.from_user === me),
   }));
 
-  let sub = 'Noch keine Daten';
+  let sub = t('crew.row.noData');
   if (latest) {
-    sub = `Tag ${latest.day_number} · 🔥 ${latest.streak} · ${latest.rate} %`;
-    if (inactive) sub = `Zuletzt aktiv an Tag ${latest.day_number}`;
+    sub = t('crew.row.sub', { day: latest.day_number, streak: latest.streak, rate: latest.rate });
+    if (inactive) sub = t('crew.row.lastActive', { day: latest.day_number });
   }
 
   const badge =
@@ -422,7 +422,7 @@ function MemberRow({
       <Pressable
         onPress={onOpen}
         accessibilityRole="button"
-        accessibilityLabel={`Profil von ${name}`}
+        accessibilityLabel={t('crew.row.profileOf', { name })}
         style={({ pressed }) => [styles.memberTop, { opacity: pressed ? 0.7 : 1 }]}>
         <T variant="bodyStrong" color="textTertiary" style={styles.rank}>
           {inactive ? '' : rank}
@@ -431,7 +431,7 @@ function MemberRow({
         <View style={styles.flex}>
           <T variant="bodyStrong" numberOfLines={1}>
             {name}
-            {isMe ? <T variant="caption" color="accent">  du</T> : null}
+            {isMe ? <T variant="caption" color="accent">{`  ${t('crew.row.you')}`}</T> : null}
           </T>
           <T variant="caption" numberOfLines={1}>
             {sub}
@@ -472,7 +472,7 @@ function MemberRow({
       {inactive ? null : isMe ? (
         counts.some((c) => c.count) ? (
           <T variant="caption">
-            Heute bekommen:{' '}
+            {t('crew.row.receivedToday')}{' '}
             {counts
               .filter((c) => c.count)
               .map((c) => `${c.emoji} ${c.count}`)
@@ -485,7 +485,7 @@ function MemberRow({
             <Pressable
               key={c.emoji}
               onPress={() => onReact(c.emoji)}
-              accessibilityLabel={`${c.emoji} an ${name}`}
+              accessibilityLabel={t('crew.row.reactTo', { emoji: c.emoji, name })}
               style={({ pressed }) => [
                 styles.pill,
                 {

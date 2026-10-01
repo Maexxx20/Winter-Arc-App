@@ -11,6 +11,7 @@ import { T } from '@/components/ui/text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
+import { t } from '@/i18n';
 import { confirm } from '@/lib/confirm';
 import { type ChallengeKind, challengeTitle, defaultChallengeTarget } from '@/lib/crew';
 import { addDays, formatShort, weekStart } from '@/lib/date';
@@ -63,7 +64,7 @@ export default function ChallengeScreen() {
   };
 
   const remove = async () => {
-    if (!crew || !(await confirm('Challenge löschen?', 'Die Challenge dieser Woche wird für alle entfernt.', 'Löschen', true))) return;
+    if (!crew || !(await confirm(t('crew.challenge.deleteTitle'), t('crew.challenge.deleteText'), t('common.delete'), true))) return;
     try {
       await deleteChallenge(crew, week);
       router.back();
@@ -76,22 +77,22 @@ export default function ChallengeScreen() {
     <Screen topInset={Platform.OS !== 'ios'}>
       <View style={styles.header}>
         <View style={styles.flex}>
-          <T variant="label">{detail?.crew.name ?? 'Crew'}</T>
-          <T variant="title">Wochen-Challenge</T>
+          <T variant="label">{detail?.crew.name ?? t('crew.title')}</T>
+          <T variant="title">{t('crew.challenge.label')}</T>
         </View>
-        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel="Schliessen" style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
+        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel={t('common.close')} style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
           <CloseIcon color={theme.text} size={16} />
         </Pressable>
       </View>
 
       <T color="textSecondary">
-        Gilt für diese Woche, {formatShort(week)} bis {formatShort(addDays(week, 6))}. Es zählt, wer diese Woche mitmacht.
+        {t('crew.challenge.period', { from: formatShort(week), to: formatShort(addDays(week, 6)) })}
       </T>
 
       <Segmented
         options={[
-          { value: 'crew_total', label: 'Zusammen' },
-          { value: 'everyone', label: 'Jede:r' },
+          { value: 'crew_total', label: t('crew.challenge.kindTotal') },
+          { value: 'everyone', label: t('crew.challenge.kindEveryone') },
         ]}
         value={kind}
         onChange={(k) => {
@@ -102,25 +103,25 @@ export default function ChallengeScreen() {
 
       <Card style={styles.card}>
         <T variant="bodyStrong">
-          {kind === 'crew_total' ? 'Wie viele gehaltene Tage schafft ihr zusammen?' : 'Wie viele Tage hält jede Person mindestens?'}
+          {kind === 'crew_total' ? t('crew.challenge.questionTotal') : t('crew.challenge.questionEveryone')}
         </T>
-        <Stepper value={Math.min(target, max)} onChange={setTarget} min={1} max={max} format={(v) => `${v} ${v === 1 ? 'Tag' : 'Tage'}`} />
+        <Stepper value={Math.min(target, max)} onChange={setTarget} min={1} max={max} format={(v) => t('common.days', { count: v })} />
         <T variant="caption" color="textTertiary">
           {kind === 'crew_total'
-            ? `${memberCount} ${memberCount === 1 ? 'Person' : 'Personen'} × 7 Tage = höchstens ${memberCount * 7}.`
-            : 'Geschafft, wenn alle, die diese Woche dabei sind, das Ziel erreichen.'}
+            ? t('crew.challenge.maxHint', { people: t('crew.people', { count: memberCount }), max: memberCount * 7 })
+            : t('crew.challenge.everyoneHint')}
         </T>
       </Card>
 
       <Card tone="accentSoft" bordered={false}>
-        <T variant="label" color="accent">Vorschau</T>
+        <T variant="label" color="accent">{t('crew.challenge.preview')}</T>
         <T variant="heading">{challengeTitle({ kind, target: Math.min(target, max) })}</T>
       </Card>
 
       {error ? <T variant="caption" color="danger">{error}</T> : null}
 
-      <Button title={existing ? 'Speichern' : 'Challenge starten'} onPress={save} loading={busy} disabled={!detail} />
-      {existing ? <Button title="Challenge löschen" variant="ghost" small onPress={remove} /> : null}
+      <Button title={existing ? t('common.save') : t('crew.challenge.start')} onPress={save} loading={busy} disabled={!detail} />
+      {existing ? <Button title={t('crew.challenge.delete')} variant="ghost" small onPress={remove} /> : null}
     </Screen>
   );
 }

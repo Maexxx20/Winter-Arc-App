@@ -12,13 +12,13 @@ import { T } from '@/components/ui/text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
-import { formatShort, weekdayShortNames } from '@/lib/date';
+import { formatNumber, t } from '@/i18n';
+import { formatShort, weekdayName, weekdayShortNames } from '@/lib/date';
 import { ruleDetail } from '@/lib/rule-stats';
 import { describeRule } from '@/lib/templates';
 import { selectActiveArc, selectLog, useAppState } from '@/store/store';
 
-const WEEKDAY_NAMES = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
-const fmt = (n: number) => (Number.isInteger(n) ? `${n}` : n.toFixed(1)).replace('.', ',');
+const fmt = (n: number) => formatNumber(n, 1);
 
 /** Statistik einer Regel. Parameter: id der Regel, optional arc (sonst aktiver Arc). */
 export default function RuleScreen() {
@@ -43,37 +43,41 @@ export default function RuleScreen() {
           <T variant="title" numberOfLines={2}>{rule.title}</T>
           <T variant="caption">
             {describeRule(rule)}
-            {rule.removedOn ? ` · entfernt am ${formatShort(rule.removedOn)}` : ''}
+            {rule.removedOn ? ` · ${t('history.rule.removedOn', { date: formatShort(rule.removedOn) })}` : ''}
           </T>
         </View>
-        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel="Schliessen" style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
+        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel={t('common.close')} style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
           <CloseIcon color={theme.text} size={16} />
         </Pressable>
       </View>
 
       {!started ? (
         <Card tone="surfaceMuted" bordered={false}>
-          <T variant="caption">Noch keine Daten. Die Statistik füllt sich ab dem ersten Tag.</T>
+          <T variant="caption">{t('history.rule.noData')}</T>
         </Card>
       ) : (
         <>
           <View style={styles.tiles}>
             <StatTile
-              label="Quote"
+              label={t('history.stats.rate')}
               value={d.expected ? pct(d.rate) : '–'}
-              sub={`${d.hits} von ${d.expected} ${d.runUnit === 'Tage' ? 'Tagen' : 'Einheiten'}`}
+              sub={t(d.runUnit === 'Tage' ? 'history.stats.hitsDays' : 'history.stats.hitsUnits', { hits: d.hits, expected: d.expected })}
             />
-            <StatTile label="Serie" value={`${d.currentRun}`} sub={`${d.runUnit} · Rekord ${d.bestRun}`} />
+            <StatTile
+              label={t('history.rule.series')}
+              value={`${d.currentRun}`}
+              sub={t(d.runUnit === 'Tage' ? 'history.rule.runDays' : 'history.rule.runWeeks', { count: d.currentRun, best: d.bestRun })}
+            />
           </View>
 
           {d.recent.length ? (
             <Card style={styles.card}>
-              <T variant="label">Letzte {d.recent.length} Tage</T>
+              <T variant="label">{t('history.rule.lastDays', { count: d.recent.length })}</T>
               <View style={styles.strip}>
                 {d.recent.map((r) => (
                   <View
                     key={r.date}
-                    accessibilityLabel={`${formatShort(r.date)}: ${r.hit ? 'erfüllt' : 'nicht erfüllt'}`}
+                    accessibilityLabel={`${formatShort(r.date)}: ${r.hit ? t('history.rule.hit') : t('history.rule.notHit')}`}
                     style={[styles.cell, { backgroundColor: r.hit ? theme.accent : theme.surfaceMuted }]}
                   />
                 ))}
@@ -85,7 +89,7 @@ export default function RuleScreen() {
             </Card>
           ) : null}
 
-          <SectionTitle>Pro Woche</SectionTitle>
+          <SectionTitle>{t('history.rule.perWeek')}</SectionTitle>
           <Card style={styles.card}>
             <BarChart
               bars={d.weeks.map((w, i) => ({
@@ -97,13 +101,13 @@ export default function RuleScreen() {
               highlight={d.weeks.length - 1}
             />
             <T variant="caption" color="textTertiary">
-              {rule.frequency.kind === 'daily' ? 'Erfüllte Tage pro Arc-Woche.' : 'Einheiten pro Arc-Woche im Verhältnis zum Ziel.'} Antippen zeigt die Zahl.
+              {rule.frequency.kind === 'daily' ? t('history.rule.perWeekDaily') : t('history.rule.perWeekWeekly')} {t('history.rule.tapHint')}
             </T>
           </Card>
 
           {rule.frequency.kind === 'daily' ? (
             <>
-              <SectionTitle>Wochentage</SectionTitle>
+              <SectionTitle>{t('history.rule.weekdays')}</SectionTitle>
               <Card style={styles.card}>
                 <BarChart
                   bars={d.weekdays.map((w) => ({
@@ -115,8 +119,8 @@ export default function RuleScreen() {
                 />
                 <T variant="caption" color={d.weakestWeekday !== null ? 'text' : 'textTertiary'}>
                   {d.weakestWeekday !== null
-                    ? `Am schwierigsten ist der ${WEEKDAY_NAMES[d.weakestWeekday]} (${pct(d.weekdays[d.weakestWeekday].rate)}). Plan dort bewusst Zeit ein.`
-                    : 'Ab zwei Wochen zeigt sich, welcher Wochentag dir am schwersten fällt.'}
+                    ? t('history.rule.weakest', { day: weekdayName(d.weakestWeekday), rate: pct(d.weekdays[d.weakestWeekday].rate) })
+                    : t('history.rule.weakestPending')}
                 </T>
               </Card>
             </>
@@ -124,18 +128,18 @@ export default function RuleScreen() {
 
           {d.amount ? (
             <>
-              <SectionTitle>Menge</SectionTitle>
+              <SectionTitle>{t('history.rule.amount')}</SectionTitle>
               <View style={styles.tiles}>
-                <StatTile label="Total" value={fmt(d.amount.total)} sub={d.amount.unit} />
+                <StatTile label={t('history.rule.total')} value={fmt(d.amount.total)} sub={d.amount.unit} />
                 <StatTile
-                  label="Schnitt"
+                  label={t('history.rule.average')}
                   value={fmt(Math.round(d.amount.average * 10) / 10)}
-                  sub={`pro Tag · Ziel ${fmt(d.amount.target)}`}
+                  sub={t('history.rule.perDay', { target: fmt(d.amount.target) })}
                 />
               </View>
               {d.amount.best ? (
                 <T variant="caption" color="textSecondary" center>
-                  Bester Tag: {fmt(d.amount.best.value)} {d.amount.unit} am {formatShort(d.amount.best.date)}
+                  {t('history.rule.bestDay', { value: fmt(d.amount.best.value), unit: d.amount.unit, date: formatShort(d.amount.best.date) })}
                 </T>
               ) : null}
             </>

@@ -1,2 +1,61 @@
-/** Texte: system */
-export default {};
+/** Texte: system (Tabs, Erinnerungen, Push, Anmeldung, Abgleich) */
+export default {
+  tabs: {
+    today: 'Heute',
+    history: 'Verlauf',
+    crew: 'Crew',
+    contract: 'Vertrag',
+  },
+  reminders: {
+    channel: 'Erinnerungen',
+    startEveTitle: 'Morgen geht’s los',
+    startEveBody: 'Dein {title} startet morgen. Leg dir heute Abend alles bereit.',
+    firstDayTitle: 'Tag 1. Los geht’s.',
+    firstDayBody: 'Heute beginnt dein {title}. Du hast unterschrieben – jetzt zählt jeder Tag.',
+    dayTitle: 'Tag {day} von {total}',
+    morningLines: [
+      'Ein Tag nach dem anderen. Heute zählt.',
+      'Kein Verhandeln. Einfach anfangen.',
+      'Die Wand wird nicht kleiner. Du wirst stärker.',
+      'Disziplin ist, was du tust, wenn keiner zuschaut.',
+      'Kleine Schritte, jeden Tag.',
+      'Zeig dir heute, wer du sein willst.',
+      'Motivation kommt und geht. Deine Regeln bleiben.',
+    ],
+    eveningThinIce: {
+      one: 'Gestern verpasst – heute nicht auch noch. Noch {count} Regel offen.',
+      other: 'Gestern verpasst – heute nicht auch noch. Noch {count} Regeln offen.',
+    },
+    eveningOpen: {
+      one: 'Noch {count} Regel offen. Du schaffst das.',
+      other: 'Noch {count} Regeln offen. Du schaffst das.',
+    },
+    eveningLater: 'Schon alles abgehakt? Noch ist Zeit.',
+    checkInTitle: 'Check-in',
+    lastDayTitle: 'Letzter Tag deines Arcs',
+    reviewTitle: 'Wochenrückblick',
+    reviewBody: 'Zwei Minuten: Was lief gut, was nimmst du dir für nächste Woche vor?',
+  },
+  push: {
+    noProject: 'Die App ist noch nicht mit einem Expo-Projekt verbunden (npx eas-cli@latest init).',
+    simulator: 'Push funktioniert nur auf einem echten Handy.',
+    web: 'Push gibt es nur in der App.',
+    denied: 'Erlaube Mitteilungen für Nordwand in den Einstellungen deines Handys.',
+    signedOut: 'Melde dich zuerst an.',
+    failed: 'Das hat nicht geklappt. Versuch es später nochmal.',
+  },
+  auth: {
+    notConfigured: 'Sync ist noch nicht eingerichtet.',
+    mailFailed: 'Die Mail konnte nicht verschickt werden. Prüfe in Supabase die SMTP-Einstellungen (Host, Port 587, App-Passwort).',
+    wrongPassword: 'E-Mail oder Passwort ist falsch.',
+    wrongCode: 'Der Code ist falsch oder abgelaufen.',
+    tooMany: 'Zu viele Versuche. Warte kurz und versuch es nochmal.',
+    invalidEmail: 'Diese E-Mail-Adresse ist ungültig.',
+  },
+  sync: {
+    crew: 'Crew: {error}',
+    profile: 'Profil: {error}',
+    photos: 'Fotos: {error}',
+    photosDelete: 'Fotos konnten nicht gelöscht werden: {error}',
+  },
+};

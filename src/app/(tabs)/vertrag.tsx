@@ -65,23 +65,30 @@ export default function ContractScreen() {
   const total = diffDays(arc.startDate, arc.endDate) + 1;
 
   const amendNotice = beforeStart
-    ? 'Vor dem Start kannst du deine Regeln frei ändern.'
+    ? t('contract.rules.noticeBefore')
     : arc.amendmentsLeft > 0
-      ? `Noch ${arc.amendmentsLeft} ${arc.amendmentsLeft === 1 ? 'Änderung' : 'Änderungen'} möglich. Änderungen gelten ab heute.`
-      : 'Keine Änderungen mehr möglich. Du hast dein Wort gegeben.';
+      ? t('contract.rules.noticeLeft', { count: arc.amendmentsLeft })
+      : t('contract.rules.noticeNone');
+
+  // «Ich, {name}, …»: Name fett, darum am Platzhalter aufteilen.
+  const [pledgeBefore, pledgeAfter = ''] = t('contract.card.pledge', {
+    start: formatShort(arc.startDate),
+    end: formatShort(arc.endDate, true),
+    days: t('common.days', { count: total }),
+  }).split('{name}');
 
   const guardAmend = async (what: string) => {
     if (beforeStart) return true;
     return confirm(
-      'Vertrag ändern?',
-      `${what}\n\nDas kostet eine deiner ${arc.amendmentsLeft} verbleibenden Änderungen.`,
-      'Ändern',
+      t('contract.rules.amendTitle'),
+      t('contract.rules.amendCost', { what, count: arc.amendmentsLeft }),
+      t('contract.rules.amendConfirm'),
     );
   };
 
   const removeRule = async (id: string, title: string) => {
     if (rules.length <= 1) return;
-    if (!(await guardAmend(`«${title}» wird ab heute aus deinem Vertrag entfernt.`))) return;
+    if (!(await guardAmend(t('contract.rules.removeWhat', { title })))) return;
     amendRules(arc.id, { removeIds: [id] }, today);
   };
 
@@ -89,21 +96,22 @@ export default function ContractScreen() {
     <Screen tabs>
       <View style={styles.head}>
         <T variant="label">{arc.title}</T>
-        <T variant="display">Vertrag</T>
+        <T variant="display">{t('contract.title')}</T>
       </View>
 
       <Card style={styles.contract}>
-        <T variant="label" center>Vertrag mit mir selbst</T>
+        <T variant="label" center>{t('contract.card.label')}</T>
         <T color="textSecondary">
-          Ich, <T variant="bodyStrong">{arc.signature?.name}</T>, halte mich vom {formatShort(arc.startDate)} bis{' '}
-          {formatShort(arc.endDate, true)} ({total} Tage) an diese Regeln.
+          {pledgeBefore}
+          <T variant="bodyStrong">{arc.signature?.name}</T>
+          {pledgeAfter}
         </T>
-        {arc.why ? <T color="textSecondary" style={styles.italic}>Weil: «{arc.why}»</T> : null}
+        {arc.why ? <T color="textSecondary" style={styles.italic}>{t('contract.card.why', { why: arc.why })}</T> : null}
         <View style={[styles.divider, { backgroundColor: theme.border }]} />
         <View style={styles.sigRow}>
           <T style={[styles.signature, { color: theme.text }]}>{arc.signature?.name}</T>
           <T variant="caption" color="textTertiary">
-            unterschrieben am {arc.signature ? formatNumeric(toISO(new Date(arc.signature.signedAt))) : '–'}
+            {t('contract.card.signedOn', { date: arc.signature ? formatNumeric(toISO(new Date(arc.signature.signedAt))) : '–' })}
           </T>
         </View>
       </Card>
@@ -112,11 +120,11 @@ export default function ContractScreen() {
         action={
           !beforeStart ? (
             <T variant="caption" color={arc.amendmentsLeft > 0 ? 'textSecondary' : 'warning'}>
-              {arc.amendmentsLeft} {arc.amendmentsLeft === 1 ? 'Änderung' : 'Änderungen'} übrig
+              {t('contract.rules.left', { count: arc.amendmentsLeft })}
             </T>
           ) : undefined
         }>
-        Regeln
+        {t('contract.rules.title')}
       </SectionTitle>
       {arc.crew ? (
         <T variant="caption" color="textSecondary">
@@ -128,14 +136,14 @@ export default function ContractScreen() {
           <Pressable
             key={r.id}
             onPress={() => setLinkRule(r)}
-            accessibilityHint="Automatisch abhaken einstellen"
+            accessibilityHint={t('contract.rules.autoHint')}
             style={({ pressed }) => [styles.rule, { backgroundColor: theme.surface, borderColor: theme.border, opacity: pressed ? 0.85 : 1 }]}>
             <T style={styles.emoji}>{r.icon}</T>
             <View style={styles.flex}>
               <T variant="bodyStrong">{r.title}</T>
               <T variant="caption">{describeRule(r)}</T>
               <T variant="caption" color={r.health ? 'accent' : 'textTertiary'}>
-                {r.health ? describeHealthLink(r.health) : 'Automatisch abhaken …'}
+                {r.health ? describeHealthLink(r.health) : t('contract.rules.autoNone')}
               </T>
               {r.reminder !== undefined ? (
                 <T variant="caption" color="textSecondary">
@@ -146,7 +154,7 @@ export default function ContractScreen() {
             {canAmend && rules.length > 1 && (
               <Pressable
                 hitSlop={10}
-                accessibilityLabel={`${r.title} entfernen`}
+                accessibilityLabel={t('contract.rules.removeA11y', { title: r.title })}
                 onPress={() => removeRule(r.id, r.title)}
                 style={[styles.round, { backgroundColor: theme.surfaceMuted }]}>
                 <CloseIcon color={theme.textSecondary} size={14} />
@@ -172,7 +180,7 @@ export default function ContractScreen() {
       <T variant="caption" color="textTertiary">{amendNotice}</T>
       {canAmend && rules.length < HARD_MAX_RULES && (
         <Button
-          title="Regel hinzufügen"
+          title={t('contract.rules.add')}
           variant="secondary"
           icon={<PlusIcon color={theme.text} size={16} />}
           onPress={() => setEditorOpen(true)}
@@ -186,40 +194,40 @@ export default function ContractScreen() {
           setEditorOpen(false);
           // Warten, bis das Sheet zu ist – sonst verschluckt iOS den Dialog.
           await new Promise((r) => setTimeout(r, 450));
-          if (!(await guardAmend(`«${rule.title}» kommt ab heute in deinen Vertrag.`))) return;
+          if (!(await guardAmend(t('contract.rules.addWhat', { title: rule.title })))) return;
           amendRules(arc.id, { add: [rule] }, today);
         }}
       />
 
-      <SectionTitle>Profil & Konto</SectionTitle>
+      <SectionTitle>{t('contract.profileRow.title')}</SectionTitle>
       <Pressable
         onPress={() => router.push('/profil')}
         style={({ pressed }) => [styles.rule, { backgroundColor: theme.surface, borderColor: theme.border, opacity: pressed ? 0.8 : 1 }]}>
         <MyAvatar size={36} />
         <View style={styles.flex}>
-          <T variant="bodyStrong">{state.settings.name || 'Dein Profil'}</T>
+          <T variant="bodyStrong">{state.settings.name || t('contract.profileRow.fallbackName')}</T>
           <T variant="caption" numberOfLines={1}>
             {!supabaseConfigured
-              ? 'Name, Bild und Statistik'
+              ? t('contract.profileRow.offline')
               : session
                 ? sync.state === 'error'
-                  ? 'Abgleich fehlgeschlagen – antippen'
+                  ? t('contract.profileRow.syncFailed')
                   : session.user.email
-                : 'Nicht angemeldet · Konto & Sync'}
+                : t('contract.profileRow.signedOut')}
           </T>
         </View>
         <ChevronIcon color={theme.textTertiary} size={16} />
       </Pressable>
 
-      <SectionTitle>Verbindungen</SectionTitle>
+      <SectionTitle>{t('contract.connections.title')}</SectionTitle>
       <ConnectionsCard />
 
-      <SectionTitle>Erinnerungen</SectionTitle>
+      <SectionTitle>{t('contract.reminders.title')}</SectionTitle>
       <Card style={styles.settings}>
         <View style={styles.switchRow}>
           <View style={styles.flex}>
-            <T variant="bodyStrong">Erinnerungen</T>
-            <T variant="caption">Abends nur, wenn noch etwas offen ist.</T>
+            <T variant="bodyStrong">{t('contract.reminders.title')}</T>
+            <T variant="caption">{t('contract.reminders.hint')}</T>
           </View>
           <Switch
             value={!!reminders.enabled}
@@ -227,27 +235,23 @@ export default function ContractScreen() {
               if (!v) return updateReminders({ enabled: false });
               const ok = await enableReminders();
               if (!ok) {
-                await confirm(
-                  'Benachrichtigungen blockiert',
-                  'Erlaube Benachrichtigungen für Nordwand in den Systemeinstellungen deines Handys.',
-                  'OK',
-                );
+                await confirm(t('contract.reminders.blockedTitle'), t('contract.reminders.blockedBody'), t('common.ok'));
               }
             }}
             trackColor={{ true: theme.accent, false: theme.border }}
           />
         </View>
         <TimeRow
-          label="Morgens"
-          hint="Tag X von Y und ein kurzer Anstoss"
+          label={t('contract.reminders.morning')}
+          hint={t('contract.reminders.morningHint')}
           value={reminders.morning}
           fallback={7 * 60 + 30}
           disabled={!reminders.enabled}
           onChange={(morning) => updateReminders({ morning })}
         />
         <TimeRow
-          label="Abends"
-          hint="Check-in, falls noch Regeln offen sind"
+          label={t('contract.reminders.evening')}
+          hint={t('contract.reminders.eveningHint')}
           value={reminders.evening}
           fallback={20 * 60 + 30}
           disabled={!reminders.enabled}
@@ -256,14 +260,14 @@ export default function ContractScreen() {
         {supabaseConfigured && session ? (
           <View style={styles.switchRow}>
             <View style={styles.flex}>
-              <T variant="bodyStrong">Crew-Mitteilungen</T>
-              <T variant="caption">Wenn jemand reagiert oder deiner Crew beitritt</T>
+              <T variant="bodyStrong">{t('contract.reminders.crewPush')}</T>
+              <T variant="caption">{t('contract.reminders.crewPushHint')}</T>
             </View>
             <Switch
               value={!!state.settings.crewPush}
               onValueChange={async (on) => {
                 const problem = await setCrewPush(on);
-                if (problem) await confirm('Mitteilungen nicht aktiv', pushProblemText(problem), 'OK');
+                if (problem) await confirm(t('contract.reminders.crewPushOff'), pushProblemText(problem), t('common.ok'));
               }}
               trackColor={{ true: theme.accent, false: theme.border }}
             />
@@ -271,8 +275,8 @@ export default function ContractScreen() {
         ) : null}
         <View style={[styles.switchRow, !reminders.enabled && styles.disabled]}>
           <View style={styles.flex}>
-            <T variant="bodyStrong">Wochenrückblick</T>
-            <T variant="caption">Sonntagabend, zwei Minuten Reflexion</T>
+            <T variant="bodyStrong">{t('contract.reminders.weekly')}</T>
+            <T variant="caption">{t('contract.reminders.weeklyHint')}</T>
           </View>
           <Switch
             disabled={!reminders.enabled}
@@ -283,7 +287,7 @@ export default function ContractScreen() {
         </View>
       </Card>
 
-      <SectionTitle>Einstellungen</SectionTitle>
+      <SectionTitle>{t('contract.settings.title')}</SectionTitle>
       <Card style={styles.settings}>
         <View style={styles.setting}>
           <T variant="label">{t('language.title')}</T>
@@ -300,23 +304,23 @@ export default function ContractScreen() {
           <T variant="caption" color="textTertiary">{t('language.hint')}</T>
         </View>
         <View style={styles.setting}>
-          <T variant="label">Neuer Tag beginnt um</T>
+          <T variant="label">{t('contract.settings.rollover')}</T>
           <View style={styles.chips}>
             {ROLLOVER_OPTIONS.map((h) => (
               <Chip
                 key={h}
-                label={h === 0 ? 'Mitternacht' : `${h}:00`}
+                label={h === 0 ? t('contract.settings.midnight') : `${h}:00`}
                 selected={state.settings.rolloverHour === h}
                 onPress={() => updateSettings({ rolloverHour: h })}
               />
             ))}
           </View>
           <T variant="caption" color="textTertiary">
-            Für Nachteulen: Was du um 1 Uhr abhakst, zählt dann noch zum Vortag.
+            {t('contract.settings.rolloverHint')}
           </T>
         </View>
         <View style={styles.switchRow}>
-          <T variant="bodyStrong">Haptisches Feedback</T>
+          <T variant="bodyStrong">{t('contract.settings.haptics')}</T>
           <Switch
             value={state.settings.haptics}
             onValueChange={(haptics) => updateSettings({ haptics })}
@@ -343,31 +347,29 @@ export default function ContractScreen() {
         </View>
       </Card>
 
-      <SectionTitle>Gefahrenzone</SectionTitle>
+      <SectionTitle>{t('contract.danger.title')}</SectionTitle>
       <Card style={styles.settings}>
         <Button
-          title="Arc abbrechen"
+          title={t('contract.danger.abandon')}
           variant="secondary"
           onPress={async () => {
-            if (await confirm('Arc abbrechen?', 'Dein Arc wird beendet. Du kannst danach einen neuen starten.', 'Arc beenden', true)) {
+            if (await confirm(t('contract.danger.abandonTitle'), t('contract.danger.abandonBody'), t('contract.danger.abandonConfirm'), true)) {
               abandonActiveArc();
               router.replace('/onboarding');
             }
           }}
         />
         <Button
-          title="Alle Daten löschen"
+          title={t('contract.danger.deleteAll')}
           variant="danger"
           onPress={async () => {
-            const msg = session
-              ? 'Alle Arcs und Einträge werden auf diesem Gerät und in deinem Konto unwiderruflich gelöscht.'
-              : 'Alle Arcs und Einträge werden unwiderruflich gelöscht.';
-            if (await confirm('Alles löschen?', msg, 'Löschen', true)) {
+            const msg = session ? t('contract.danger.deleteAllBodyAccount') : t('contract.danger.deleteAllBody');
+            if (await confirm(t('contract.danger.deleteAllTitle'), msg, t('common.delete'), true)) {
               if (session) {
                 try {
                   await deleteRemoteData();
                 } catch (e) {
-                  await confirm('Löschen fehlgeschlagen', String(e), 'OK');
+                  await confirm(t('contract.danger.deleteFailed'), e instanceof Error ? e.message : String(e), t('common.ok'));
                   return;
                 }
               }
@@ -377,20 +379,20 @@ export default function ContractScreen() {
           }}
         />
         {__DEV__ && (
-          <Button title="Beispieldaten (Dev)" variant="ghost" small onPress={() => seedDemo(arc.id, today, 30)} />
+          <Button title={t('contract.danger.demo')} variant="ghost" small onPress={() => seedDemo(arc.id, today, 30)} />
         )}
       </Card>
 
       <T variant="caption" color="textTertiary" center>
-        {session ? 'Deine Daten sind in deinem Konto gesichert.' : 'Deine Daten liegen nur auf diesem Gerät.'}
+        {session ? t('contract.footer.account') : t('contract.footer.local')}
       </T>
       <View style={styles.links}>
         <Pressable onPress={() => openLink(PRIVACY_URL)} hitSlop={8}>
-          <T variant="caption" color="accent">Datenschutz</T>
+          <T variant="caption" color="accent">{t('contract.footer.privacy')}</T>
         </Pressable>
         <T variant="caption" color="textTertiary">·</T>
         <Pressable onPress={() => openLink(WEBSITE_URL)} hitSlop={8}>
-          <T variant="caption" color="accent">Support</T>
+          <T variant="caption" color="accent">{t('contract.footer.support')}</T>
         </Pressable>
       </View>
     </Screen>

@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n';
 import { confirm } from '@/lib/confirm';
 import { haptic } from '@/lib/haptics';
 import { usePhotoUri } from '@/services/photo-sync';
@@ -18,10 +19,10 @@ export const MAX_PHOTOS_PER_DAY = 4;
 function chooseSource(): Promise<'camera' | 'library' | null> {
   if (Platform.OS === 'web') return Promise.resolve('library');
   return new Promise((resolve) =>
-    Alert.alert('Foto hinzufügen', undefined, [
-      { text: 'Kamera', onPress: () => resolve('camera') },
-      { text: 'Aus Galerie wählen', onPress: () => resolve('library') },
-      { text: 'Abbrechen', style: 'cancel', onPress: () => resolve(null) },
+    Alert.alert(t('history.photo.add'), undefined, [
+      { text: t('history.photo.camera'), onPress: () => resolve('camera') },
+      { text: t('history.photo.library'), onPress: () => resolve('library') },
+      { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(null) },
     ], { cancelable: true, onDismiss: () => resolve(null) }),
   );
 }
@@ -54,7 +55,7 @@ export function PhotoStrip({ photos, onAdd, onRemove }: Props) {
   };
 
   const remove = async (name: string) => {
-    if (!(await confirm('Foto löschen?', 'Das Foto wird aus deinem Tagebuch entfernt.', 'Löschen', true))) return;
+    if (!(await confirm(t('history.photo.deleteTitle'), t('history.photo.deleteBody'), t('common.delete'), true))) return;
     setViewing(null);
     onRemove(name);
     deletePhoto(name);
@@ -64,7 +65,7 @@ export function PhotoStrip({ photos, onAdd, onRemove }: Props) {
     <>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}>
         {photos.map((p) => (
-          <Pressable key={p} onPress={() => setViewing(p)} accessibilityLabel="Foto ansehen">
+          <Pressable key={p} onPress={() => setViewing(p)} accessibilityLabel={t('history.photo.view')}>
             <PhotoImage name={p} style={[styles.thumb, { backgroundColor: theme.surfaceMuted }]} contentFit="cover" />
           </Pressable>
         ))}
@@ -72,14 +73,14 @@ export function PhotoStrip({ photos, onAdd, onRemove }: Props) {
           <Pressable
             onPress={add}
             disabled={busy}
-            accessibilityLabel="Foto hinzufügen"
+            accessibilityLabel={t('history.photo.add')}
             style={({ pressed }) => [
               styles.thumb,
               styles.add,
               { borderColor: theme.border, backgroundColor: theme.surface, opacity: pressed || busy ? 0.6 : 1 },
             ]}>
             <PlusIcon color={theme.textSecondary} size={22} />
-            <T variant="caption">Foto</T>
+            <T variant="caption">{t('history.photo.short')}</T>
           </Pressable>
         )}
       </ScrollView>
@@ -88,12 +89,12 @@ export function PhotoStrip({ photos, onAdd, onRemove }: Props) {
         <View style={styles.viewer}>
           {viewing && <PhotoImage name={viewing} style={styles.full} contentFit="contain" />}
           <View style={[styles.viewerBar, { top: insets.top + Spacing.three }]}>
-            <Pressable onPress={() => viewing && remove(viewing)} style={styles.viewerBtn} accessibilityLabel="Foto löschen">
+            <Pressable onPress={() => viewing && remove(viewing)} style={styles.viewerBtn} accessibilityLabel={t('history.photo.delete')}>
               <T variant="bodyStrong" style={styles.white}>
-                Löschen
+                {t('common.delete')}
               </T>
             </Pressable>
-            <Pressable onPress={() => setViewing(null)} style={[styles.viewerBtn, styles.round]} accessibilityLabel="Schliessen">
+            <Pressable onPress={() => setViewing(null)} style={[styles.viewerBtn, styles.round]} accessibilityLabel={t('common.close')}>
               <CloseIcon color="#fff" size={18} />
             </Pressable>
           </View>

@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n';
 import { BADGE_BY_ID, type BadgeId } from '@/lib/badges';
 import { challengeTitle, type FeedItem } from '@/lib/crew';
 import { diffDays, formatShort, type ISODate } from '@/lib/date';
@@ -16,21 +17,21 @@ export interface FeedPerson {
 
 function when(date: ISODate, today: ISODate): string {
   const d = diffDays(date, today);
-  if (d === 0) return 'heute';
-  if (d === 1) return 'gestern';
+  if (d === 0) return t('crew.feed.today');
+  if (d === 1) return t('crew.feed.yesterday');
   return formatShort(date);
 }
 
 /** «Was läuft»: Abzeichen, Beitritte, Reaktionen und gemeinsame Erfolge der letzten 7 Tage. */
 export function CrewFeed({ items, people, me, today }: { items: FeedItem[]; people: Record<string, FeedPerson>; me?: string; today: ISODate }) {
   const theme = useTheme();
-  const name = (id: string) => (id === me ? 'Du' : (people[id]?.name ?? 'Jemand'));
-  const obj = (id: string) => (id === me ? 'dir' : (people[id]?.name ?? 'jemandem'));
+  const name = (id: string) => people[id]?.name ?? t('common.someone');
+  const obj = (id: string) => people[id]?.name ?? t('crew.feed.someoneTo');
 
   if (!items.length) {
     return (
       <T variant="caption" color="textTertiary">
-        Noch nichts los. Abzeichen, neue Mitglieder und Reaktionen erscheinen hier.
+        {t('crew.feed.empty')}
       </T>
     );
   }
@@ -44,24 +45,33 @@ export function CrewFeed({ items, people, me, today }: { items: FeedItem[]; peop
           case 'badge': {
             const b = BADGE_BY_ID[it.badgeId as BadgeId];
             icon = <Emoji>{b?.icon ?? '🏅'}</Emoji>;
-            text = `${name(it.userId)} ${it.userId === me ? 'hast' : 'hat'} «${b?.title ?? it.badgeId}» erreicht`;
+            const badge = b?.title ?? it.badgeId;
+            text = it.userId === me ? t('crew.feed.badgeMe', { badge }) : t('crew.feed.badge', { name: name(it.userId), badge });
             break;
           }
           case 'joined':
             icon = <RemoteAvatar id={it.userId} name={people[it.userId]?.name ?? '?'} path={people[it.userId]?.avatarPath} size={32} />;
-            text = `${name(it.userId)} ${it.userId === me ? 'bist' : 'ist'} der Crew beigetreten`;
+            text = it.userId === me ? t('crew.feed.joinedMe') : t('crew.feed.joined', { name: name(it.userId) });
             break;
           case 'reactions':
             icon = <Emoji>{it.emojis[0]}</Emoji>;
-            text = `${name(it.from)} ${it.from === me ? 'hast' : 'hat'} ${obj(it.to)} ${it.emojis.join(' ')} geschickt`;
+            {
+              const emojis = it.emojis.join(' ');
+              text =
+                it.from === me
+                  ? t('crew.feed.reactionFromMe', { to: obj(it.to), emojis })
+                  : it.to === me
+                    ? t('crew.feed.reactionToMe', { from: name(it.from), emojis })
+                    : t('crew.feed.reaction', { from: name(it.from), to: obj(it.to), emojis });
+            }
             break;
           case 'crew_day':
             icon = <Emoji>🤝</Emoji>;
-            text = it.run > 1 ? `Die ganze Crew hat gehalten – ${it.run} Tage in Folge` : 'Die ganze Crew hat gehalten';
+            text = it.run > 1 ? t('crew.feed.crewDayRun', { count: it.run }) : t('crew.feed.crewDay');
             break;
           case 'challenge_done':
             icon = <Emoji>🎉</Emoji>;
-            text = `Challenge geschafft: ${challengeTitle(it.challenge)}`;
+            text = t('crew.feed.challengeDone', { title: challengeTitle(it.challenge) });
             break;
         }
         return (

@@ -3,6 +3,8 @@
  * Der Winter Arc bleibt der Klassiker (1. Oktober bis Silvester).
  */
 
+import { t } from '@/i18n';
+
 import { addDays, diffDays, type ISODate, parseISO } from './date';
 
 export type SeasonId = 'newyear' | 'spring' | 'summer' | 'winter';
@@ -14,15 +16,19 @@ export interface SeasonDef {
   /** Monat (1–12) und Tag des Starts bzw. Endes */
   start: [number, number];
   end: [number, number];
-  pitch: string;
 }
 
 export const SEASONS: SeasonDef[] = [
-  { id: 'newyear', title: 'New Year Arc', icon: '🎆', start: [1, 1], end: [3, 31], pitch: 'Vorsätze, die diesmal halten – durch den ganzen Winter.' },
-  { id: 'spring', title: 'Spring Arc', icon: '🌱', start: [4, 1], end: [6, 30], pitch: 'Frühling bis Sommeranfang: in Form kommen, bevor es warm wird.' },
-  { id: 'summer', title: 'Summer Arc', icon: '☀️', start: [7, 1], end: [9, 30], pitch: 'Lange Tage nutzen – und fit in den Herbst starten.' },
-  { id: 'winter', title: 'Winter Arc', icon: '❄️', start: [10, 1], end: [12, 31], pitch: 'Der Klassiker: Während andere Winterschlaf halten, baust du auf.' },
+  { id: 'newyear', title: 'New Year Arc', icon: '🎆', start: [1, 1], end: [3, 31] },
+  { id: 'spring', title: 'Spring Arc', icon: '🌱', start: [4, 1], end: [6, 30] },
+  { id: 'summer', title: 'Summer Arc', icon: '☀️', start: [7, 1], end: [9, 30] },
+  { id: 'winter', title: 'Winter Arc', icon: '❄️', start: [10, 1], end: [12, 31] },
 ];
+
+/** Kurzer Werbetext einer Saison in der aktuellen Sprache (Titel bleiben englisch). */
+export function seasonPitch(season: SeasonDef): string {
+  return t(`today.seasons.${season.id}`);
+}
 
 export interface SeasonInstance {
   season: SeasonDef;
@@ -82,5 +88,5 @@ export function seasonOptions(today: ISODate, minDays = 21): SeasonOption[] {
 
 /** Vorschlag für den Namen eines eigenen Arcs. */
 export function customArcTitle(days: number): string {
-  return `${days}-Tage-Arc`;
+  return t('today.seasons.customTitle', { days });
 }

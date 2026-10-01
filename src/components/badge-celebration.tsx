@@ -5,6 +5,7 @@ import { Radius, Spacing } from '@/constants/theme';
 import { useBadges } from '@/hooks/use-badges';
 import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
+import { t } from '@/i18n';
 import { BADGE_BY_ID, badgeKey, type EarnedBadge, freshBadges } from '@/lib/badges';
 import { haptic } from '@/lib/haptics';
 import { markBadgesSeen, useAppState } from '@/store/store';
@@ -112,11 +113,11 @@ function CelebrationModal({ badge, onDone }: { badge: EarnedBadge | undefined; o
           );
         })}
         <Animated.View style={[styles.card, { backgroundColor: theme.surface, transform: [{ scale }] }]}>
-          <T variant="label" color="accent">Neues Abzeichen</T>
+          <T variant="label" color="accent">{t('history.badges.new')}</T>
           <BadgeMedal badge={def} earned size={112} />
           <T variant="title" center>{def.title}</T>
           <T color="textSecondary" center>{def.description}</T>
-          <Button title="Stark!" onPress={close} style={styles.button} />
+          <Button title={t('history.badges.cheer')} onPress={close} style={styles.button} />
         </Animated.View>
       </View>
     </Modal>

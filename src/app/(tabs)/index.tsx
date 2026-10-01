@@ -66,21 +66,21 @@ export default function TodayScreen() {
         <View style={styles.headRow}>
           <View style={[styles.head, styles.flex]}>
             <T variant="label">{formatLong(today)}</T>
-            <T variant="display">{firstName ? `Bereit, ${firstName}?` : 'Bereit?'}</T>
+            <T variant="display">{firstName ? t('today.screen.readyName', { name: firstName }) : t('today.screen.ready')}</T>
           </View>
           <ProfileButton />
         </View>
         <Card style={styles.countdown}>
-          <T variant="label" color="accent">Start am {formatShort(arc.startDate)}</T>
+          <T variant="label" color="accent">{t('today.screen.startOn', { date: formatShort(arc.startDate) })}</T>
           <T variant="hero">{inDays}</T>
-          <T color="textSecondary">{inDays === 1 ? 'Tag bis zum Start' : 'Tage bis zum Start'}</T>
+          <T color="textSecondary">{t('today.screen.daysToStart', { count: inDays })}</T>
         </Card>
         <ReminderPrompt />
         <Card tone="surfaceMuted" bordered={false}>
           <T variant="bodyStrong">{phase.title}</T>
           <T variant="caption">{phase.hint}</T>
         </Card>
-        <SectionTitle>Deine Regeln</SectionTitle>
+        <SectionTitle>{t('today.screen.yourRules')}</SectionTitle>
         {arc.rules.filter((r) => !r.removedOn).map((r) => (
           <View key={r.id} style={[styles.preview, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <T style={styles.emoji}>{r.icon}</T>
@@ -91,7 +91,7 @@ export default function TodayScreen() {
           </View>
         ))}
         <T variant="caption" color="textTertiary" center>
-          Vor dem Start kannst du deine Regeln im Tab «Vertrag» noch frei anpassen.
+          {t('today.screen.editBeforeStart')}
         </T>
       </Screen>
     );
@@ -105,30 +105,30 @@ export default function TodayScreen() {
         <View style={styles.headRow}>
           <View style={[styles.head, styles.flex]}>
             <T variant="label">{arc.title}</T>
-            <T variant="display">Arc abgeschlossen.</T>
+            <T variant="display">{t('today.screen.finished')}</T>
           </View>
           <ProfileButton />
         </View>
         <Card style={styles.countdown}>
-          <T variant="label" color="accent">Gehaltene Tage</T>
+          <T variant="label" color="accent">{t('today.screen.daysHeld')}</T>
           <T variant="hero">{stats.doneDays}</T>
-          <T color="textSecondary">von {stats.totalDays} · {Math.round(stats.completionRate * 100)} %</T>
+          <T color="textSecondary">{t('today.screen.ofTotal', { total: stats.totalDays, percent: Math.round(stats.completionRate * 100) })}</T>
         </Card>
         <View style={styles.tiles}>
-          <StatTile label="Bester Streak" value={`${stats.streak.best}`} sub="Tage am Stück" />
-          <StatTile label="Schilde" value={`${stats.shieldedDays}`} sub="Tage gerettet" />
+          <StatTile label={t('today.screen.bestStreak')} value={`${stats.streak.best}`} sub={t('today.screen.inARow')} />
+          <StatTile label={t('today.screen.shields')} value={`${stats.shieldedDays}`} sub={t('today.screen.saved')} />
         </View>
         <Button title={`✨ ${t('recap.open')}`} onPress={() => router.push({ pathname: '/arc-rueckblick', params: { id: arc.id } })} />
         <Card tone="accentSoft" bordered={false} style={styles.next}>
-          <T variant="label" color="accent">Wie geht es weiter?</T>
+          <T variant="label" color="accent">{t('today.screen.whatsNext')}</T>
           <T variant="heading">
-            {next.season.icon} {next.title} · ab {formatShort(next.startDate)}
+            {next.season.icon} {t('today.screen.nextFrom', { title: next.title, date: formatShort(next.startDate) })}
           </T>
           <T variant="caption">
-            Nimm deine Regeln mit in den nächsten Arc – oder fang mit neuen an. Dein {arc.title} bleibt im Verlauf.
+            {t('today.screen.nextHint', { title: arc.title })}
           </T>
-          <Button title="Regeln mitnehmen" variant="secondary" onPress={() => router.push({ pathname: '/onboarding/create', params: { from: arc.id } })} />
-          <Button title="Neu beginnen" variant="secondary" onPress={() => router.push('/onboarding/create')} />
+          <Button title={t('today.screen.takeRules')} variant="secondary" onPress={() => router.push({ pathname: '/onboarding/create', params: { from: arc.id } })} />
+          <Button title={t('today.screen.startFresh')} variant="secondary" onPress={() => router.push('/onboarding/create')} />
         </Card>
       </Screen>
     );
@@ -154,20 +154,20 @@ export default function TodayScreen() {
         <ArcGauge progress={stats.dayNumber / stats.totalDays} today={progress.ratio} dayNumber={stats.dayNumber} totalDays={stats.totalDays} />
         <T variant="caption" center style={styles.gaugeCaption}>
           {allDone
-            ? 'Heute gehalten. Stark.'
-            : `${progress.done} von ${progress.total} erledigt · noch ${stats.daysLeft} ${stats.daysLeft === 1 ? 'Tag' : 'Tage'}`}
+            ? t('today.screen.heldToday')
+            : t('today.screen.progress', { done: progress.done, total: progress.total, count: stats.daysLeft })}
         </T>
       </View>
 
       <View style={styles.tiles}>
-        <StatTile label="Streak" value={`${streakDays}`} sub={`Rekord ${stats.streak.best}`} icon={<FlameIcon color={streakDays > 0 ? theme.accent : theme.textTertiary} size={16} />} />
+        <StatTile label={t('today.screen.streak')} value={`${streakDays}`} sub={t('today.screen.record', { best: stats.streak.best })} icon={<FlameIcon color={streakDays > 0 ? theme.accent : theme.textTertiary} size={16} />} />
         <StatTile
-          label="Schild"
+          label={t('today.screen.shield')}
           value={stats.streak.shieldAvailable ? '1/1' : '0/1'}
-          sub="übrig"
+          sub={t('today.screen.left')}
           icon={<ShieldIcon color={theme.shield} size={16} filled={stats.streak.shieldAvailable} />}
         />
-        <StatTile label="Quote" value={stats.evaluatedDays ? `${Math.round(stats.completionRate * 100)}%` : '–'} sub="gehalten" />
+        <StatTile label={t('today.screen.rate')} value={stats.evaluatedDays ? `${Math.round(stats.completionRate * 100)}%` : '–'} sub={t('today.screen.held')} />
       </View>
 
       <ReminderPrompt />
@@ -186,8 +186,8 @@ export default function TodayScreen() {
           style={({ pressed }) => [styles.noteRow, { backgroundColor: theme.accentSoft, borderColor: theme.accent, opacity: pressed ? 0.8 : 1, marginTop: 0 }]}>
           <T style={styles.emoji}>🗓️</T>
           <View style={styles.flex}>
-            <T variant="bodyStrong" color="accent">Wochenrückblick</T>
-            <T variant="caption">Zwei Minuten: Was lief gut, was nimmst du dir vor?</T>
+            <T variant="bodyStrong" color="accent">{t('today.screen.weeklyReview')}</T>
+            <T variant="caption">{t('today.screen.weeklyReviewHint')}</T>
           </View>
           <ChevronIcon color={theme.accent} />
         </Pressable>
@@ -195,14 +195,14 @@ export default function TodayScreen() {
 
       {stats.streak.onThinIce && !allDone && (
         <Card tone="warningSoft" bordered={false} style={styles.alert}>
-          <T variant="bodyStrong" color="warning">Dünnes Eis</T>
+          <T variant="bodyStrong" color="warning">{t('today.screen.thinIce')}</T>
           <T variant="caption" color="warning">
-            Gestern hast du verpasst. Kein Problem – aber heute zählt. Nie zweimal hintereinander.
+            {t('today.screen.thinIceHint')}
           </T>
         </Card>
       )}
 
-      <SectionTitle action={<T variant="caption">{progress.done}/{progress.total}</T>}>Heute</SectionTitle>
+      <SectionTitle action={<T variant="caption">{progress.done}/{progress.total}</T>}>{t('date.today')}</SectionTitle>
       <View style={styles.list}>
         {daily.map((r) => (
           <RuleRow key={r.id} rule={r} value={ruleValue(log, today, r.id)} onChange={(v) => setRuleValue(arc.id, today, r.id, v)} />
@@ -211,7 +211,7 @@ export default function TodayScreen() {
 
       {weekly.length > 0 && (
         <>
-          <SectionTitle>Diese Woche</SectionTitle>
+          <SectionTitle>{t('today.screen.thisWeek')}</SectionTitle>
           <View style={styles.list}>
             {weekly.map((r) => (
               <RuleRow
@@ -231,30 +231,30 @@ export default function TodayScreen() {
         style={({ pressed }) => [styles.noteRow, { backgroundColor: theme.surface, borderColor: theme.border, opacity: pressed ? 0.8 : 1 }]}>
         <T style={styles.emoji}>📝</T>
         <View style={styles.flex}>
-          <T variant="bodyStrong">{log[today]?.note ? 'Notiz von heute' : 'Notiz zum Tag'}</T>
+          <T variant="bodyStrong">{log[today]?.note ? t('today.screen.noteToday') : t('today.screen.noteDay')}</T>
           <T variant="caption" numberOfLines={1}>
-            {log[today]?.note ?? 'Wie lief es? Was hat geholfen?'}
+            {log[today]?.note ?? t('today.screen.notePlaceholder')}
           </T>
         </View>
         <ChevronIcon color={theme.textTertiary} />
       </Pressable>
 
       <Card tone="surfaceMuted" bordered={false} style={styles.phase}>
-        <T variant="label" color="accent">Phase · {phase.title}</T>
+        <T variant="label" color="accent">{t('today.screen.phase', { title: phase.title })}</T>
         <T variant="caption">{phase.hint}</T>
         {stats.daysToHabit > 0 ? (
           <T variant="caption" color="textTertiary">
-            Noch {stats.daysToHabit} Tage Streak bis zur 66-Tage-Marke.
+            {t('today.screen.toHabit', { count: stats.daysToHabit })}
           </T>
         ) : (
-          <T variant="caption" color="accent">66-Tage-Marke erreicht. Das ist jetzt Gewohnheit.</T>
+          <T variant="caption" color="accent">{t('today.screen.habitReached')}</T>
         )}
       </Card>
 
       {arc.why ? (
         <View style={styles.why}>
-          <T variant="label">Dein Warum</T>
-          <T color="textSecondary" style={styles.whyText}>«{arc.why}»</T>
+          <T variant="label">{t('today.screen.yourWhy')}</T>
+          <T color="textSecondary" style={styles.whyText}>{t('today.screen.whyQuote', { why: arc.why })}</T>
         </View>
       ) : null}
     </Screen>

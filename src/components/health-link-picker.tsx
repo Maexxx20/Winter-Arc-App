@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
+import { t } from '@/i18n';
 import { HEALTH_METRIC_BY_ID, HEALTH_METRICS, formatThreshold } from '@/lib/health';
 import type { HealthLink } from '@/lib/types';
 
@@ -13,7 +14,7 @@ export function HealthLinkPicker({ value, onChange }: { value: HealthLink | unde
   return (
     <View style={styles.group}>
       <View style={styles.chips}>
-        <Chip label="Aus" selected={!value} onPress={() => onChange(undefined)} />
+        <Chip label={t('contract.picker.off')} selected={!value} onPress={() => onChange(undefined)} />
         {HEALTH_METRICS.map((m) => (
           <Chip
             key={m.id}
@@ -26,7 +27,7 @@ export function HealthLinkPicker({ value, onChange }: { value: HealthLink | unde
       {value && def ? (
         <>
           <View style={styles.inline}>
-            <T variant="body" color="textSecondary">Erledigt ab</T>
+            <T variant="body" color="textSecondary">{t('contract.picker.doneFrom')}</T>
             <Stepper
               value={value.threshold}
               min={def.min}
@@ -37,12 +38,12 @@ export function HealthLinkPicker({ value, onChange }: { value: HealthLink | unde
             />
           </View>
           <T variant="caption" color="textTertiary">
-            {def.hint}. Kommt aus Apple Health bzw. Health Connect{value.metric === 'workout' ? ' oder Strava' : ''}. Von Hand abhaken geht weiterhin.
+            {t(value.metric === 'workout' ? 'contract.picker.sourceWorkout' : 'contract.picker.source', { hint: def.hint })}
           </T>
         </>
       ) : (
         <T variant="caption" color="textTertiary">
-          Nordwand kann diese Regel automatisch abhaken – mit Werten deiner Uhr oder Fitness-App.
+          {t('contract.picker.pitch')}
         </T>
       )}
     </View>

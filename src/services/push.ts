@@ -4,7 +4,7 @@ import * as Notifications from 'expo-notifications';
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
 
-import { getLang, onLangChange } from '@/i18n';
+import { getLang, onLangChange, t } from '@/i18n';
 import { getState, subscribe, updateSettings } from '@/store/store';
 
 import { getSession, onSession, supabase } from './supabase';
@@ -19,17 +19,17 @@ export type PushProblem = 'no-project' | 'simulator' | 'web' | 'denied' | 'signe
 export function pushProblemText(p: PushProblem): string {
   switch (p) {
     case 'no-project':
-      return 'Die App ist noch nicht mit einem Expo-Projekt verbunden (npx eas-cli@latest init).';
+      return t('system.push.noProject');
     case 'simulator':
-      return 'Push funktioniert nur auf einem echten Handy.';
+      return t('system.push.simulator');
     case 'web':
-      return 'Push gibt es nur in der App.';
+      return t('system.push.web');
     case 'denied':
-      return 'Erlaube Mitteilungen für Nordwand in den Einstellungen deines Handys.';
+      return t('system.push.denied');
     case 'signed-out':
-      return 'Melde dich zuerst an.';
+      return t('system.push.signedOut');
     default:
-      return 'Das hat nicht geklappt. Versuch es später nochmal.';
+      return t('system.push.failed');
   }
 }
 

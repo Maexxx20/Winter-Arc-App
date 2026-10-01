@@ -31,21 +31,21 @@ function translate(message: string): string {
   if (message.includes('not_owner')) return t('crewx.errors.notOwner');
   if (message.includes('already_done')) return t('crewx.errors.alreadyDone');
   if (message.includes('blocked')) return t('crewx.errors.blocked');
-  if (message.includes('crew_not_found')) return 'Diesen Code gibt es nicht. Prüf ihn nochmal.';
-  if (message.includes('crew_full')) return 'Diese Crew ist voll (max. 20 Personen).';
-  if (message.includes('too_many_crews')) return 'Du bist schon in 5 Crews – mehr geht nicht.';
-  if (message.includes('not_authenticated')) return 'Bitte melde dich zuerst an.';
-  if (message.toLowerCase().includes('fetch') || message.toLowerCase().includes('network')) return 'Keine Verbindung. Bist du online?';
+  if (message.includes('crew_not_found')) return t('crew.errors.notFound');
+  if (message.includes('crew_full')) return t('crew.errors.full');
+  if (message.includes('too_many_crews')) return t('crew.errors.tooMany');
+  if (message.includes('not_authenticated')) return t('common.signInFirst');
+  if (message.toLowerCase().includes('fetch') || message.toLowerCase().includes('network')) return t('common.offline');
   return message;
 }
 
 function need() {
-  if (!supabase || !getSession()) throw new Error('Bitte melde dich zuerst an.');
+  if (!supabase || !getSession()) throw new Error(t('common.signInFirst'));
   return supabase;
 }
 
 function displayName(): string {
-  return getState().settings.name.trim() || 'Ohne Namen';
+  return getState().settings.name.trim() || t('common.noName');
 }
 
 /** Eigene Tages-Zusammenfassungen hochladen (heute + 2 Tage zurück). */
@@ -160,7 +160,7 @@ export async function saveChallenge(crewId: string, week: ISODate, kind: Challen
     ? await sb.from('crew_challenges').update({ kind, target }).eq('crew_id', crewId).eq('week', week)
     : await sb.from('crew_challenges').insert({ crew_id: crewId, week, kind, target, created_by: getSession()!.user.id });
   if (error) {
-    if (error.message.includes('duplicate')) throw new Error('Für diese Woche gibt es schon eine Challenge.');
+    if (error.message.includes('duplicate')) throw new Error(t('crew.errors.challengeExists'));
     throw new Error(translate(error.message));
   }
 }

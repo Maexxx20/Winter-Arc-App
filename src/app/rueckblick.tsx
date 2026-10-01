@@ -11,6 +11,7 @@ import { T } from '@/components/ui/text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
+import { t } from '@/i18n';
 import { defaultReviewWeek, weekSummary } from '@/lib/arc';
 import { addDays, formatShort, isValidISO, weekdayShortNames, weekStart } from '@/lib/date';
 import { haptic } from '@/lib/haptics';
@@ -57,15 +58,15 @@ export default function ReviewScreen() {
   };
 
   return (
-    <Screen topInset={Platform.OS !== 'ios'} footer={<Button title={existing ? 'Aktualisieren' : 'Rückblick speichern'} onPress={save} disabled={!rating} />}>
+    <Screen topInset={Platform.OS !== 'ios'} footer={<Button title={existing ? t('history.review.update') : t('history.review.save')} onPress={save} disabled={!rating} />}>
       <View style={styles.header}>
         <View style={styles.flex}>
           <T variant="label">
             {formatShort(addDays(week, 0))} – {formatShort(addDays(week, 6))}
           </T>
-          <T variant="title">Woche {summary.index}</T>
+          <T variant="title">{t('history.stats.week', { index: summary.index })}</T>
         </View>
-        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel="Schliessen" style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
+        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel={t('common.close')} style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
           <CloseIcon color={theme.text} size={16} />
         </Pressable>
       </View>
@@ -85,7 +86,7 @@ export default function ReviewScreen() {
           })}
         </View>
         <T variant="number">
-          {summary.held} von {summary.days.length} Tagen gehalten
+          {t('history.review.heldSummary', { held: summary.held, total: summary.days.length })}
         </T>
         <View style={styles.rules}>
           {summary.rules.map(({ rule, hits, expected }) => (
@@ -105,7 +106,7 @@ export default function ReviewScreen() {
         </View>
       </Card>
 
-      <SectionTitle>Wie war deine Woche?</SectionTitle>
+      <SectionTitle>{t('history.review.question')}</SectionTitle>
       <View style={styles.ratings}>
         {RATINGS.map((e, i) => {
           const active = rating === i + 1;
@@ -116,7 +117,7 @@ export default function ReviewScreen() {
                 haptic.tap();
                 setRating(i + 1);
               }}
-              accessibilityLabel={`Bewertung ${i + 1} von 5`}
+              accessibilityLabel={t('history.review.ratingA11y', { n: i + 1 })}
               style={[styles.rating, { backgroundColor: active ? theme.accentSoft : theme.surface, borderColor: active ? theme.accent : theme.border }]}>
               <T style={styles.ratingEmoji}>{e}</T>
             </Pressable>
@@ -124,15 +125,15 @@ export default function ReviewScreen() {
         })}
       </View>
 
-      <TextField label="Was lief gut?" value={wins} onChangeText={setWins} multiline maxLength={500} placeholder="Worauf bist du stolz?" />
-      <TextField label="Was hat dich gebremst?" value={obstacles} onChangeText={setObstacles} multiline maxLength={500} placeholder="Wann und warum hast du verpasst?" />
+      <TextField label={t('history.review.wins')} value={wins} onChangeText={setWins} multiline maxLength={500} placeholder={t('history.review.winsPlaceholder')} />
+      <TextField label={t('history.review.obstacles')} value={obstacles} onChangeText={setObstacles} multiline maxLength={500} placeholder={t('history.review.obstaclesPlaceholder')} />
       <TextField
-        label="Fokus für nächste Woche"
+        label={t('history.review.next')}
         value={nextWeek}
         onChangeText={setNextWeek}
         multiline
         maxLength={500}
-        placeholder="Eine konkrete Sache, z. B. «Sporttasche am Vorabend packen»"
+        placeholder={t('history.review.nextPlaceholder')}
       />
     </Screen>
   );

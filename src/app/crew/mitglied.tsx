@@ -63,12 +63,12 @@ export default function MemberScreen() {
     <Screen topInset={Platform.OS !== 'ios'}>
       <View style={styles.header}>
         <View style={styles.flex}>
-          <T variant="label">{detail?.crew.name ?? 'Crew'}</T>
+          <T variant="label">{detail?.crew.name ?? t('crew.title')}</T>
         </View>
         <Pressable
           onPress={() => router.back()}
           hitSlop={10}
-          accessibilityLabel="Schliessen"
+          accessibilityLabel={t('common.close')}
           style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
           <CloseIcon color={theme.text} size={16} />
         </Pressable>
@@ -100,11 +100,13 @@ export default function MemberScreen() {
             ) : null}
             {profile?.instagram ? (
               <Pressable onPress={() => openLink(instagramUrl(profile.instagram))} hitSlop={8} accessibilityRole="link">
-                <T variant="caption" color="accent">@{profile.instagram} auf Instagram</T>
+                <T variant="caption" color="accent">{t('crew.member.instagram', { handle: profile.instagram })}</T>
               </Pressable>
             ) : null}
             <T variant="caption" color="textTertiary">
-              {entry.member.role === 'owner' ? 'Gründer:in' : 'Mitglied'} seit {formatShort(toISO(new Date(entry.member.joined_at)), true)}
+              {t(entry.member.role === 'owner' ? 'crew.member.ownerSince' : 'crew.member.memberSince', {
+                date: formatShort(toISO(new Date(entry.member.joined_at)), true),
+              })}
             </T>
           </View>
 
@@ -112,27 +114,27 @@ export default function MemberScreen() {
             <>
               <View style={styles.tiles}>
                 <StatTile
-                  label="Streak"
+                  label={t('crew.member.streak')}
                   value={`${latest.streak}`}
-                  sub={`Rekord ${latest.best_streak}`}
+                  sub={t('crew.member.record', { count: latest.best_streak })}
                   icon={<FlameIcon color={latest.streak > 0 ? theme.accent : theme.textTertiary} size={16} />}
                 />
-                <StatTile label="Quote" value={`${latest.rate}%`} sub="gehalten" />
+                <StatTile label={t('crew.member.rate')} value={`${latest.rate}%`} sub={t('crew.member.held')} />
               </View>
               <View style={styles.tiles}>
-                <StatTile label="Arc" value={`${latest.day_number}`} sub={`von ${latest.total_days} Tagen`} />
-                <StatTile label="Letzte 7 Tage" value={`${entry.week.filter((st) => st === 'done').length}/7`} sub="gehalten" />
+                <StatTile label={t('crew.member.arc')} value={`${latest.day_number}`} sub={t('crew.member.ofDays', { total: latest.total_days })} />
+                <StatTile label={t('crew.member.last7')} value={`${entry.week.filter((st) => st === 'done').length}/7`} sub={t('crew.member.held')} />
               </View>
             </>
           ) : (
             <Card tone="surfaceMuted" bordered={false}>
-              <T variant="caption">Noch keine Daten – der Arc hat noch nicht begonnen oder wurde noch nicht abgeglichen.</T>
+              <T variant="caption">{t('crew.member.noData')}</T>
             </Card>
           )}
 
           {badgeList.length ? (
             <Card style={styles.reactions}>
-              <T variant="label">Abzeichen · {badgeList.length}</T>
+              <T variant="label">{t('crew.member.badges', { count: badgeList.length })}</T>
               <View style={styles.badges}>
                 {badgeList.map((b) => (
                   <View key={b.id} style={styles.badge} accessible accessibilityLabel={b.title}>
@@ -146,13 +148,13 @@ export default function MemberScreen() {
 
           {received.length ? (
             <Card style={styles.reactions}>
-              <T variant="label">Reaktionen der letzten 7 Tage</T>
+              <T variant="label">{t('crew.member.reactions')}</T>
               <T style={styles.emojis}>{received.map((r) => r.emoji).join(' ')}</T>
             </Card>
           ) : null}
 
           {isMe ? (
-            <Button title="Profil bearbeiten" variant="secondary" onPress={() => router.push('/profil')} />
+            <Button title={t('crew.member.editProfile')} variant="secondary" onPress={() => router.push('/profil')} />
           ) : (
             <View style={styles.actions}>
               <Button
@@ -207,10 +209,8 @@ export default function MemberScreen() {
                 variant="ghost"
                 small
                 onPress={() => {
-                  const subject = encodeURIComponent('Nordwand: Profil melden');
-                  const body = encodeURIComponent(
-                    `Crew: ${detail?.crew.name ?? ''}\nPerson: ${name}\nID: ${user}\n\nWas ist das Problem?\n`,
-                  );
+                  const subject = encodeURIComponent(t('crew.member.reportSubject'));
+                  const body = encodeURIComponent(t('crew.member.reportBody', { crew: detail?.crew.name ?? '', name, id: user ?? '' }));
                   Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`).catch(() => undefined);
                 }}
               />

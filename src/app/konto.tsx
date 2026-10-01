@@ -9,6 +9,7 @@ import { TextField } from '@/components/ui/controls';
 import { Screen } from '@/components/ui/screen';
 import { T } from '@/components/ui/text';
 import { Spacing } from '@/constants/theme';
+import { t } from '@/i18n';
 import { useTheme } from '@/hooks/use-theme';
 import { confirm } from '@/lib/confirm';
 import { haptic } from '@/lib/haptics';
@@ -16,12 +17,13 @@ import { openLink, PRIVACY_URL } from '@/constants/links';
 import { isReviewEmail, sendLoginCode, signInWithPassword, supabaseConfigured, useSession, verifyLoginCode } from '@/services/supabase';
 import { deleteAccount, logout, syncNow, useSyncStatus } from '@/services/sync';
 
-function timeAgo(d: Date | null): string {
-  if (!d) return 'noch nie';
+/** «Abgeglichen vor 5 Min.» usw. */
+function syncedText(d: Date | null): string {
+  if (!d) return t('contract.account.syncedNever');
   const s = Math.round((Date.now() - d.getTime()) / 1000);
-  if (s < 60) return 'gerade eben';
-  if (s < 3600) return `vor ${Math.round(s / 60)} Min.`;
-  return `um ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+  if (s < 60) return t('contract.account.syncedJustNow');
+  if (s < 3600) return t('contract.account.syncedMinutes', { min: Math.round(s / 60) });
+  return t('contract.account.syncedAt', { time: `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}` });
 }
 
 export default function AccountScreen() {
@@ -72,9 +74,9 @@ export default function AccountScreen() {
     <View style={styles.header}>
       <View style={styles.flex}>
         <T variant="label">Nordwand</T>
-        <T variant="title">Konto & Sync</T>
+        <T variant="title">{t('contract.account.title')}</T>
       </View>
-      <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel="Schliessen" style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
+      <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel={t('common.close')} style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
         <CloseIcon color={theme.text} size={16} />
       </Pressable>
     </View>
@@ -85,7 +87,7 @@ export default function AccountScreen() {
       <Screen topInset={Platform.OS !== 'ios'}>
         {header}
         <Card tone="surfaceMuted" bordered={false}>
-          <T variant="caption">Der Sync ist in dieser Version noch nicht eingerichtet. Deine Daten liegen sicher auf diesem Gerät.</T>
+          <T variant="caption">{t('contract.account.notConfigured')}</T>
         </Card>
       </Screen>
     );
@@ -97,49 +99,49 @@ export default function AccountScreen() {
       <Screen topInset={Platform.OS !== 'ios'}>
         {header}
         <Card style={styles.card}>
-          <T variant="label">Angemeldet als</T>
+          <T variant="label">{t('contract.account.signedInAs')}</T>
           <T variant="bodyStrong">{session.user.email}</T>
           <View style={[styles.divider, { backgroundColor: theme.border }]} />
           <View style={styles.row}>
             <View style={[styles.dot, { backgroundColor: sync.state === 'error' ? theme.danger : sync.state === 'syncing' ? theme.shield : theme.accent }]} />
             <T variant="caption" style={styles.flex}>
               {sync.state === 'syncing'
-                ? 'Wird abgeglichen …'
+                ? t('contract.account.syncing')
                 : sync.state === 'error'
-                  ? `Fehler beim Abgleich: ${sync.error}`
-                  : `Abgeglichen ${timeAgo(sync.lastSyncAt)}`}
+                  ? t('contract.account.syncError', { error: sync.error ?? '' })
+                  : syncedText(sync.lastSyncAt)}
             </T>
           </View>
-          <Button title="Jetzt abgleichen" variant="secondary" small loading={sync.state === 'syncing'} onPress={() => syncNow()} />
+          <Button title={t('contract.account.syncNow')} variant="secondary" small loading={sync.state === 'syncing'} onPress={() => syncNow()} />
         </Card>
 
         <T variant="caption" color="textTertiary">
-          Arcs, Häkchen, Notizen, Fotos und Wochenrückblicke werden gesichert. Deine Fotos sieht nur du.
+          {t('contract.account.backedUp')}
         </T>
 
         <Button
-          title="Abmelden"
+          title={t('contract.account.signOut')}
           variant="secondary"
           onPress={async () => {
-            if (!(await confirm('Abmelden?', 'Deine Daten bleiben auf diesem Gerät und im Konto gespeichert.', 'Abmelden'))) return;
+            if (!(await confirm(t('contract.account.signOutTitle'), t('contract.account.signOutBody'), t('contract.account.signOut')))) return;
             await logout();
           }}
         />
         <Button
-          title="Konto löschen"
+          title={t('contract.account.delete')}
           variant="danger"
           onPress={async () => {
             if (
               !(await confirm(
-                'Konto löschen?',
-                'Dein Konto und alle Daten auf dem Server werden endgültig gelöscht. Die Daten auf diesem Gerät bleiben.',
-                'Endgültig löschen',
+                t('contract.account.deleteTitle'),
+                t('contract.account.deleteBody'),
+                t('contract.account.deleteConfirm'),
                 true,
               ))
             )
               return;
             const err = await deleteAccount();
-            if (err) await confirm('Löschen fehlgeschlagen', err, 'OK');
+            if (err) await confirm(t('contract.danger.deleteFailed'), err, t('common.ok'));
           }}
         />
       </Screen>
@@ -147,20 +149,23 @@ export default function AccountScreen() {
   }
 
   // ---------- Anmelden ----------
+  // Hervorgehobene Teile stehen als {link}/{email} im Text, darum dort aufteilen.
+  const [privacyBefore, privacyAfter = ''] = t('contract.account.privacyNote').split('{link}');
+  const [codeBefore, codeAfter = ''] = t('contract.account.codeSent').split('{email}');
   return (
     <Screen topInset={Platform.OS !== 'ios'}>
       {header}
       <T color="textSecondary">
-        Sichere deinen Arc und nutze ihn auf mehreren Geräten. Kein Passwort – du bekommst einen Code per E-Mail.
+        {t('contract.account.intro')}
       </T>
 
       {step === 'email' ? (
         <>
           <TextField
-            label="E-Mail"
+            label={t('contract.account.email')}
             value={email}
             onChangeText={setEmail}
-            placeholder="du@beispiel.ch"
+            placeholder={t('contract.account.emailPlaceholder')}
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
@@ -168,22 +173,26 @@ export default function AccountScreen() {
             onSubmitEditing={() => emailValid && send()}
           />
           {review && (
-            <TextField label="Passwort" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" />
+            <TextField label={t('contract.account.password')} value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" />
           )}
-          <Button title={review ? 'Anmelden' : 'Code senden'} onPress={send} disabled={!emailValid || (review && !password)} loading={busy} />
+          <Button title={review ? t('contract.account.signIn') : t('contract.account.sendCode')} onPress={send} disabled={!emailValid || (review && !password)} loading={busy} />
           <Pressable onPress={() => openLink(PRIVACY_URL)} hitSlop={8}>
             <T variant="caption" color="textTertiary" center>
-              Mit der Anmeldung gilt unsere <T variant="caption" color="accent">Datenschutzerklärung</T>.
+              {privacyBefore}
+              <T variant="caption" color="accent">{t('contract.account.privacyLink')}</T>
+              {privacyAfter}
             </T>
           </Pressable>
         </>
       ) : (
         <>
           <T variant="caption">
-            Wir haben dir einen Code an <T variant="caption" color="text">{email.trim()}</T> geschickt.
+            {codeBefore}
+            <T variant="caption" color="text">{email.trim()}</T>
+            {codeAfter}
           </T>
           <TextField
-            label="Code"
+            label={t('contract.account.code')}
             value={code}
             onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 8))}
             placeholder="123456"
@@ -193,8 +202,8 @@ export default function AccountScreen() {
             autoFocus
             style={styles.code}
           />
-          <Button title="Anmelden" onPress={verify} disabled={code.length < 6} loading={busy} />
-          <Button title="Andere E-Mail" variant="ghost" small onPress={() => setStep('email')} />
+          <Button title={t('contract.account.signIn')} onPress={verify} disabled={code.length < 6} loading={busy} />
+          <Button title={t('contract.account.otherEmail')} variant="ghost" small onPress={() => setStep('email')} />
         </>
       )}
 
