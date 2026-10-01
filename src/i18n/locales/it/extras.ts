@@ -5,7 +5,7 @@ const extras: DictOf<typeof de> = {
   widgetHint: {
     title: 'Metti Nordwand nella schermata Home',
     ios: 'Tieni premuto sulla schermata Home, tocca «+» in alto e cerca «Nordwand». Nel widget medio spunti le regole direttamente – e ci sono anche widget per la schermata di blocco.',
-    android: 'Tieni premuto sulla schermata Home, scegli «Widget» e cerca «Nordwand». Il widget mostra giorno, serie e regole aperte.',
+    android: 'Tieni premuto sulla schermata Home, scegli «Widget» e cerca «Nordwand». Nel widget più grande spunti le regole direttamente.',
     ok: 'Capito',
   },
   quick: {

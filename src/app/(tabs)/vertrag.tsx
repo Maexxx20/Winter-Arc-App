@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Switch, View } from 'react-native';
 
 import { MyAvatar } from '@/components/avatar';
 import { ConnectionsCard } from '@/components/connections-card';
+import { exportData } from '@/services/export';
 import { HealthLinkSheet } from '@/components/health-link-sheet';
 import { ChevronIcon, CloseIcon, PlusIcon } from '@/components/icons';
 import { RuleEditor } from '@/components/rule-editor';
@@ -321,6 +322,24 @@ export default function ContractScreen() {
             onValueChange={(haptics) => updateSettings({ haptics })}
             trackColor={{ true: theme.accent, false: theme.border }}
           />
+        </View>
+      </Card>
+
+      <SectionTitle>{t('extras.export.title')}</SectionTitle>
+      <Card style={styles.settings}>
+        <T variant="caption" color="textSecondary">{t('extras.export.hint')}</T>
+        <View style={styles.chips}>
+          {(['csv', 'json'] as const).map((f) => (
+            <Button
+              key={f}
+              title={t(f === 'csv' ? 'extras.export.csv' : 'extras.export.json')}
+              variant="secondary"
+              small
+              onPress={() =>
+                exportData(f).catch((e) => confirm(t('common.error'), t('extras.export.failed', { error: e instanceof Error ? e.message : String(e) }), t('common.ok')))
+              }
+            />
+          ))}
         </View>
       </Card>
 

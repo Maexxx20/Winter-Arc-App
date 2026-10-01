@@ -8,6 +8,7 @@ import language from './language';
 import progress from './progress';
 import recap from './recap';
 import ruleReminder from './ruleReminder';
+import widget from './widget';
 
-const dict: DictOf<typeof de> = { common, crewx, date, extras, language, progress, recap, ruleReminder };
+const dict: DictOf<typeof de> = { common, crewx, date, extras, language, progress, recap, ruleReminder, widget };
 export default dict;

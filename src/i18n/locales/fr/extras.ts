@@ -5,7 +5,7 @@ const extras: DictOf<typeof de> = {
   widgetHint: {
     title: 'Mets Nordwand sur ton écran d’accueil',
     ios: 'Appuie longuement sur l’écran d’accueil, touche « + » en haut et cherche « Nordwand ». Dans le widget moyen, tu coches tes règles directement – et il y a aussi des widgets pour l’écran verrouillé.',
-    android: 'Appuie longuement sur l’écran d’accueil, choisis « Widgets » et cherche « Nordwand ». Le widget affiche ton jour, ta série et les règles ouvertes.',
+    android: 'Appuie longuement sur l’écran d’accueil, choisis « Widgets » et cherche « Nordwand ». Dans le grand widget, tu coches tes règles directement.',
     ok: 'Compris',
   },
   quick: {

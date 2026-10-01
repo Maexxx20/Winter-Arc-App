@@ -7,10 +7,12 @@ import { confirm } from '@/lib/confirm';
 import { healthProviderName, type HealthSupport, healthSupport, requestHealthAccess } from '@/services/health-source';
 import { syncHealthNow } from '@/services/health-sync';
 import { connectStrava, disconnectStrava, stravaAvailableHere } from '@/services/strava';
+
 import { supabaseConfigured, useSession } from '@/services/supabase';
 import { selectActiveArc, updateSettings, useAppState } from '@/store/store';
 
 import { Button } from './ui/button';
+import { PoweredByStrava, StravaConnectButton } from './strava-button';
 import { Card } from './ui/card';
 import { T } from './ui/text';
 
@@ -87,14 +89,13 @@ export function ConnectionsCard() {
               ? 'Für Strava brauchst du ein Konto (Profil → Anmelden).'
               : (stravaAvailableHere() ?? 'Aktivitäten aus Strava zählen als Training.')}
         </T>
-        {supabaseConfigured && session && (stravaAthlete || !stravaAvailableHere()) ? (
-          <Button
-            title={stravaAthlete ? 'Strava trennen' : 'Mit Strava verbinden'}
-            variant={stravaAthlete ? 'ghost' : 'secondary'}
-            small
-            loading={busy === 'strava'}
-            onPress={toggleStrava}
-          />
+        {supabaseConfigured && session && stravaAthlete ? (
+          <>
+            <PoweredByStrava />
+            <Button title="Strava trennen" variant="ghost" small loading={busy === 'strava'} onPress={toggleStrava} />
+          </>
+        ) : supabaseConfigured && session && !stravaAvailableHere() ? (
+          <StravaConnectButton loading={busy === 'strava'} onPress={toggleStrava} />
         ) : null}
       </View>
 

@@ -6,5 +6,6 @@ import language from './language';
 import progress from './progress';
 import recap from './recap';
 import ruleReminder from './ruleReminder';
+import widget from './widget';
 
-export default { common, crewx, date, extras, language, progress, recap, ruleReminder };
+export default { common, crewx, date, extras, language, progress, recap, ruleReminder, widget };

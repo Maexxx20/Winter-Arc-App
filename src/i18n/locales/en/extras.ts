@@ -5,7 +5,7 @@ const extras: DictOf<typeof de> = {
   widgetHint: {
     title: 'Put Nordwand on your home screen',
     ios: 'Long-press the home screen, tap “+” at the top and search for “Nordwand”. In the medium widget you check off rules directly – and there are widgets for the lock screen too.',
-    android: 'Long-press the home screen, choose “Widgets” and search for “Nordwand”. The widget shows your day, streak and open rules.',
+    android: 'Long-press the home screen, choose “Widgets” and search for “Nordwand”. In the larger widget you check off rules directly.',
     ok: 'Got it',
   },
   quick: {

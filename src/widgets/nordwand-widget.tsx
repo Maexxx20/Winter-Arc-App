@@ -7,6 +7,8 @@ import { Button, Gauge, HStack, Spacer, Text, VStack } from '@expo/ui/swift-ui';
 import { font, foregroundStyle, gaugeStyle, lineLimit, padding, widgetURL } from '@expo/ui/swift-ui/modifiers';
 import { createWidget, type WidgetEnvironment } from 'expo-widgets';
 
+import type { WidgetLabels } from '@/lib/widget-data';
+
 export interface WidgetRule {
   id: string;
   icon: string;
@@ -31,6 +33,8 @@ export interface NordwandWidgetProps {
   rules: WidgetRule[];
   /** Im Widget abgehakt, von der App noch nicht übernommen */
   tapped: string[];
+  /** Texte in der Sprache der App */
+  labels: WidgetLabels;
 }
 
 function NordwandWidget(props: NordwandWidgetProps, env: WidgetEnvironment) {
@@ -38,9 +42,10 @@ function NordwandWidget(props: NordwandWidgetProps, env: WidgetEnvironment) {
   const accent = '#2657D9';
   const family = env.widgetFamily;
   const open = widgetURL('nordwand://');
+  const L = props.labels;
 
   if (props.ended) {
-    if (family === 'accessoryInline') return <Text>Nordwand · Neuer Arc?</Text>;
+    if (family === 'accessoryInline') return <Text>{L.inlineNoArc}</Text>;
     if (family === 'accessoryCircular') {
       return (
         <VStack modifiers={[open]}>
@@ -53,42 +58,42 @@ function NordwandWidget(props: NordwandWidgetProps, env: WidgetEnvironment) {
         <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle({ type: 'hierarchical', style: 'secondary' }), lineLimit(1)]}>
           {props.title}
         </Text>
-        <Text modifiers={[font({ size: 17, weight: 'bold' })]}>Kein laufender Arc</Text>
-        <Text modifiers={[font({ size: 13 })]}>Tippen, um den nächsten zu starten.</Text>
+        <Text modifiers={[font({ size: 17, weight: 'bold' })]}>{L.noArc}</Text>
+        <Text modifiers={[font({ size: 13 })]}>{L.noArcHint}</Text>
       </VStack>
     );
   }
 
   if (!props.started) {
-    if (family === 'accessoryInline') return <Text>{`Nordwand · Start in ${props.daysToStart} T.`}</Text>;
+    if (family === 'accessoryInline') return <Text>{L.inlineStart}</Text>;
     return (
       <VStack alignment="leading" spacing={4} modifiers={[open]}>
         <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}>
           {props.title}
         </Text>
         <Text modifiers={[font({ size: 34, weight: 'bold', design: 'rounded' })]}>{`${props.daysToStart}`}</Text>
-        <Text modifiers={[font({ size: 13 })]}>{props.daysToStart === 1 ? 'Tag bis zum Start' : 'Tage bis zum Start'}</Text>
+        <Text modifiers={[font({ size: 13 })]}>{L.untilStart}</Text>
       </VStack>
     );
   }
 
-  const heute = `${props.done}/${props.total} heute`;
+  const heute = L.today.replace('{done}', `${props.done}`).replace('{total}', `${props.total}`);
 
   // ---------- Sperrbildschirm ----------
   if (family === 'accessoryInline') {
-    return <Text>{`Tag ${props.dayNumber}/${props.totalDays} · 🔥 ${props.streak} · ${heute}`}</Text>;
+    return <Text>{`${L.inline} · ${heute}`}</Text>;
   }
   if (family === 'accessoryCircular') {
     return (
       <Gauge value={props.total ? props.done / props.total : 0} modifiers={[gaugeStyle('circularCapacity'), open]} currentValueLabel={<Text>{`${props.dayNumber}`}</Text>}>
-        <Text>Tag</Text>
+        <Text>{L.dayShort}</Text>
       </Gauge>
     );
   }
   if (family === 'accessoryRectangular') {
     return (
       <VStack alignment="leading" spacing={2} modifiers={[open]}>
-        <Text modifiers={[font({ size: 13, weight: 'semibold' })]}>{`Tag ${props.dayNumber} von ${props.totalDays}`}</Text>
+        <Text modifiers={[font({ size: 13, weight: 'semibold' })]}>{L.dayOf}</Text>
         <Text modifiers={[font({ size: 13 })]}>{`🔥 ${props.streak} · ${heute}`}</Text>
         <Gauge value={props.total ? props.done / props.total : 0} modifiers={[gaugeStyle('linearCapacity')]} />
       </VStack>
@@ -115,8 +120,8 @@ function NordwandWidget(props: NordwandWidgetProps, env: WidgetEnvironment) {
       <VStack alignment="leading" spacing={6} modifiers={[open]}>
         {header}
         <Gauge value={props.total ? props.done / props.total : 0} modifiers={[gaugeStyle('linearCapacity'), foregroundStyle(accent)]} />
-        <Text modifiers={[font({ size: 13, weight: 'semibold' })]}>{props.done === props.total && props.total > 0 ? 'Heute gehalten ✓' : heute}</Text>
-        <Text modifiers={[font({ size: 13 }), foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}>{`🔥 ${props.streak} Tage`}</Text>
+        <Text modifiers={[font({ size: 13, weight: 'semibold' })]}>{props.done === props.total && props.total > 0 ? L.held : heute}</Text>
+        <Text modifiers={[font({ size: 13 }), foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}>{L.streak}</Text>
       </VStack>
     );
   }

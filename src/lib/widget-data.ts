@@ -18,11 +18,53 @@ export interface WidgetData {
   total: number;
   rules: { id: string; icon: string; title: string; done: boolean }[];
   tapped: string[];
+  /** Fertige Texte in der Sprache der App (das Widget selbst kann nicht übersetzen) */
+  labels: WidgetLabels;
+}
+
+export interface WidgetLabels {
+  dayOf: string;
+  dayShort: string;
+  inline: string;
+  /** Vorlage mit {done} und {total} – das Widget setzt die Zahlen nach dem Abhaken neu ein */
+  today: string;
+  held: string;
+  allDone: string;
+  streak: string;
+  untilStart: string;
+  inlineStart: string;
+  noArc: string;
+  noArcHint: string;
+  inlineNoArc: string;
+}
+
+export type Translate = (key: string, vars?: Record<string, string | number>) => string;
+
+const EMPTY_LABELS: WidgetLabels = {
+  dayOf: '', dayShort: '', inline: '', today: '{done}/{total}', held: '', allDone: '', streak: '', untilStart: '', inlineStart: '', noArc: '', noArcHint: '', inlineNoArc: '',
+};
+
+/** Texte fürs Widget (mit `t` aus @/i18n). */
+export function widgetLabels(d: Omit<WidgetData, 'labels'>, tr: Translate): WidgetLabels {
+  return {
+    dayOf: tr('widget.dayOf', { day: d.dayNumber, total: d.totalDays }),
+    dayShort: tr('widget.dayShort'),
+    inline: tr('widget.inline', { day: d.dayNumber, total: d.totalDays, streak: d.streak }),
+    today: tr('widget.today', { done: '{done}', total: '{total}' }),
+    held: tr('widget.held'),
+    allDone: tr('widget.allDone'),
+    streak: tr('widget.streak', { count: d.streak }),
+    untilStart: tr('widget.untilStart', { count: d.daysToStart }),
+    inlineStart: tr('widget.inlineStart', { count: d.daysToStart }),
+    noArc: tr('widget.noArc'),
+    noArcHint: tr('widget.noArcHint'),
+    inlineNoArc: tr('widget.inlineNoArc'),
+  };
 }
 
 /** Anzeige ohne laufenden Arc («Neuen Arc starten»). */
 export function endedWidgetData(today: ISODate, title = 'Nordwand'): WidgetData {
-  return { date: today, title, started: true, ended: true, daysToStart: 0, dayNumber: 0, totalDays: 0, streak: 0, done: 0, total: 0, rules: [], tapped: [] };
+  return { date: today, title, started: true, ended: true, daysToStart: 0, dayNumber: 0, totalDays: 0, streak: 0, done: 0, total: 0, rules: [], tapped: [], labels: EMPTY_LABELS };
 }
 
 /** null, wenn es keinen aktiven Arc gibt; «ended», wenn der Tag nach dem Arc liegt. */
@@ -52,7 +94,14 @@ export function widgetData(state: AppState, today: ISODate): WidgetData | null {
       done: isValueDone(r, ruleValue(log, today, r.id)),
     })),
     tapped: [],
+    labels: EMPTY_LABELS,
   };
+}
+
+/** Widget-Daten samt Texten (null ohne aktiven Arc → «Kein laufender Arc»). */
+export function widgetDataWithLabels(state: AppState, today: ISODate, tr: Translate): WidgetData {
+  const d = widgetData(state, today) ?? endedWidgetData(today);
+  return { ...d, labels: widgetLabels(d, tr) };
 }
 
 /** Im Widget abgehakte Regeln, die in der App noch offen sind: ruleId → einzutragender Wert. */

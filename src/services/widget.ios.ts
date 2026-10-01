@@ -3,7 +3,8 @@ import { useEffect } from 'react';
 import { AppState as RNAppState } from 'react-native';
 
 import { addDays, parseISO, todayISO } from '@/lib/date';
-import { endedWidgetData, widgetData, widgetTapsToApply } from '@/lib/widget-data';
+import { type TKey, t } from '@/i18n';
+import { widgetDataWithLabels, widgetTapsToApply } from '@/lib/widget-data';
 import { getState, isHydrated, selectActiveArc, setRuleValue, subscribe } from '@/store/store';
 
 type WidgetModule = typeof import('@/widgets/nordwand-widget');
@@ -61,10 +62,11 @@ function push() {
   const s = getState();
   const today = todayISO(new Date(), s.settings.rolloverHour);
   const tomorrow = addDays(today, 1);
-  const now = widgetData(s, today) ?? endedWidgetData(today);
+  const tr = (k: string, v?: Record<string, string | number>) => t(k as TKey, v);
+  const now = widgetDataWithLabels(s, today, tr);
   // Der Eintrag für morgen ist eine Vorschau: Häkchen, die du danach nur im Widget setzt,
   // kennt er noch nicht – beim nächsten Öffnen der App wird er neu berechnet.
-  const next = widgetData(s, tomorrow) ?? endedWidgetData(tomorrow);
+  const next = widgetDataWithLabels(s, tomorrow, tr);
   const switchAt = parseISO(tomorrow);
   switchAt.setHours(s.settings.rolloverHour, 0, 0, 0);
   try {

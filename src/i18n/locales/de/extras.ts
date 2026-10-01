@@ -3,7 +3,7 @@ export default {
   widgetHint: {
     title: 'Nordwand auf den Homescreen',
     ios: 'Lange auf den Homescreen drücken, oben auf «+» tippen und «Nordwand» suchen. Im mittleren Widget hakst du Regeln direkt ab – und für den Sperrbildschirm gibt es eigene Widgets.',
-    android: 'Lange auf den Homescreen drücken, «Widgets» wählen und «Nordwand» suchen. Im Widget siehst du Tag, Streak und offene Regeln.',
+    android: 'Lange auf den Homescreen drücken, «Widgets» wählen und «Nordwand» suchen. Im grösseren Widget hakst du Regeln direkt ab.',
     ok: 'Verstanden',
   },
   quick: {

@@ -56,6 +56,13 @@ function persist() {
   }, 150);
 }
 
+/** Sofort speichern (z. B. im Android-Widget, das danach beendet wird). */
+export async function flushState(): Promise<void> {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = null;
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
 function setState(updater: (s: AppState) => AppState) {
   state = updater(state);
   emit();

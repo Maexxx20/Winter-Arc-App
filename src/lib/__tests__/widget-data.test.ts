@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { AppState, Rule } from '../types';
-import { widgetData, widgetTapsToApply } from '../widget-data';
+import { widgetData, widgetDataWithLabels, widgetTapsToApply } from '../widget-data';
 
 const rule = (id: string, extra: Partial<Rule> = {}): Rule => ({
   id, title: id, icon: '⭐', category: 'body', frequency: { kind: 'daily' }, measure: { kind: 'check' }, activeFrom: '2026-10-01', ...extra,
@@ -34,6 +34,13 @@ describe('Widget-Daten', () => {
   it('nach dem Ende: «vorbei», keine Regeln', () => {
     expect(widgetData(state(), '2027-01-01')).toMatchObject({ ended: true, rules: [], title: 'Winter Arc 2026' });
     expect(widgetTapsToApply(state(), { date: '2027-01-01', tapped: ['r1'] })).toEqual({});
+  });
+  it('Texte kommen fertig mit, «heute» bleibt eine Vorlage', () => {
+    const tr = (k: string, v?: Record<string, string | number>) => `${k}${v ? JSON.stringify(v) : ''}`;
+    const d = widgetDataWithLabels(state(), '2026-10-02', tr);
+    expect(d.labels.dayOf).toBe('widget.dayOf{"day":2,"total":92}');
+    expect(d.labels.today).toBe('widget.today{"done":"{done}","total":"{total}"}');
+    expect(widgetDataWithLabels({ ...state(), activeArcId: null }, '2026-10-02', tr)).toMatchObject({ ended: true, labels: { noArc: 'widget.noArc' } });
   });
   it('Taps aus dem Widget übernehmen, Erledigtes nicht doppelt', () => {
     expect(widgetTapsToApply(state(), { date: '2026-10-02', tapped: ['r1', 'r2', 'r2', 'x'] })).toEqual({ r2: 20 });
