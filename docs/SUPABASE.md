@@ -159,6 +159,11 @@ App steckt.
 5. Testen geht erst im Development-Build (Expo Go kann nicht aus dem Browser zurückspringen):
    Profil (oben rechts) → Verbindungen → «Mit Strava verbinden».
 
+**In der App einschalten:** Strava ist in der App ausgeblendet, bis Strava die API-App für alle
+freigibt (sonst scheitert die Prüfung bei Apple, weil die Verbindung für den Prüfer nicht klappt).
+Zum Testen und nach der Freigabe `EXPO_PUBLIC_STRAVA=1` in `.env.local` bzw. als EAS-Umgebungsvariable
+setzen.
+
 Gut zu wissen:
 - Neue Strava-Apps dürfen zuerst nur **ein** Konto verbinden (deins). Für alle Nutzer muss die App
   bei Strava zur Prüfung eingereicht werden (Formular auf der API-Seite). Dafür verlangt Strava den

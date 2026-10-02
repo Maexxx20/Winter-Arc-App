@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Chip, SectionTitle } from '@/components/ui/controls';
 import { TimeRow } from '@/components/ui/time-row';
 import { T } from '@/components/ui/text';
-import { openLink, PRIVACY_URL, WEBSITE_URL } from '@/constants/links';
+import { openLink, PRIVACY_URL, termsUrl, WEBSITE_URL } from '@/constants/links';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
@@ -191,6 +191,10 @@ export function SettingsSections() {
           <T variant="caption" color="accent">{t('contract.footer.privacy')}</T>
         </Pressable>
         <T variant="caption" color="textTertiary">·</T>
+        <Pressable onPress={() => openLink(termsUrl())} hitSlop={8}>
+          <T variant="caption" color="accent">{t('contract.account.termsLink')}</T>
+        </Pressable>
+        <T variant="caption" color="textTertiary">·</T>
         <Pressable onPress={() => openLink(WEBSITE_URL)} hitSlop={8}>
           <T variant="caption" color="accent">{t('contract.footer.support')}</T>
         </Pressable>
@@ -206,5 +210,5 @@ const styles = StyleSheet.create({
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three },
   flex: { flex: 1 },
   disabled: { opacity: 0.45 },
-  links: { flexDirection: 'row', justifyContent: 'center', gap: Spacing.two },
+  links: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: Spacing.two },
 });

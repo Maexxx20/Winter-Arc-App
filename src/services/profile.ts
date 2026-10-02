@@ -1,4 +1,5 @@
 import { t } from '@/i18n';
+import { isObjectionable } from '@/lib/moderation';
 import { allBadges } from '@/lib/badges';
 import type { ProfileBadge } from '@/lib/crew';
 import { todayISO } from '@/lib/date';
@@ -101,9 +102,10 @@ async function pushProfile(userId: string, serverAvatar: string | null) {
     .upsert(
       {
         id: userId,
-        name: s.name.trim().slice(0, 40),
-        motto: s.motto.trim().slice(0, 80),
-        instagram: s.instagram,
+        // Wortfilter: Anstössiges geht nie an die Crew
+        name: isObjectionable(s.name) ? '' : s.name.trim().slice(0, 40),
+        motto: isObjectionable(s.motto) ? '' : s.motto.trim().slice(0, 80),
+        instagram: isObjectionable(s.instagram) ? '' : s.instagram,
         avatar_path: s.avatar.remote,
         updated_at: s.profileUpdatedAt ?? new Date().toISOString(),
       },

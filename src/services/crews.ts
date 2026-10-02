@@ -1,5 +1,6 @@
 import { buildStatusRows, type Challenge, type ChallengeKind, type Crew, type CrewMember, normalizeCode, type Reaction, type ReactionEmoji, type StatusRow } from '@/lib/crew';
 import { type CrewArc, type CrewArcSignature, isValidCrewArc } from '@/lib/crew-arc';
+import { firstObjectionable, isObjectionable } from '@/lib/moderation';
 import { addDays, type ISODate, todayISO, weekStart } from '@/lib/date';
 import { t } from '@/i18n';
 import { getState, selectActiveArc, selectLog } from '@/store/store';
@@ -47,7 +48,13 @@ function need() {
 }
 
 function displayName(): string {
-  return getState().settings.name.trim() || t('common.noName');
+  const name = getState().settings.name.trim();
+  return name && !isObjectionable(name) ? name : t('common.noName');
+}
+
+/** Wortfilter für alles, was die Crew sieht. */
+function guard(...texts: (string | null | undefined)[]) {
+  if (firstObjectionable(...texts)) throw new Error(t('system.moderation.blocked'));
 }
 
 /** Eigene Tages-Zusammenfassungen hochladen (heute + 2 Tage zurück). */
@@ -125,6 +132,7 @@ export async function loadCrew(crewId: string, today: ISODate): Promise<CrewDeta
 }
 
 export async function createCrew(name: string): Promise<Crew> {
+  guard(name);
   const sb = need();
   await publishStatus().catch(() => {});
   const { data, error } = await sb.rpc('create_crew', { p_name: name.trim(), p_display_name: displayName() });
@@ -147,6 +155,7 @@ export async function leaveCrew(crewId: string): Promise<void> {
 }
 
 export async function renameMe(crewId: string, name: string): Promise<void> {
+  guard(name);
   const sb = need();
   const { error } = await sb
     .from('crew_members')
@@ -289,6 +298,7 @@ export async function loadCrewArcs(crewId: string): Promise<{ arcs: CrewArc[]; s
 
 /** Nur Besitzer: Crew-Arc veröffentlichen. */
 export async function publishCrewArc(input: Omit<CrewArc, 'id' | 'created_by' | 'created_at' | 'updated_at'>): Promise<CrewArc> {
+  guard(input.title, input.why, ...input.rules.flatMap((r) => [r.title, r.measure.kind === 'amount' ? r.measure.unit : null]));
   const sb = need();
   const { data, error } = await sb
     .from('crew_arcs')

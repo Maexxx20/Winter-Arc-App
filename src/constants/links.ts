@@ -23,6 +23,18 @@ export function privacyUrl(lang: Lang = getLang()): string {
   return `${WEBSITE_URL}${PRIVACY_PAGES[lang]}`;
 }
 
+const TERMS_PAGES: Record<Lang, string> = {
+  de: 'nutzungsbedingungen.html',
+  en: 'en/terms.html',
+  fr: 'fr/conditions.html',
+  it: 'it/condizioni.html',
+};
+
+/** Nutzungsbedingungen in der aktuellen Sprache der App. */
+export function termsUrl(lang: Lang = getLang()): string {
+  return `${WEBSITE_URL}${TERMS_PAGES[lang]}`;
+}
+
 export function openLink(url: string) {
   // Datenschutz immer in der Sprache der App öffnen, auch wenn PRIVACY_URL übergeben wird.
   const target = url === PRIVACY_URL ? privacyUrl() : url;

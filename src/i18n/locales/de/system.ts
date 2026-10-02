@@ -58,4 +58,7 @@ export default {
     photos: 'Fotos: {error}',
     photosDelete: 'Fotos konnten nicht gelöscht werden: {error}',
   },
+  moderation: {
+    blocked: 'Das können wir so nicht anzeigen. Bitte wähle eine andere Formulierung.',
+  },
 };

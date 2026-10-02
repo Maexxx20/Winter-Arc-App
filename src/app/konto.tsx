@@ -13,7 +13,7 @@ import { t } from '@/i18n';
 import { useTheme } from '@/hooks/use-theme';
 import { confirm } from '@/lib/confirm';
 import { haptic } from '@/lib/haptics';
-import { openLink, PRIVACY_URL } from '@/constants/links';
+import { openLink, PRIVACY_URL, termsUrl } from '@/constants/links';
 import { isReviewEmail, sendLoginCode, signInWithPassword, supabaseConfigured, useSession, verifyLoginCode } from '@/services/supabase';
 import { deleteAccount, logout, syncNow, useSyncStatus } from '@/services/sync';
 
@@ -143,7 +143,8 @@ export default function AccountScreen() {
 
   // ---------- Anmelden ----------
   // Hervorgehobene Teile stehen als {link}/{email} im Text, darum dort aufteilen.
-  const [privacyBefore, privacyAfter = ''] = t('contract.account.privacyNote').split('{link}');
+  // «… die {terms} und die {link}.» – beide Links antippbar
+  const legal = t('contract.account.privacyNote').split(/(\{terms\}|\{link\})/);
   const [codeBefore, codeAfter = ''] = t('contract.account.codeSent').split('{email}');
   return (
     <Screen>
@@ -169,13 +170,21 @@ export default function AccountScreen() {
             <TextField label={t('contract.account.password')} value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" />
           )}
           <Button title={review ? t('contract.account.signIn') : t('contract.account.sendCode')} onPress={send} disabled={!emailValid || (review && !password)} loading={busy} />
-          <Pressable onPress={() => openLink(PRIVACY_URL)} hitSlop={8}>
-            <T variant="caption" color="textTertiary" center>
-              {privacyBefore}
-              <T variant="caption" color="accent">{t('contract.account.privacyLink')}</T>
-              {privacyAfter}
-            </T>
-          </Pressable>
+          <T variant="caption" color="textSecondary" center>
+            {legal.map((part, i) =>
+              part === '{terms}' ? (
+                <T key={i} variant="caption" color="accent" onPress={() => openLink(termsUrl())}>
+                  {t('contract.account.termsLink')}
+                </T>
+              ) : part === '{link}' ? (
+                <T key={i} variant="caption" color="accent" onPress={() => openLink(PRIVACY_URL)}>
+                  {t('contract.account.privacyLink')}
+                </T>
+              ) : (
+                part
+              ),
+            )}
+          </T>
         </>
       ) : (
         <>

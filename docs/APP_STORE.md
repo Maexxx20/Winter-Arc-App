@@ -17,6 +17,7 @@ denselben Texten); in der Play Console unter *Store-Präsenz → Übersetzungen 
 | Altersfreigabe | Fragebogen ehrlich ausfüllen: Crews zeigen Profilbild, Name, Motto, Zahlen und Emojis nur innerhalb privater Gruppen (Beitritt nur per Code). Mitglieder können Personen blockieren und über «Profil melden» eine Mail an den Support schicken; wer die Crew gegründet hat, kann Mitglieder entfernen. |
 | Datenschutz-URL | siehe [Datenschutz- und Support-URLs pro Sprache](#datenschutz--und-support-urls-pro-sprache) |
 | Support-URL | `https://maexxx20.github.io/Winter-Arc-App/` (pro Sprache siehe unten) |
+| Lizenzvertrag (EULA) | Standard-EULA von Apple – in App Store Connect nichts eintragen; eigene Nutzungsbedingungen siehe [Hinweise für die App-Review](#hinweise-für-die-app-review) |
 
 ## Datenschutz- und Support-URLs pro Sprache
 
@@ -49,6 +50,8 @@ winter arc,habit tracker,gewohnheit,challenge,disziplin,routine,streak,lock in,9
 
 ### Beschreibung
 
+<!-- Strava wieder aufnehmen, sobald freigeschaltet: unter AUTOMATISCH ABHAKEN wieder «… oder Health Connect (Android) und Strava: …» schreiben. -->
+
 ```
 Während alle anderen in den Winterschlaf gehen, ziehst du durch.
 
@@ -71,7 +74,7 @@ VORHER / NACHHER UND ARC-RÜCKBLICK
 Leg zwei Fotos aus deinem Tagebuch nebeneinander und sieh, was sich verändert hat. Am Ende zeigt dir der Rückblick deinen Arc in Zahlen: gehaltene Tage, längster Streak, stärkste und schwierigste Regel, beste Woche. Alles wird auf deinem Gerät berechnet.
 
 AUTOMATISCH ABHAKEN
-Verbinde Apple Health (iPhone) oder Health Connect (Android) und Strava: Schritte, Training, Schlaf, Wasser und Achtsamkeit haken deine Regeln von selbst ab – egal ob die Daten von Apple Watch, Garmin oder einer anderen Fitness-App kommen. Nordwand liest nur und schreibt nichts in Health.
+Verbinde Apple Health (iPhone) oder Health Connect (Android): Schritte, Training, Schlaf, Wasser und Achtsamkeit haken deine Regeln von selbst ab – egal ob die Daten von Apple Watch, Garmin oder einer anderen Fitness-App kommen. Nordwand liest nur und schreibt nichts in Health.
 
 WIDGETS UND SCHNELLAKTIONEN
 Tag im Arc und Streak auf dem Homescreen – auf dem iPhone und auf Android. Offene Regeln hakst du direkt im Widget ab, auf dem iPhone gibt es zusätzlich Widgets für den Sperrbildschirm. Lange aufs App-Icon drücken, und du bist sofort beim Abhaken, bei der Notiz oder bei deiner Crew.
@@ -93,6 +96,8 @@ Mach aus deinem Fortschritt eine Karte im Story-Format und zeig, dass du dranble
 
 PRIVAT UND IN DEINER SPRACHE
 Funktioniert komplett ohne Konto. Mit Konto werden deine Daten gesichert und zwischen Geräten abgeglichen. Exportiere deine Daten jederzeit als CSV oder JSON. Keine Werbung, kein Tracking. Auf Deutsch, Englisch, Französisch und Italienisch.
+
+Nutzungsbedingungen: https://maexxx20.github.io/Winter-Arc-App/nutzungsbedingungen.html
 ```
 
 ### Neuerungen (erste Version)
@@ -123,6 +128,8 @@ winter arc,habit tracker,habits,challenge,discipline,routine,streak,lock in,90 d
 
 ### Description
 
+<!-- Strava wieder aufnehmen, sobald freigeschaltet: unter AUTOMATIC CHECK-OFF wieder «… or Health Connect (Android) and Strava: …» schreiben. -->
+
 ```
 While everyone else goes into hibernation, you keep going.
 
@@ -145,7 +152,7 @@ BEFORE / AFTER AND ARC RECAP
 Put two photos from your journal side by side and see what has changed. At the end, the recap shows your arc in numbers: days held, longest streak, strongest and toughest rule, best week. Everything is calculated on your device.
 
 AUTOMATIC CHECK-OFF
-Connect Apple Health (iPhone) or Health Connect (Android) and Strava: steps, workouts, sleep, water and mindfulness check off your rules by themselves – whether the data comes from an Apple Watch, Garmin or another fitness app. Nordwand only reads and writes nothing to Health.
+Connect Apple Health (iPhone) or Health Connect (Android): steps, workouts, sleep, water and mindfulness check off your rules by themselves – whether the data comes from an Apple Watch, Garmin or another fitness app. Nordwand only reads and writes nothing to Health.
 
 WIDGETS AND QUICK ACTIONS
 Day in the arc and streak on your home screen – on iPhone and Android. Check off open rules right in the widget, plus lock screen widgets on iPhone. Long-press the app icon to jump straight to checking off, your note or your crew.
@@ -167,6 +174,8 @@ Turn your progress into a story-format card and show that you're sticking with i
 
 PRIVATE AND IN YOUR LANGUAGE
 Works completely without an account. With an account, your data is backed up and synced between devices. Export your data any time as CSV or JSON. No ads, no tracking. In English, German, French and Italian.
+
+Terms of Use: https://maexxx20.github.io/Winter-Arc-App/en/terms.html
 ```
 
 ### What's New (first version)
@@ -197,6 +206,8 @@ winter arc,suivi habitudes,habitudes,défi,discipline,routine,série,objectifs,9
 
 ### Description
 
+<!-- Strava wieder aufnehmen, sobald freigeschaltet: unter COCHER AUTOMATIQUEMENT wieder «… ou Health Connect (Android) et Strava : …» schreiben. -->
+
 ```
 Pendant que tout le monde hiberne, toi, tu tiens bon.
 
@@ -219,7 +230,7 @@ AVANT / APRÈS ET BILAN DE L'ARC
 Place deux photos de ton journal côte à côte et vois ce qui a changé. À la fin, le bilan montre ton arc en chiffres : jours tenus, plus longue série, règle la plus solide et la plus difficile, meilleure semaine. Tout est calculé sur ton appareil.
 
 COCHER AUTOMATIQUEMENT
-Connecte Apple Santé (iPhone) ou Health Connect (Android) et Strava : pas, entraînements, sommeil, eau et pleine conscience cochent tes règles tout seuls – que les données viennent d'une Apple Watch, d'une Garmin ou d'une autre app de fitness. Nordwand lit uniquement et n'écrit rien dans Santé.
+Connecte Apple Santé (iPhone) ou Health Connect (Android) : pas, entraînements, sommeil, eau et pleine conscience cochent tes règles tout seuls – que les données viennent d'une Apple Watch, d'une Garmin ou d'une autre app de fitness. Nordwand lit uniquement et n'écrit rien dans Santé.
 
 WIDGETS ET ACTIONS RAPIDES
 Jour de l'arc et série sur l'écran d'accueil – sur iPhone et sur Android. Coche les règles ouvertes directement dans le widget ; sur iPhone, il y a aussi des widgets pour l'écran verrouillé. Un appui long sur l'icône de l'app, et tu es tout de suite prêt à cocher, à écrire ta note ou avec ton crew.
@@ -241,6 +252,8 @@ Transforme ta progression en carte au format story et montre que tu tiens bon.
 
 PRIVÉ ET DANS TA LANGUE
 Fonctionne entièrement sans compte. Avec un compte, tes données sont sauvegardées et synchronisées entre tes appareils. Exporte tes données à tout moment en CSV ou JSON. Pas de publicité, pas de tracking. En français, allemand, anglais et italien.
+
+Conditions d'utilisation : https://maexxx20.github.io/Winter-Arc-App/fr/conditions.html
 ```
 
 ### Nouveautés (première version)
@@ -271,6 +284,8 @@ winter arc,habit tracker,abitudini,sfida,disciplina,routine,serie,obiettivi,90 g
 
 ### Descrizione
 
+<!-- Strava wieder aufnehmen, sobald freigeschaltet: unter SPUNTA AUTOMATICA wieder «… o Health Connect (Android) e Strava: …» schreiben. -->
+
 ```
 Mentre tutti gli altri vanno in letargo, tu tieni duro.
 
@@ -293,7 +308,7 @@ PRIMA / DOPO E BILANCIO DELL'ARC
 Metti due foto del tuo diario una accanto all'altra e guarda cosa è cambiato. Alla fine, il bilancio mostra il tuo arc in numeri: giorni tenuti, serie più lunga, regola più forte e più difficile, settimana migliore. Tutto viene calcolato sul tuo dispositivo.
 
 SPUNTA AUTOMATICA
-Collega Apple Salute (iPhone) o Health Connect (Android) e Strava: passi, allenamenti, sonno, acqua e consapevolezza spuntano le tue regole da soli – che i dati arrivino da Apple Watch, Garmin o da un'altra app di fitness. Nordwand legge soltanto e non scrive nulla in Salute.
+Collega Apple Salute (iPhone) o Health Connect (Android): passi, allenamenti, sonno, acqua e consapevolezza spuntano le tue regole da soli – che i dati arrivino da Apple Watch, Garmin o da un'altra app di fitness. Nordwand legge soltanto e non scrive nulla in Salute.
 
 WIDGET E AZIONI RAPIDE
 Giorno dell'arc e serie sulla schermata Home – su iPhone e su Android. Spunta le regole aperte direttamente nel widget; su iPhone ci sono anche i widget per la schermata di blocco. Tieni premuta l'icona dell'app e sei subito pronto a spuntare, a scrivere la nota o dalla tua crew.
@@ -315,6 +330,8 @@ Trasforma i tuoi progressi in una card in formato storia e mostra che non molli.
 
 PRIVATO E NELLA TUA LINGUA
 Funziona completamente senza account. Con un account i tuoi dati vengono salvati e sincronizzati tra i dispositivi. Esporta i tuoi dati in qualsiasi momento in CSV o JSON. Niente pubblicità, niente tracciamento. In italiano, tedesco, inglese e francese.
+
+Condizioni d'uso: https://maexxx20.github.io/Winter-Arc-App/it/condizioni.html
 ```
 
 ### Novità (prima versione)
@@ -337,7 +354,7 @@ Tracking: **Nein** (keine Daten werden zum Tracking verwendet).
 | Nutzerinhalte → Fotos oder Videos | Ja (Profilbild und Tagebuch-Fotos, nur mit Konto; Vorher/Nachher wird nur lokal erstellt) | Ja | App-Funktionalität |
 | Kennungen → Geräte-ID (Push-Token, mit Sprache der App) | Ja (nur wenn Crew-Mitteilungen eingeschaltet) | Ja | App-Funktionalität |
 | Kennungen → Geräte-ID (zufällige Installations-ID von EAS Update, siehe unten) | Ja | Nein | App-Funktionalität |
-| Gesundheit & Fitness → Gesundheit, Fitness | Ja (nur wenn Apple Health bzw. Strava verbunden **und** Konto: das Ergebnis der verknüpften Regel, z. B. Häkchen «Training» oder Schrittzahl, wird mit den Arc-Daten gesichert; Strava-Aktivitäten der letzten 14 Tage liegen auf dem Server) | Ja | App-Funktionalität |
+| Gesundheit & Fitness → Gesundheit, Fitness | Ja (nur wenn Apple Health bzw. Health Connect verbunden **und** Konto: das Ergebnis der verknüpften Regel, z. B. Häkchen «Training» oder Schrittzahl, wird mit den Arc-Daten gesichert) <!-- Strava wieder aufnehmen, sobald freigeschaltet: «bzw. Strava verbunden … Strava-Aktivitäten der letzten 14 Tage liegen auf dem Server» --> | Ja | App-Funktionalität |
 | Nutzungsdaten, Diagnose, Standort | Nein | – | – |
 
 Zur EAS-Update-Zeile: `expo-updates` schickt bei jeder Update-Abfrage an `u.expo.dev` eine zufällige,
@@ -367,7 +384,7 @@ Passwort: [REVIEW-PASSWORT]
 Im Tab «Crew» ist das Test-Konto bereits Mitglied der Crew «Review Crew» mit Beispieldaten.
 Konto löschen: Profilbild oben rechts → «Konto & Sync» → «Konto löschen».
 
-Nutzerinhalte und Moderation (Guideline 1.2): In einer Crew ein Mitglied antippen → «Blockieren» (wirkt in beide Richtungen) oder «Profil melden» (Mail an den Support). Wer die Crew gegründet hat, kann dort «Aus der Crew entfernen» wählen und unter «Crew verwalten» einen neuen Einladungscode erzeugen. Blockierte Personen: Profil → «Blockierte Personen».
+Nutzerinhalte und Moderation (Guideline 1.2): Beim Anmelden akzeptiert man die Nutzungsbedingungen (https://maexxx20.github.io/Winter-Arc-App/nutzungsbedingungen.html). Sie enthalten eine Null-Toleranz-Regel für anstössige Inhalte und missbräuchliches Verhalten. In einer Crew ein Mitglied antippen → «Profil melden» (Mail an den Support) oder «Blockieren» (wirkt in beide Richtungen). Wer die Crew gegründet hat, kann dort «Aus der Crew entfernen» wählen und unter «Crew verwalten» einen neuen Einladungscode erzeugen. Blockierte Personen: Profil → «Blockierte Personen». Ein automatischer Wortfilter blockiert bestimmte Begriffe, bevor sie gespeichert werden. Meldungen werden innert 24 Stunden geprüft: anstössige Inhalte werden entfernt, Konten, die gegen die Bedingungen verstossen, werden ausgeschlossen bzw. gelöscht. Kontakt: max.ale.konrad@gmail.com
 
 Apple Health (optional): Profilbild oben rechts → «Verbindungen» → «Apple Health verbinden». Nordwand liest nur Schritte, Workouts, Schlaf, Wasser und Achtsamkeitsminuten, um Regeln automatisch abzuhaken (Tab «Vertrag» → Regel antippen → «Automatisch abhaken»). Es werden keine Daten in Health geschrieben. Die Health-Werte werden auf dem Gerät ausgewertet; gesichert wird nur das Ergebnis der Regel.
 
@@ -377,6 +394,22 @@ Schnellaktionen: App-Icon lange drücken.
 
 Die Review-Hinweise sind nur für Apple bzw. Google und müssen nicht übersetzt werden (Englisch geht auch –
 dann die Menünamen so angeben, wie sie auf dem Review-Gerät erscheinen).
+
+### Nutzungsbedingungen und EULA
+
+| Sprache | Nutzungsbedingungen |
+|---|---|
+| Deutsch | `https://maexxx20.github.io/Winter-Arc-App/nutzungsbedingungen.html` |
+| Englisch | `https://maexxx20.github.io/Winter-Arc-App/en/terms.html` |
+| Französisch | `https://maexxx20.github.io/Winter-Arc-App/fr/conditions.html` |
+| Italienisch | `https://maexxx20.github.io/Winter-Arc-App/it/condizioni.html` |
+
+In App Store Connect wird der **Standard-EULA von Apple** verwendet (*App-Informationen → Lizenzvertrag* unverändert lassen, kein eigener EULA nötig). Die Nutzungsbedingungen ergänzen ihn und verweisen selbst darauf; der Link steht am Ende jeder Beschreibung oben.
+
+### Strava in Version 1.0
+
+Strava ist in Version 1.0 ausgeblendet, bis Strava die API-App freigeschaltet hat. In den Review-Hinweisen muss Strava darum nicht erwähnt werden, und die Store-Beschreibungen nennen nur Apple Health / Health Connect.
+<!-- Strava wieder aufnehmen, sobald freigeschaltet: Beschreibungen (4 Sprachen), Nutrition-Label-Zeile «Gesundheit & Fitness» und bei Bedarf ein Review-Hinweis zu Profil → Verbindungen → Strava. -->
 
 ## Screenshots
 

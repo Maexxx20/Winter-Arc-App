@@ -65,6 +65,14 @@ async function call<T>(action: string, extra: Record<string, unknown> = {}): Pro
   return data as T;
 }
 
+/**
+ * Strava ist ausgeblendet, bis Strava die API-App für alle freigibt (sonst scheitert die App-Prüfung).
+ * Einschalten: EXPO_PUBLIC_STRAVA=1 in .env.local bzw. als EAS-Umgebungsvariable.
+ */
+export function stravaEnabled(): boolean {
+  return process.env.EXPO_PUBLIC_STRAVA === '1';
+}
+
 export function stravaAvailableHere(): string | null {
   if (Platform.OS === 'web') return t('contract.strava.webOnly');
   if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {

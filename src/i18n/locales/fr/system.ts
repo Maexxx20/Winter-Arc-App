@@ -60,6 +60,9 @@ const system: DictOf<typeof de> = {
     photos: 'Photos : {error}',
     photosDelete: 'Les photos n’ont pas pu être supprimées : {error}',
   },
+  moderation: {
+    blocked: 'Nous ne pouvons pas afficher ça. Choisis une autre formulation.',
+  },
 };
 
 export default system;

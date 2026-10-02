@@ -25,6 +25,7 @@ import { useBadges } from '@/hooks/use-badges';
 import { confirm } from '@/lib/confirm';
 import { haptic } from '@/lib/haptics';
 import { pickAvatar } from '@/services/avatar-file';
+import { isObjectionable } from '@/lib/moderation';
 import { cleanInstagram, instagramUrl } from '@/lib/profile';
 import { supabaseConfigured, useSession } from '@/services/supabase';
 import { logout, useSyncStatus } from '@/services/sync';
@@ -113,6 +114,14 @@ export default function ProfileScreen() {
     setEditing(null);
     if (field === 'name' && !value) {
       setName(settings.name);
+      return;
+    }
+    if (isObjectionable(value)) {
+      // Zurück auf den gespeicherten Wert
+      if (field === 'name') setName(settings.name);
+      else if (field === 'motto') setMotto(settings.motto);
+      else setInstagram(settings.instagram);
+      confirm(t('common.error'), t('system.moderation.blocked'), t('common.ok'));
       return;
     }
     if (value !== settings[field]) updateProfile({ [field]: value });
