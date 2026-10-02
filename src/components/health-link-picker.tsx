@@ -37,9 +37,6 @@ export function HealthLinkPicker({ value, onChange }: { value: HealthLink | unde
               onChange={(threshold) => onChange({ ...value, threshold })}
             />
           </View>
-          <T variant="caption" color="textTertiary">
-            {t(value.metric === 'workout' ? 'contract.picker.sourceWorkout' : 'contract.picker.source', { hint: def.hint })}
-          </T>
         </>
       ) : (
         <T variant="caption" color="textTertiary">

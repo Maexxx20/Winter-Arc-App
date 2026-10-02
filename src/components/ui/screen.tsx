@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View, type ScrollViewProps } from 'react-native';
+import { Platform, RefreshControl, ScrollView, StyleSheet, View, type ScrollViewProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -34,6 +34,9 @@ export function Screen({ children, tabs, footer, scroll = true, topInset = true,
             { paddingTop: (topInset ? insets.top : 0) + Spacing.four, paddingBottom: bottom },
           ]}
           keyboardShouldPersistTaps={rest.keyboardShouldPersistTaps ?? 'handled'}
+          // Tastatur schiebt den Inhalt hoch, damit das Feld sichtbar bleibt (Android macht das selbst)
+          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
           refreshControl={
             onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={theme.textTertiary} /> : undefined
           }

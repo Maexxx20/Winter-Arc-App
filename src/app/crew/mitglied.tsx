@@ -1,14 +1,15 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, View } from 'react-native';
 
 import { MyAvatar, RemoteAvatar } from '@/components/avatar';
 import { BadgeMedal } from '@/components/badge';
-import { CloseIcon, FlameIcon } from '@/components/icons';
+import { FlameIcon } from '@/components/icons';
 import { StatTile } from '@/components/stat-tile';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { T } from '@/components/ui/text';
 import { openLink, SUPPORT_EMAIL } from '@/constants/links';
 import { Spacing } from '@/constants/theme';
@@ -60,19 +61,12 @@ export default function MemberScreen() {
   const badgeList = BADGES.filter((b) => earnedIds.has(b.id));
 
   return (
-    <Screen topInset={Platform.OS !== 'ios'}>
-      <View style={styles.header}>
+    <Screen>
+      <ScreenHeader>
         <View style={styles.flex}>
           <T variant="label">{detail?.crew.name ?? t('crew.title')}</T>
         </View>
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={10}
-          accessibilityLabel={t('common.close')}
-          style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
-          <CloseIcon color={theme.text} size={16} />
-        </Pressable>
-      </View>
+      </ScreenHeader>
 
       {error ? (
         <Card tone="surfaceMuted" bordered={false}>

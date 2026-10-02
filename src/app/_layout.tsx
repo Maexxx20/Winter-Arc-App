@@ -49,21 +49,21 @@ export default function RootLayout() {
         <Stack key={lang} screenOptions={{ headerShown: false, contentStyle: { backgroundColor: palette.background } }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
-          <Stack.Screen name="tag/[date]" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="rueckblick" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="teilen" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="konto" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="profil" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="crew/mitglied" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="crew/challenge" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="crew/arc" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="fortschritt/index" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="tag/[date]" />
+          <Stack.Screen name="rueckblick" />
+          <Stack.Screen name="teilen" />
+          <Stack.Screen name="konto" />
+          <Stack.Screen name="profil" />
+          <Stack.Screen name="crew/mitglied" />
+          <Stack.Screen name="crew/challenge" />
+          <Stack.Screen name="crew/arc" />
+          <Stack.Screen name="fortschritt/index" />
           <Stack.Screen name="arc-rueckblick" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
-          <Stack.Screen name="regel/[id]" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="arcs" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="regel/[id]" />
+          <Stack.Screen name="arcs" />
           <Stack.Screen name="arc/[id]" />
           <Stack.Screen name="crew/[id]" />
-          <Stack.Screen name="crew/beitreten" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="crew/beitreten" />
         </Stack>
       </ThemeProvider>
     </SafeAreaProvider>

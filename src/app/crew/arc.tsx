@@ -1,14 +1,14 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { MyAvatar, RemoteAvatar } from '@/components/avatar';
 import { HoldToSign } from '@/components/hold-to-sign';
-import { CloseIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { SectionTitle, TextField } from '@/components/ui/controls';
 import { Screen } from '@/components/ui/screen';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { T } from '@/components/ui/text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -135,21 +135,17 @@ export default function CrewArcScreen() {
 
   return (
     <Screen
-      topInset={Platform.OS !== 'ios'}
       footer={
         ca && period && !mine ? (
           <HoldToSign onSigned={sign} disabled={busy || name.trim().length < 2} />
         ) : undefined
       }>
-      <View style={styles.header}>
+      <ScreenHeader>
         <View style={styles.flex}>
           <T variant="label" color="accent">{t('crewx.arc.label')} · {detail?.crew.name ?? ''}</T>
           <T variant="title" numberOfLines={2}>{ca?.title ?? ' '}</T>
         </View>
-        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel={t('common.close')} style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
-          <CloseIcon color={theme.text} size={16} />
-        </Pressable>
-      </View>
+      </ScreenHeader>
 
       {error ? (
         <Card tone="surfaceMuted" bordered={false}>

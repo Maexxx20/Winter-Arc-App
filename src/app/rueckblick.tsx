@@ -1,12 +1,12 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { CloseIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { SectionTitle, TextField } from '@/components/ui/controls';
 import { Screen } from '@/components/ui/screen';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { T } from '@/components/ui/text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -58,18 +58,15 @@ export default function ReviewScreen() {
   };
 
   return (
-    <Screen topInset={Platform.OS !== 'ios'} footer={<Button title={existing ? t('history.review.update') : t('history.review.save')} onPress={save} disabled={!rating} />}>
-      <View style={styles.header}>
+    <Screen footer={<Button title={existing ? t('history.review.update') : t('history.review.save')} onPress={save} disabled={!rating} />}>
+      <ScreenHeader>
         <View style={styles.flex}>
           <T variant="label">
             {formatShort(addDays(week, 0))} – {formatShort(addDays(week, 6))}
           </T>
           <T variant="title">{t('history.stats.week', { index: summary.index })}</T>
         </View>
-        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel={t('common.close')} style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
-          <CloseIcon color={theme.text} size={16} />
-        </Pressable>
-      </View>
+      </ScreenHeader>
 
       <Card style={styles.summary}>
         <View style={styles.weekRow}>

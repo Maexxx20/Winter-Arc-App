@@ -1,14 +1,16 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Heatmap, HeatmapLegend } from '@/components/heatmap';
+import { HeatmapLegend } from '@/components/heatmap';
+import { MonthCalendar } from '@/components/month-calendar';
 import { ChevronIcon } from '@/components/icons';
 import { StatTile } from '@/components/stat-tile';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { SectionTitle } from '@/components/ui/controls';
 import { Screen } from '@/components/ui/screen';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { T } from '@/components/ui/text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -31,18 +33,16 @@ export default function ArcDetail() {
   const active = arc.id === state.activeArcId;
 
   return (
-    <Screen topInset={Platform.OS !== 'ios'}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel={t('common.back')} style={[styles.round, { backgroundColor: theme.surfaceMuted }]}>
-          <ChevronIcon dir="left" color={theme.text} />
-        </Pressable>
+    <Screen>
+      <ScreenHeader>
+        
         <View style={styles.flex}>
           <T variant="label">
             {formatShort(arc.startDate)} – {formatShort(arc.endDate, true)}
           </T>
           <T variant="title" numberOfLines={2}>{arc.title}</T>
         </View>
-      </View>
+      </ScreenHeader>
 
       {arc.why ? <T color="textSecondary" style={styles.why}>{t('history.arcs.because', { why: arc.why })}</T> : null}
 
@@ -58,12 +58,13 @@ export default function ArcDetail() {
       <Button title={`✨ ${t('recap.open')}`} variant="secondary" onPress={() => router.push({ pathname: '/arc-rueckblick', params: { id: arc.id } })} />
 
       <Card style={styles.heat}>
-        <Heatmap
+        <MonthCalendar
+          log={state.logs[arc.id] ?? {}}
           startDate={arc.startDate}
           endDate={arc.endDate}
           today={today}
           statuses={stats.streak.statuses}
-          onPressDay={active ? (date) => router.push({ pathname: '/tag/[date]', params: { date } }) : undefined}
+          onPressDay={(date) => router.push({ pathname: '/tag/[date]', params: { date, arc: arc.id } })}
         />
         <HeatmapLegend />
       </Card>

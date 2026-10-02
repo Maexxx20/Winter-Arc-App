@@ -131,7 +131,7 @@ Domain in Brevo verifizieren und als Absender z. B. `code@deinedomain.ch` nehmen
    die Mitteilungen dann selbst an den Expo-Push-Dienst.
 2. Im Projektordner einmal `npx eas-cli@latest init` ausführen. Das trägt die Projekt-ID in
    `app.json` ein – ohne sie kann die App kein Push-Token holen.
-3. In der App: Vertrag → Erinnerungen → «Crew-Mitteilungen» einschalten. In Expo Go geht das nur auf
+3. In der App: Profil (oben rechts) → Erinnerungen → «Crew-Mitteilungen» einschalten. In Expo Go geht das nur auf
    dem iPhone; auf Android braucht es einen Development-Build.
 4. Mit `0010_push_nudge.sql` speichert die App beim Registrieren die Sprache des Geräts
    (`claim_push_token(token, platform, lang)`); die Datenbank wählt den Text pro Gerät in dieser Sprache
@@ -157,7 +157,7 @@ App steckt.
 4. **Secrets:** Edge Functions → **Secrets** → `STRAVA_CLIENT_ID` und `STRAVA_CLIENT_SECRET` mit den
    Werten aus Schritt 1 anlegen. (`SUPABASE_URL` usw. setzt Supabase selbst.)
 5. Testen geht erst im Development-Build (Expo Go kann nicht aus dem Browser zurückspringen):
-   Vertrag → Verbindungen → «Mit Strava verbinden».
+   Profil (oben rechts) → Verbindungen → «Mit Strava verbinden».
 
 Gut zu wissen:
 - Neue Strava-Apps dürfen zuerst nur **ein** Konto verbinden (deins). Für alle Nutzer muss die App

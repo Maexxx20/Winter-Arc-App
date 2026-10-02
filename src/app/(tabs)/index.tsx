@@ -90,9 +90,6 @@ export default function TodayScreen() {
             </View>
           </View>
         ))}
-        <T variant="caption" color="textTertiary" center>
-          {t('today.screen.editBeforeStart')}
-        </T>
       </Screen>
     );
   }

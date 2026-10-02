@@ -41,7 +41,7 @@ async function doSync(): Promise<number> {
   if (!useHealth && !useStrava) return 0;
 
   const today = todayISO(new Date(), s.settings.rolloverHour);
-  const dates = [0, 1, 2].map((n) => addDays(today, -n)).filter((d) => d >= arc.startDate && d <= arc.endDate);
+  const dates = [0, 1].map((n) => addDays(today, -n)).filter((d) => d >= arc.startDate && d <= arc.endDate);
   const strava =
     useStrava && linked.some((r) => r.health?.metric === 'workout') ? await stravaWorkoutMinutes(dates) : ({} as Record<ISODate, number>);
 

@@ -1,9 +1,10 @@
 import { router } from 'expo-router';
 import { useMemo } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { ChevronIcon, CloseIcon } from '@/components/icons';
+import { ChevronIcon } from '@/components/icons';
 import { Screen } from '@/components/ui/screen';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { T } from '@/components/ui/text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -29,16 +30,13 @@ export default function ArcsScreen() {
   );
 
   return (
-    <Screen topInset={Platform.OS !== 'ios'}>
-      <View style={styles.header}>
+    <Screen>
+      <ScreenHeader>
         <View style={styles.flex}>
           <T variant="label">Nordwand</T>
           <T variant="title">{t('history.arcs.title')}</T>
         </View>
-        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel={t('common.close')} style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
-          <CloseIcon color={theme.text} size={16} />
-        </Pressable>
-      </View>
+      </ScreenHeader>
 
       {list.map(({ arc, stats }) => {
         const active = arc.id === state.activeArcId;

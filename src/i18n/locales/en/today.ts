@@ -70,7 +70,7 @@ const today: DictOf<typeof de> = {
   },
   reminder: {
     title: '🔔 Turn on reminders?',
-    text: 'A quick nudge in the morning, a check-in in the evening – but only if something’s still open. You can change the times in the “Contract” tab.',
+    text: 'A quick nudge in the morning, a check-in in the evening – but only if something’s still open. You can change the times in your profile.',
     no: 'No thanks',
     yes: 'Turn on',
   },
@@ -116,6 +116,7 @@ const today: DictOf<typeof de> = {
     liter: 'litres',
     pages: 'pages',
     min: 'min',
+    hours: 'h',
   },
   templates: {
     training: 'Workout',

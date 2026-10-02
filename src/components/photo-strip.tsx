@@ -31,9 +31,11 @@ type Props = {
   photos: string[];
   onAdd: (name: string) => void;
   onRemove: (name: string) => void;
+  /** Nur ansehen (vergangene Tage) */
+  readOnly?: boolean;
 };
 
-export function PhotoStrip({ photos, onAdd, onRemove }: Props) {
+export function PhotoStrip({ photos, onAdd, onRemove, readOnly }: Props) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [viewing, setViewing] = useState<string | null>(null);
@@ -69,7 +71,7 @@ export function PhotoStrip({ photos, onAdd, onRemove }: Props) {
             <PhotoImage name={p} style={[styles.thumb, { backgroundColor: theme.surfaceMuted }]} contentFit="cover" />
           </Pressable>
         ))}
-        {photos.length < MAX_PHOTOS_PER_DAY && (
+        {!readOnly && photos.length < MAX_PHOTOS_PER_DAY && (
           <Pressable
             onPress={add}
             disabled={busy}
@@ -89,11 +91,15 @@ export function PhotoStrip({ photos, onAdd, onRemove }: Props) {
         <View style={styles.viewer}>
           {viewing && <PhotoImage name={viewing} style={styles.full} contentFit="contain" />}
           <View style={[styles.viewerBar, { top: insets.top + Spacing.three }]}>
-            <Pressable onPress={() => viewing && remove(viewing)} style={styles.viewerBtn} accessibilityLabel={t('history.photo.delete')}>
-              <T variant="bodyStrong" style={styles.white}>
-                {t('common.delete')}
-              </T>
-            </Pressable>
+            {readOnly ? (
+              <View />
+            ) : (
+              <Pressable onPress={() => viewing && remove(viewing)} style={styles.viewerBtn} accessibilityLabel={t('history.photo.delete')}>
+                <T variant="bodyStrong" style={styles.white}>
+                  {t('common.delete')}
+                </T>
+              </Pressable>
+            )}
             <Pressable onPress={() => setViewing(null)} style={[styles.viewerBtn, styles.round]} accessibilityLabel={t('common.close')}>
               <CloseIcon color="#fff" size={18} />
             </Pressable>

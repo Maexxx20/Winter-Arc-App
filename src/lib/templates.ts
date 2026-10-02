@@ -24,7 +24,7 @@ type TemplateKey =
   | 'earlyRise' | 'noDoomscrolling' | 'bedtime' | 'noAlcohol'
   | 'deepWork' | 'learn' | 'ownProject' | 'save';
 /** Übersetzte Einheiten; alles andere (z. B. «g») bleibt, wie es ist. */
-type UnitKey = 'liter' | 'pages' | 'min' | 'g';
+type UnitKey = 'liter' | 'pages' | 'min' | 'hours' | 'g';
 type TemplateMeasure = { kind: 'check' } | { kind: 'amount'; target: number; unit: UnitKey };
 type TemplateDef = Omit<RuleTemplate, 'title' | 'measure'> & { key: TemplateKey; measure: TemplateMeasure };
 
@@ -33,7 +33,7 @@ const TEMPLATE_DEFS: TemplateDef[] = [
   { key: 'training', icon: '🏋️', category: 'body', frequency: { kind: 'weekly', times: 4 }, measure: { kind: 'check' }, health: { metric: 'workout', threshold: 30 } },
   { key: 'steps', icon: '🚶', category: 'body', frequency: { kind: 'daily' }, measure: { kind: 'check' }, health: { metric: 'steps', threshold: 10000 } },
   { key: 'water', icon: '💧', category: 'body', frequency: { kind: 'daily' }, measure: { kind: 'amount', target: 2, unit: 'liter' } },
-  { key: 'sleep', icon: '🛌', category: 'body', frequency: { kind: 'daily' }, measure: { kind: 'check' }, health: { metric: 'sleep', threshold: 7 } },
+  { key: 'sleep', icon: '🛌', category: 'body', frequency: { kind: 'daily' }, measure: { kind: 'amount', target: 7, unit: 'hours' }, health: { metric: 'sleep', threshold: 7 } },
   { key: 'coldShower', icon: '🧊', category: 'body', frequency: { kind: 'daily' }, measure: { kind: 'check' } },
   { key: 'noFastFood', icon: '🥗', category: 'body', frequency: { kind: 'daily' }, measure: { kind: 'check' } },
   { key: 'protein', icon: '🍳', category: 'body', frequency: { kind: 'daily' }, measure: { kind: 'amount', target: 120, unit: 'g' } },

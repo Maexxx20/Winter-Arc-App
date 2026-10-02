@@ -45,7 +45,7 @@ src/
     (tabs)/verlauf.tsx  Heatmap über den ganzen Arc, Quote je Regel
     (tabs)/vertrag.tsx  Vertrag, Regeln ändern (Amendments), Einstellungen
     onboarding/         Willkommen + 4-Schritte-Assistent (Zeitraum, Regeln, Warum, Vertrag)
-    tag/[date].tsx      Tagesdetail, Nachtragen (bis 2 Tage zurück), Notiz, Fotos
+    tag/[date].tsx      Tagesdetail: heute bearbeiten, frühere Tage nur ansehen
     rueckblick.tsx      Wochenrückblick
     arc-rueckblick.tsx  Arc-Rückblick: der Arc in Zahlen (auch als Zwischenstand)
     fortschritt/        Vorher/Nachher aus Tagebuch-Fotos (Schieberegler, als Bild teilen)
@@ -98,7 +98,7 @@ assets/brand/           Icon-Vorlage; node assets/brand/make-icons.mjs erzeugt a
   verpasster Tag beeinflusst die Gewohnheitsbildung kaum.
 - **Vertrag**: Vor dem Start frei änderbar, danach 3 Änderungen. Änderungen gelten ab heute,
   vergangene Tage bleiben so, wie sie bewertet wurden.
-- **Nachtragen**: heute und die 2 Tage davor. Ältere Tage sind gesperrt.
+- **Kein Nachtragen**: Abgehakt wird nur heute (mit «Tag endet um …» zählt die Nacht noch zum Vortag). Verpasst bleibt verpasst; nur Apple Health und Strava dürfen gestern noch automatisch ergänzen.
 
 ## Roadmap
 

@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { ChevronIcon } from '@/components/icons';
+import { ProfileButton } from '@/components/profile-button';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { SectionTitle, TextField } from '@/components/ui/controls';
@@ -70,9 +71,12 @@ export default function CrewTab() {
   };
 
   const head = (
-    <View style={styles.head}>
-      <T variant="label">{t('crew.tab.kicker')}</T>
-      <T variant="display">{t('crew.title')}</T>
+    <View style={styles.headRow}>
+      <View style={styles.head}>
+        <T variant="label">{t('crew.tab.kicker')}</T>
+        <T variant="display">{t('crew.title')}</T>
+      </View>
+      <ProfileButton />
     </View>
   );
 
@@ -190,16 +194,13 @@ export default function CrewTab() {
           {error}
         </T>
       ) : null}
-
-      <T variant="caption" color="textTertiary" center>
-        {t('crew.tab.privacy')}
-      </T>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  head: { gap: 2 },
+  headRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.three },
+  head: { gap: 2, flex: 1 },
   hero: { alignItems: 'center', gap: Spacing.three, paddingVertical: Spacing.eight },
   heroEmoji: { fontSize: 44, lineHeight: 52 },
   list: { gap: Spacing.two },

@@ -1,12 +1,12 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { CloseIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { TextField } from '@/components/ui/controls';
 import { Screen } from '@/components/ui/screen';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { T } from '@/components/ui/text';
 import { Spacing } from '@/constants/theme';
 import { t } from '@/i18n';
@@ -71,20 +71,17 @@ export default function AccountScreen() {
   };
 
   const header = (
-    <View style={styles.header}>
+    <ScreenHeader>
       <View style={styles.flex}>
         <T variant="label">Nordwand</T>
         <T variant="title">{t('contract.account.title')}</T>
       </View>
-      <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel={t('common.close')} style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
-        <CloseIcon color={theme.text} size={16} />
-      </Pressable>
-    </View>
+      </ScreenHeader>
   );
 
   if (!supabaseConfigured) {
     return (
-      <Screen topInset={Platform.OS !== 'ios'}>
+      <Screen>
         {header}
         <Card tone="surfaceMuted" bordered={false}>
           <T variant="caption">{t('contract.account.notConfigured')}</T>
@@ -96,7 +93,7 @@ export default function AccountScreen() {
   // ---------- Angemeldet ----------
   if (session) {
     return (
-      <Screen topInset={Platform.OS !== 'ios'}>
+      <Screen>
         {header}
         <Card style={styles.card}>
           <T variant="label">{t('contract.account.signedInAs')}</T>
@@ -114,10 +111,6 @@ export default function AccountScreen() {
           </View>
           <Button title={t('contract.account.syncNow')} variant="secondary" small loading={sync.state === 'syncing'} onPress={() => syncNow()} />
         </Card>
-
-        <T variant="caption" color="textTertiary">
-          {t('contract.account.backedUp')}
-        </T>
 
         <Button
           title={t('contract.account.signOut')}
@@ -153,7 +146,7 @@ export default function AccountScreen() {
   const [privacyBefore, privacyAfter = ''] = t('contract.account.privacyNote').split('{link}');
   const [codeBefore, codeAfter = ''] = t('contract.account.codeSent').split('{email}');
   return (
-    <Screen topInset={Platform.OS !== 'ios'}>
+    <Screen>
       {header}
       <T color="textSecondary">
         {t('contract.account.intro')}

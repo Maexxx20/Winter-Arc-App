@@ -4,13 +4,15 @@ import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, View } from 
 
 import { MyAvatar } from '@/components/avatar';
 import { BadgeGrid } from '@/components/badge';
-import { ChevronIcon, CloseIcon } from '@/components/icons';
+import { ChevronIcon } from '@/components/icons';
 import { StatTile } from '@/components/stat-tile';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { BlockedList } from '@/components/blocked-list';
+import { SettingsSections } from '@/components/settings-sections';
 import { SectionTitle, TextField } from '@/components/ui/controls';
 import { Screen } from '@/components/ui/screen';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { T } from '@/components/ui/text';
 import { openLink } from '@/constants/links';
 import { Radius, Spacing } from '@/constants/theme';
@@ -119,20 +121,13 @@ export default function ProfileScreen() {
   const shownName = name.trim() || t('contract.profile.yourName');
 
   return (
-    <Screen topInset={Platform.OS !== 'ios'}>
-      <View style={styles.header}>
+    <Screen>
+      <ScreenHeader>
         <View style={styles.flex}>
           <T variant="label">Nordwand</T>
           <T variant="title">{t('contract.profile.title')}</T>
         </View>
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={10}
-          accessibilityLabel={t('common.close')}
-          style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
-          <CloseIcon color={theme.text} size={16} />
-        </Pressable>
-      </View>
+      </ScreenHeader>
 
       {/* Kopf: Bild, Name, Motto */}
       <View style={styles.hero}>
@@ -202,9 +197,6 @@ export default function ProfileScreen() {
           keyboardType={Platform.OS === 'ios' ? 'twitter' : 'default'}
           returnKeyType="done"
         />
-        <T variant="caption" color="textTertiary">
-          {t('contract.profile.visibility')}
-        </T>
       </Card>
 
       <SectionTitle>{t('contract.profile.stats')}</SectionTitle>
@@ -273,6 +265,8 @@ export default function ProfileScreen() {
           )}
         </>
       )}
+
+      <SettingsSections />
     </Screen>
   );
 }

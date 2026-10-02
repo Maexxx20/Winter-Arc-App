@@ -32,7 +32,6 @@ export function ConnectionsCard() {
   const [support, setSupport] = useState<HealthSupport | null>(null);
   const [busy, setBusy] = useState<'health' | 'strava' | null>(null);
   const arc = selectActiveArc(state);
-  const linked = arc?.rules.filter((r) => r.health && !r.removedOn).length ?? 0;
   const { healthEnabled, stravaAthlete } = state.settings;
 
   useEffect(() => {
@@ -100,11 +99,6 @@ export function ConnectionsCard() {
           <StravaConnectButton loading={busy === 'strava'} onPress={toggleStrava} />
         ) : null}
       </View>
-
-      <T variant="caption" color="textTertiary">
-        {t('contract.connections.devices', { provider: healthProviderName })}{' '}
-        {linked ? t('contract.connections.linked', { count: linked }) : t('contract.connections.linkHint')}
-      </T>
     </Card>
   );
 }

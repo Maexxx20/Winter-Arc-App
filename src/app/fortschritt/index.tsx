@@ -4,11 +4,11 @@ import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CompareSlider } from '@/components/compare-slider';
-import { CloseIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Chip, SectionTitle } from '@/components/ui/controls';
 import { Screen } from '@/components/ui/screen';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { T } from '@/components/ui/text';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -85,16 +85,13 @@ export default function ProgressScreen() {
   };
 
   return (
-    <Screen topInset={Platform.OS !== 'ios'}>
-      <View style={styles.header}>
+    <Screen>
+      <ScreenHeader>
         <View style={styles.flex}>
           <T variant="label">{t('progress.count', { count: photos.length })}</T>
           <T variant="title">{t('progress.title')}</T>
         </View>
-        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel={t('common.close')} style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
-          <CloseIcon color={theme.text} size={16} />
-        </Pressable>
-      </View>
+      </ScreenHeader>
 
       {photos.length < 2 ? (
         <Card tone="accentSoft" bordered={false} style={styles.gap}>
@@ -135,13 +132,7 @@ export default function ProgressScreen() {
             after={after.name}
             labels={[`${t('progress.before')} · ${formatShort(before.date)}`, `${t('progress.after')} · ${formatShort(after.date)}`]}
           />
-          <T variant="caption" color="textTertiary" center>
-            {t('progress.pickHint')}
-          </T>
           <Button title={t('progress.shareCompare')} variant="secondary" loading={busy} onPress={share} />
-          <T variant="caption" color="textTertiary" center>
-            {t('progress.shareNote')}
-          </T>
 
           <SectionTitle
             action={

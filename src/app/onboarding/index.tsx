@@ -89,10 +89,6 @@ export default function Welcome() {
           </View>
         ))}
       </View>
-
-      <T variant="caption" color="textTertiary" center>
-        {t('today.onboarding.habitNote')}
-      </T>
     </Screen>
   );
 }

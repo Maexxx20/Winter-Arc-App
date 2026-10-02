@@ -72,3 +72,12 @@ export function FlameIcon({ size = 18, color }: P) {
     </Svg>
   );
 }
+
+export function PencilIcon({ size = 18, color, strokeWidth = 2 }: P) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z" stroke={color} strokeWidth={strokeWidth} strokeLinejoin="round" />
+      <Path d="M13.5 6.5l4 4" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
+    </Svg>
+  );
+}

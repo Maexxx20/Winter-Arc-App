@@ -70,7 +70,7 @@ const today: DictOf<typeof de> = {
   },
   reminder: {
     title: '🔔 Activer les rappels ?',
-    text: 'Un petit coup de pouce le matin, un point le soir – mais seulement s’il reste quelque chose à faire. Tu peux changer les heures dans l’onglet « Contrat ».',
+    text: 'Un petit coup de pouce le matin, un point le soir – mais seulement s’il reste quelque chose à faire. Tu peux changer les heures dans ton profil.',
     no: 'Non merci',
     yes: 'Activer',
   },
@@ -116,6 +116,7 @@ const today: DictOf<typeof de> = {
     liter: 'litres',
     pages: 'pages',
     min: 'min',
+    hours: 'h',
   },
   templates: {
     training: 'Entraînement',

@@ -3,7 +3,6 @@ import type { DictOf } from '../../types';
 
 const history: DictOf<typeof de> = {
   title: 'History',
-  footerHint: 'Tap a day to fill it in, or a rule to see its stats.',
 
   stats: {
     held: 'Held',
@@ -43,7 +42,7 @@ const history: DictOf<typeof de> = {
   day: {
     number: 'Day {n}',
     outside: 'Outside the arc',
-    editWindow: 'You can fill in days up to {count} days back. Older days stay as they are – that keeps your arc honest.',
+    editWindow: 'Past days stay as they are.',
     note: 'Note',
     notePlaceholder: 'How did the day go? What helped, what didn’t?',
     photos: 'Photos',
@@ -143,6 +142,14 @@ const history: DictOf<typeof de> = {
     streak_66: { title: 'Habit', hint: '{count} days', description: '{count} days in a row – now it sticks.' },
     summit: { title: 'Summit', hint: '≥ 80%', description: 'Finished the arc with at least 80%.' },
     north_face: { title: 'Nordwand', hint: 'No break', description: 'The whole arc without a single break.' },
+  },
+  calendar: {
+    prev: 'Previous month',
+    next: 'Next month',
+  },
+  journal: {
+    title: 'Journal',
+    more: 'Show more',
   },
 };
 

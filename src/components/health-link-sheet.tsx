@@ -52,16 +52,12 @@ export function HealthLinkSheet({
           <T variant="label">{t('ruleReminder.section')}</T>
           <TimeRow
             label={t('ruleReminder.label')}
-            hint={t('ruleReminder.hint')}
             value={reminder}
             fallback={18 * 60}
             onChange={setReminder}
           />
           <T variant="label">{t('contract.sheet.auto')}</T>
           <HealthLinkPicker value={link} onChange={setLink} />
-          <T variant="caption" color="textTertiary">
-            {t('contract.sheet.note')}
-          </T>
         </ScrollView>
         <View style={[styles.footer, { paddingBottom: insets.bottom + Spacing.four, borderTopColor: theme.border }]}>
           <Button title={t('common.save')} onPress={() => onSave(link ?? null, reminder)} />

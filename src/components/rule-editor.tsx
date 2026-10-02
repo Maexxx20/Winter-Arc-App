@@ -170,10 +170,6 @@ export function RuleEditor({ visible, initial, onClose, onSave }: Props) {
             <T variant="label">{t('today.editor.autoCheck')}</T>
             <HealthLinkPicker value={draft.health} onChange={(health) => setDraft((d) => ({ ...d, health }))} />
           </View>
-
-          <T variant="caption" color="textTertiary">
-            {t('today.editor.tip')}
-          </T>
         </ScrollView>
 
         <View style={[styles.footer, { paddingBottom: insets.bottom + Spacing.four, borderTopColor: theme.border }]}>

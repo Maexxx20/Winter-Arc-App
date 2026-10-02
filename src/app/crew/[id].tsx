@@ -5,11 +5,11 @@ import { Pressable, Share, StyleSheet, View } from 'react-native';
 import { MyAvatar, RemoteAvatar } from '@/components/avatar';
 import { ChallengeCard } from '@/components/challenge-card';
 import { CrewFeed, type FeedPerson } from '@/components/crew-feed';
-import { ChevronIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { SectionTitle } from '@/components/ui/controls';
 import { Screen } from '@/components/ui/screen';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { T } from '@/components/ui/text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -22,22 +22,7 @@ import { CrewArcCard } from '@/components/crew-arc-card';
 import { t } from '@/i18n';
 import { type CrewArc, type CrewArcSignature, relevantCrewArc } from '@/lib/crew-arc';
 import { loadBlocks, useBlocks } from '@/services/blocks';
-import {
-  addReaction,
-  cachedCrew,
-  type CrewDetail,
-  leaveCrew,
-  loadCrew,
-  loadCrewArcs,
-  myNudgesToday,
-  nudge,
-  type RemovedMember,
-  removedMembers,
-  removeReaction,
-  renewInviteCode,
-  subscribeCrew,
-  unbanMember,
-} from '@/services/crews';
+import { addReaction, cachedCrew, type CrewDetail, leaveCrew, loadCrew, loadCrewArcs, myNudgesToday, nudge, type RemovedMember, removedMembers, removeReaction, renewInviteCode, subscribeCrew, unbanMember } from '@/services/crews';
 import { useSession } from '@/services/supabase';
 
 export default function CrewScreen() {
@@ -207,17 +192,15 @@ export default function CrewScreen() {
 
   return (
     <Screen refreshing={loading && !!detail} onRefresh={load}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel={t('common.back')} style={[styles.round, { backgroundColor: theme.surfaceMuted }]}>
-          <ChevronIcon dir="left" color={theme.text} />
-        </Pressable>
+      <ScreenHeader>
+        
         <View style={styles.flex}>
           <T variant="label">{t('crew.title')}</T>
           <T variant="title" numberOfLines={1}>
             {detail?.crew.name ?? ' '}
           </T>
         </View>
-      </View>
+      </ScreenHeader>
 
       {error ? (
         <Card tone="surfaceMuted" bordered={false}>

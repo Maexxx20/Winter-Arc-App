@@ -365,11 +365,11 @@ E-Mail: [REVIEW-E-MAIL]
 Passwort: [REVIEW-PASSWORT]
 
 Im Tab «Crew» ist das Test-Konto bereits Mitglied der Crew «Review Crew» mit Beispieldaten.
-Konto löschen: Tab «Vertrag» → «Konto & Sync» → «Konto löschen».
+Konto löschen: Profilbild oben rechts → «Konto & Sync» → «Konto löschen».
 
 Nutzerinhalte und Moderation (Guideline 1.2): In einer Crew ein Mitglied antippen → «Blockieren» (wirkt in beide Richtungen) oder «Profil melden» (Mail an den Support). Wer die Crew gegründet hat, kann dort «Aus der Crew entfernen» wählen und unter «Crew verwalten» einen neuen Einladungscode erzeugen. Blockierte Personen: Profil → «Blockierte Personen».
 
-Apple Health (optional): Tab «Vertrag» → «Verbindungen» → «Apple Health verbinden». Nordwand liest nur Schritte, Workouts, Schlaf, Wasser und Achtsamkeitsminuten, um Regeln automatisch abzuhaken (Regel antippen → «Automatisch abhaken»). Es werden keine Daten in Health geschrieben. Die Health-Werte werden auf dem Gerät ausgewertet; gesichert wird nur das Ergebnis der Regel.
+Apple Health (optional): Profilbild oben rechts → «Verbindungen» → «Apple Health verbinden». Nordwand liest nur Schritte, Workouts, Schlaf, Wasser und Achtsamkeitsminuten, um Regeln automatisch abzuhaken (Tab «Vertrag» → Regel antippen → «Automatisch abhaken»). Es werden keine Daten in Health geschrieben. Die Health-Werte werden auf dem Gerät ausgewertet; gesichert wird nur das Ergebnis der Regel.
 
 Widgets: Homescreen → Widget hinzufügen → «Nordwand» (klein, mittel mit Abhaken, Sperrbildschirm).
 Schnellaktionen: App-Icon lange drücken.
@@ -382,7 +382,7 @@ dann die Menünamen so angeben, wie sie auf dem Review-Gerät erscheinen).
 
 App Store verlangt Bilder für das 6,9"-iPhone (1320 × 2868 oder 1290 × 2796). Am besten direkt auf dem
 iPhone aufnehmen (Development- oder TestFlight-Build) mit Beispieldaten – pro Sprache einmal, mit der
-App-Sprache unter *Vertrag → Sprache* umgestellt. Vorschlag für 5 Bilder:
+App-Sprache unter *Profil → Sprache* umgestellt. Vorschlag für 5 Bilder:
 
 | # | Screen | DE | EN | FR | IT |
 |---|---|---|---|---|---|

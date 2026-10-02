@@ -1,13 +1,12 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
-import { CloseIcon } from '@/components/icons';
 import { PhotoStrip } from '@/components/photo-strip';
 import { RuleRow } from '@/components/rule-row';
-import { Card } from '@/components/ui/card';
 import { TextField } from '@/components/ui/controls';
 import { Screen } from '@/components/ui/screen';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { T } from '@/components/ui/text';
 import { Radius, Spacing, type ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -18,8 +17,7 @@ import { diffDays, formatLong, isValidISO } from '@/lib/date';
 import type { DayStatus } from '@/lib/types';
 import { addPhoto, removePhoto, selectActiveArc, selectLog, setNote, setRuleValue, useAppState } from '@/store/store';
 
-/** Wie viele Tage zurück darf nachgetragen werden? (heute + 2) */
-export const EDIT_WINDOW_DAYS = 2;
+/** Nur der heutige Tag lässt sich bearbeiten – Verpasstes bleibt verpasst. */
 
 /** Farbe des Status-Badges; der Text kommt aus history.status.* */
 const STATUS_COLOR: Partial<Record<DayStatus, ThemeColor>> = {
@@ -44,37 +42,33 @@ export default function DayScreen() {
   const [note, setNoteText] = useState(log[date]?.note ?? '');
   useEffect(() => setNoteText(log[date]?.note ?? ''), [date]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Notiz auch beim Zurückwischen speichern
+  const pending = useRef<(() => void) | null>(null);
+  useEffect(() => () => pending.current?.(), []);
+
   const status = useMemo(() => (arc ? computeStreak(arc, log, today).statuses[date] : undefined), [arc, log, today, date]);
   if (!arc) return null;
 
   const inArc = date >= arc.startDate && date <= arc.endDate;
-  const age = diffDays(date, today);
-  const editable = arc.id === active?.id && inArc && age >= 0 && age <= EDIT_WINDOW_DAYS;
+  const editable = arc.id === active?.id && inArc && date === today;
   const rules = activeRules(arc, date);
   const badgeColor = status ? STATUS_COLOR[status] : undefined;
   const badge = status && badgeColor ? { label: t(`history.status.${status}`), color: badgeColor } : undefined;
   const dayNumber = diffDays(arc.startDate, date) + 1;
 
-  const saveNote = () => setNote(arc.id, date, note);
+  const saveNote = () => {
+    if (editable && note !== (log[date]?.note ?? '')) setNote(arc.id, date, note);
+  };
+  pending.current = saveNote;
 
   return (
-    <Screen topInset={Platform.OS !== 'ios'}>
-      <View style={styles.header}>
+    <Screen>
+      <ScreenHeader>
         <View style={styles.flex}>
           <T variant="label">{inArc ? t('history.day.number', { n: dayNumber }) : t('history.day.outside')}</T>
           <T variant="title">{date === today ? t('date.today') : formatLong(date)}</T>
         </View>
-        <Pressable
-          onPress={() => {
-            saveNote();
-            router.back();
-          }}
-          hitSlop={10}
-          accessibilityLabel={t('common.close')}
-          style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
-          <CloseIcon color={theme.text} size={16} />
-        </Pressable>
-      </View>
+      </ScreenHeader>
 
       {badge ? (
         <View style={[styles.badge, { backgroundColor: theme.surfaceMuted }]}>
@@ -84,12 +78,8 @@ export default function DayScreen() {
         </View>
       ) : null}
 
-      {!editable && inArc && age > 0 && (
-        <Card tone="surfaceMuted" bordered={false}>
-          <T variant="caption">
-            {t('history.day.editWindow', { count: EDIT_WINDOW_DAYS })}
-          </T>
-        </Card>
+      {!editable && inArc && date < today && (
+        <T variant="caption" color="textSecondary">🔒 {t('history.day.editWindow')}</T>
       )}
 
       {inArc && (
@@ -107,24 +97,34 @@ export default function DayScreen() {
         </View>
       )}
 
-      <TextField
-        label={t('history.day.note')}
-        value={note}
-        onChangeText={setNoteText}
-        onBlur={saveNote}
-        multiline
-        maxLength={1000}
-        placeholder={t('history.day.notePlaceholder')}
-      />
-
-      <View style={styles.photos}>
-        <T variant="label">{t('history.day.photos')}</T>
-        <PhotoStrip
-          photos={log[date]?.photos ?? []}
-          onAdd={(name) => addPhoto(arc.id, date, name)}
-          onRemove={(name) => removePhoto(arc.id, date, name)}
+      {editable ? (
+        <TextField
+          label={t('history.day.note')}
+          value={note}
+          onChangeText={setNoteText}
+          onBlur={saveNote}
+          multiline
+          maxLength={1000}
+          placeholder={t('history.day.notePlaceholder')}
         />
-      </View>
+      ) : note.trim() ? (
+        <View style={styles.photos}>
+          <T variant="label">{t('history.day.note')}</T>
+          <T color="textSecondary">{note.trim()}</T>
+        </View>
+      ) : null}
+
+      {editable || log[date]?.photos?.length ? (
+        <View style={styles.photos}>
+          <T variant="label">{t('history.day.photos')}</T>
+          <PhotoStrip
+            photos={log[date]?.photos ?? []}
+            readOnly={!editable}
+            onAdd={(name) => addPhoto(arc.id, date, name)}
+            onRemove={(name) => removePhoto(arc.id, date, name)}
+          />
+        </View>
+      ) : null}
     </Screen>
   );
 }

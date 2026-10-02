@@ -1,13 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { BarChart } from '@/components/bar-chart';
-import { CloseIcon } from '@/components/icons';
 import { StatTile } from '@/components/stat-tile';
 import { Card } from '@/components/ui/card';
 import { SectionTitle } from '@/components/ui/controls';
 import { Screen } from '@/components/ui/screen';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { T } from '@/components/ui/text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -36,8 +36,8 @@ export default function RuleScreen() {
   const started = d.expected > 0 || d.weeks.length > 0;
 
   return (
-    <Screen topInset={Platform.OS !== 'ios'}>
-      <View style={styles.header}>
+    <Screen>
+      <ScreenHeader>
         <T style={styles.icon}>{rule.icon}</T>
         <View style={styles.flex}>
           <T variant="title" numberOfLines={2}>{rule.title}</T>
@@ -46,10 +46,7 @@ export default function RuleScreen() {
             {rule.removedOn ? ` · ${t('history.rule.removedOn', { date: formatShort(rule.removedOn) })}` : ''}
           </T>
         </View>
-        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel={t('common.close')} style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
-          <CloseIcon color={theme.text} size={16} />
-        </Pressable>
-      </View>
+      </ScreenHeader>
 
       {!started ? (
         <Card tone="surfaceMuted" bordered={false}>
@@ -100,9 +97,6 @@ export default function RuleScreen() {
               }))}
               highlight={d.weeks.length - 1}
             />
-            <T variant="caption" color="textTertiary">
-              {rule.frequency.kind === 'daily' ? t('history.rule.perWeekDaily') : t('history.rule.perWeekWeekly')} {t('history.rule.tapHint')}
-            </T>
           </Card>
 
           {rule.frequency.kind === 'daily' ? (

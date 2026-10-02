@@ -1,14 +1,14 @@
 import * as Sharing from 'expo-sharing';
 import { router } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
-import { CloseIcon } from '@/components/icons';
 import { SHARE_H, SHARE_W, ShareCard } from '@/components/share-card';
 import { Button } from '@/components/ui/button';
 import { Segmented } from '@/components/ui/controls';
 import { Screen } from '@/components/ui/screen';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { T } from '@/components/ui/text';
 import { Spacing } from '@/constants/theme';
 import { useIsDark, useTheme } from '@/hooks/use-theme';
@@ -59,16 +59,13 @@ export default function ShareScreen() {
   };
 
   return (
-    <Screen topInset={Platform.OS !== 'ios'} footer={<Button title={t('common.share')} onPress={share} loading={busy} />}>
-      <View style={styles.header}>
+    <Screen footer={<Button title={t('common.share')} onPress={share} loading={busy} />}>
+      <ScreenHeader>
         <View style={styles.flex}>
           <T variant="label">{t('history.day.number', { n: Math.min(stats.dayNumber, stats.totalDays) })}</T>
           <T variant="title">{t('history.share.title')}</T>
         </View>
-        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel={t('common.close')} style={[styles.close, { backgroundColor: theme.surfaceMuted }]}>
-          <CloseIcon color={theme.text} size={16} />
-        </Pressable>
-      </View>
+      </ScreenHeader>
 
       <Segmented
         value={style}
@@ -82,10 +79,6 @@ export default function ShareScreen() {
       <View style={[styles.preview, { borderColor: theme.border }]}>
         <ShareCard ref={cardRef} arc={arc} stats={stats} dark={style === 'dark'} />
       </View>
-
-      <T variant="caption" color="textTertiary" center>
-        {t('history.share.privacy')}
-      </T>
     </Screen>
   );
 }

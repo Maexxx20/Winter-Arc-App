@@ -3,7 +3,6 @@ import type { DictOf } from '../../types';
 
 const history: DictOf<typeof de> = {
   title: 'Cronologia',
-  footerHint: 'Tocca un giorno per completarlo, o una regola per vederne le statistiche.',
 
   stats: {
     held: 'Tenuti',
@@ -43,7 +42,7 @@ const history: DictOf<typeof de> = {
   day: {
     number: 'Giorno {n}',
     outside: 'Fuori dall’arc',
-    editWindow: 'Puoi completare fino a {count} giorni indietro. I giorni più vecchi restano come sono – così il tuo arc resta onesto.',
+    editWindow: 'I giorni passati restano come sono.',
     note: 'Nota',
     notePlaceholder: 'Com’è andata la giornata? Cosa ti ha aiutato e cosa no?',
     photos: 'Foto',
@@ -143,6 +142,14 @@ const history: DictOf<typeof de> = {
     streak_66: { title: 'Abitudine', hint: '{count} giorni', description: '{count} giorni di fila – ormai è un’abitudine.' },
     summit: { title: 'Vetta', hint: '≥ 80%', description: 'Arc concluso con almeno l’80% di riuscita.' },
     north_face: { title: 'Nordwand', hint: 'Senza stop', description: 'L’intero arc senza una sola interruzione.' },
+  },
+  calendar: {
+    prev: 'Mese precedente',
+    next: 'Mese successivo',
+  },
+  journal: {
+    title: 'Diario',
+    more: 'Mostra altro',
   },
 };
 

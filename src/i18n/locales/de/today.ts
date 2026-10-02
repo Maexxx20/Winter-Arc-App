@@ -68,7 +68,7 @@ export default {
   },
   reminder: {
     title: '🔔 Erinnerungen einschalten?',
-    text: 'Morgens ein kurzer Anstoss, abends ein Check-in – aber nur, wenn noch etwas offen ist. Zeiten kannst du im Tab «Vertrag» ändern.',
+    text: 'Morgens ein kurzer Anstoss, abends ein Check-in – aber nur, wenn noch etwas offen ist. Zeiten änderst du in deinem Profil.',
     no: 'Nein danke',
     yes: 'Einschalten',
   },
@@ -116,6 +116,7 @@ export default {
     liter: 'Liter',
     pages: 'Seiten',
     min: 'Min',
+    hours: 'Std',
   },
   templates: {
     training: 'Training',

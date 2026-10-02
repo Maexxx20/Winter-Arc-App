@@ -3,7 +3,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { HoldToSign } from '@/components/hold-to-sign';
-import { ChevronIcon, CloseIcon, PlusIcon } from '@/components/icons';
+import { ChevronIcon, CloseIcon, PencilIcon, PlusIcon } from '@/components/icons';
 import { RuleEditor } from '@/components/rule-editor';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -311,6 +311,9 @@ export default function CreateArc() {
                   <View style={styles.flex}>
                     <T variant="bodyStrong">{r.title}</T>
                     <T variant="caption">{describeRule(r)}</T>
+                  </View>
+                  <View style={[styles.round, styles.smallRound, { backgroundColor: theme.accentSoft }]} accessibilityLabel={t('common.edit')}>
+                    <PencilIcon color={theme.accent} size={14} />
                   </View>
                   <Pressable
                     hitSlop={10}

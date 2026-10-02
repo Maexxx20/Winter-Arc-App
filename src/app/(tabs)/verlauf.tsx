@@ -2,7 +2,10 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Heatmap, HeatmapLegend } from '@/components/heatmap';
+import { HeatmapLegend } from '@/components/heatmap';
+import { JournalList } from '@/components/journal-list';
+import { MonthCalendar } from '@/components/month-calendar';
+import { ProfileButton } from '@/components/profile-button';
 import { ChevronIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { StatTile } from '@/components/stat-tile';
@@ -39,11 +42,14 @@ export default function HistoryScreen() {
 
   return (
     <Screen tabs>
-      <View style={styles.head}>
-        <T variant="label">
-          {formatShort(arc.startDate)} – {formatShort(arc.endDate, true)}
-        </T>
-        <T variant="display">{t('history.title')}</T>
+      <View style={styles.headRow}>
+        <View style={styles.head}>
+          <T variant="label">
+            {formatShort(arc.startDate)} – {formatShort(arc.endDate, true)}
+          </T>
+          <T variant="display">{t('history.title')}</T>
+        </View>
+        <ProfileButton />
       </View>
 
       <View style={styles.tiles}>
@@ -56,15 +62,18 @@ export default function HistoryScreen() {
       </View>
 
       <Card style={styles.heat}>
-        <Heatmap
+        <MonthCalendar
           startDate={arc.startDate}
           endDate={arc.endDate}
           today={today}
           statuses={stats.streak.statuses}
+          log={log}
           onPressDay={(date) => router.push({ pathname: '/tag/[date]', params: { date } })}
         />
         <HeatmapLegend />
       </Card>
+
+      <JournalList arcId={arc.id} log={log} today={today} />
 
       {stats.started && (
         <Button title={t('history.share.title')} variant="secondary" onPress={() => router.push('/teilen')} />
@@ -111,7 +120,7 @@ export default function HistoryScreen() {
 
       <SectionTitle>{t('history.stats.rules')}</SectionTitle>
       <Card style={styles.rules}>
-        {stats.ruleStats.map(({ rule, consistency, hits, expected }) => (
+        {stats.ruleStats.map(({ rule, consistency, expected }) => (
           <Pressable
             key={rule.id}
             onPress={() => router.push({ pathname: '/regel/[id]', params: { id: rule.id } })}
@@ -133,22 +142,17 @@ export default function HistoryScreen() {
             <View style={[styles.bar, { backgroundColor: theme.surfaceMuted }]}>
               <View style={[styles.barFill, { width: `${consistency * 100}%`, backgroundColor: theme.accent }]} />
             </View>
-            <T variant="caption" color="textTertiary">
-              {t(rule.frequency.kind === 'weekly' ? 'history.stats.hitsUnits' : 'history.stats.hitsDays', { hits, expected })}
-            </T>
           </Pressable>
         ))}
       </Card>
 
-      <T variant="caption" color="textTertiary" center>
-        {t('history.footerHint')}
-      </T>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  head: { gap: 2 },
+  headRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.three },
+  head: { gap: 2, flex: 1 },
   tiles: { flexDirection: 'row', gap: Spacing.two },
   heat: { gap: Spacing.four },
   rules: { gap: Spacing.five },

@@ -70,7 +70,7 @@ const today: DictOf<typeof de> = {
   },
   reminder: {
     title: '🔔 Attivare i promemoria?',
-    text: 'Una spinta veloce al mattino, un check-in la sera – ma solo se c’è ancora qualcosa da fare. Puoi cambiare gli orari nella scheda «Contratto».',
+    text: 'Una spinta veloce al mattino, un check-in la sera – ma solo se c’è ancora qualcosa da fare. Puoi cambiare gli orari nel tuo profilo.',
     no: 'No grazie',
     yes: 'Attiva',
   },
@@ -116,6 +116,7 @@ const today: DictOf<typeof de> = {
     liter: 'litri',
     pages: 'pagine',
     min: 'min',
+    hours: 'ore',
   },
   templates: {
     training: 'Allenamento',

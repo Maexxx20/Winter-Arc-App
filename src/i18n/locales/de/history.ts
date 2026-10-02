@@ -1,7 +1,6 @@
 /** Texte: history (Verlauf, Tag, Wochenrückblick, Teilen, Regel-Statistik, Arcs, Abzeichen) */
 export default {
   title: 'Verlauf',
-  footerHint: 'Tippe auf einen Tag, um ihn nachzutragen, oder auf eine Regel für ihre Statistik.',
 
   stats: {
     held: 'Gehalten',
@@ -43,7 +42,7 @@ export default {
   day: {
     number: 'Tag {n}',
     outside: 'Ausserhalb des Arcs',
-    editWindow: 'Nachtragen geht bis {count} Tage zurück. Ältere Tage bleiben, wie sie sind – das hält deinen Arc ehrlich.',
+    editWindow: 'Vergangene Tage bleiben, wie sie sind.',
     note: 'Notiz',
     notePlaceholder: 'Wie lief der Tag? Was hat geholfen, was nicht?',
     photos: 'Fotos',
@@ -145,5 +144,13 @@ export default {
     streak_66: { title: 'Gewohnheit', hint: '{count} Tage', description: '{count} Tage am Stück – ab hier sitzt es.' },
     summit: { title: 'Gipfel', hint: '≥ 80 %', description: 'Den Arc mit mindestens 80 % Quote beendet.' },
     north_face: { title: 'Nordwand', hint: 'Ohne Bruch', description: 'Den ganzen Arc ohne einen einzigen Bruch.' },
+  },
+  calendar: {
+    prev: 'Vorheriger Monat',
+    next: 'Nächster Monat',
+  },
+  journal: {
+    title: 'Tagebuch',
+    more: 'Mehr anzeigen',
   },
 };
