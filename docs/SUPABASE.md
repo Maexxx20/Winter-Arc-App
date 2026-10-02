@@ -60,14 +60,11 @@ App die Sprache dort als `lang` ablegt, kann ein einziges Template alle vier Spr
 Das Template liest `lang` vorsichtig aus (fehlt der Wert oder sind gar keine Metadaten da, gibt es
 keinen Fehler, sondern Deutsch).
 
-**Betreff** (Magic Link und Confirm signup):
+**Betreff** (Magic Link und Confirm signup) – Supabase erlaubt hier nur 255 Zeichen, darum neutral für alle Sprachen:
 
 ```
-{{ $l := "" }}{{ with .Data }}{{ with .lang }}{{ $l = . }}{{ end }}{{ end }}{{ if eq $l "en" }}Your Nordwand code: {{ .Token }}{{ else if eq $l "fr" }}Ton code Nordwand : {{ .Token }}{{ else if eq $l "it" }}Il tuo codice Nordwand: {{ .Token }}{{ else }}Dein Nordwand-Code: {{ .Token }}{{ end }}
+Nordwand – Code: {{ .Token }}
 ```
-
-Falls Supabase im Betreff keine Bedingungen annimmt (Fehler beim Speichern oder die Mail kommt mit
-leerem Betreff), stattdessen einen neutralen Betreff nehmen: `Nordwand – Code: {{ .Token }}`.
 
 **Inhalt** (Magic Link und Confirm signup):
 
